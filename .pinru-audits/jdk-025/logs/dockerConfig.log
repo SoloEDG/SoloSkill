@@ -1,0 +1,20 @@
+COMMAND ['docker', 'compose', 'config']
+UTC 2026-11-22T06:33:30.103781+00:00
+name: jdk-025
+services:
+  ruinfield:
+    build:
+      context: /Users/cool/work/self-project/solo/SoloSkill/origin-project/jdk-025
+      dockerfile: Dockerfile
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 80
+        published: "18225"
+        protocol: tcp
+networks:
+  default:
+    name: jdk-025_default
+
+EXIT_CODE 0

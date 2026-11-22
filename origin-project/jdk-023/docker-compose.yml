@@ -1,7 +1,0 @@
-name: jdk023-pinball
-
-services:
-  web:
-    build: .
-    ports:
-      - "18023:80"

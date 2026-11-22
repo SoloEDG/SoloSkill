@@ -1,0 +1,8 @@
+command: docker compose -p codex-jdk024-review down
+exit: 0
+ Container codex-jdk024-review-stillwater-1 Stopping 
+ Container codex-jdk024-review-stillwater-1 Stopped 
+ Container codex-jdk024-review-stillwater-1 Removing 
+ Container codex-jdk024-review-stillwater-1 Removed 
+ Network codex-jdk024-review_default Removing 
+ Network codex-jdk024-review_default Removed 

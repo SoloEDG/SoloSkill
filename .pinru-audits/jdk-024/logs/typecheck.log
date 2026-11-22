@@ -1,0 +1,8 @@
+COMMAND ['npm', 'run', 'typecheck']
+UTC 2026-11-22T06:37:49.624615+00:00
+
+> jdk-024-stillwater@1.0.0 typecheck
+> tsc --noEmit
+
+
+EXIT_CODE 0

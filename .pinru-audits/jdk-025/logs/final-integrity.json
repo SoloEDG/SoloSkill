@@ -1,0 +1,11 @@
+{
+  "status": "passed_for_candidate_review",
+  "tasks": 24,
+  "p5Passed": 24,
+  "p6Pending": 24,
+  "runtimeChecksPassed": 7,
+  "reviewHashesMatch": true,
+  "reviewer": "/root/independent024",
+  "necessaryFileReferencesMatch": true,
+  "limitation": "此检查只汇总候选复核；P6未执行，整体不是已收录或平台批准状态。"
+}

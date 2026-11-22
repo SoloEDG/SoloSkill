@@ -1,0 +1,22 @@
+[
+  {
+    "project": "jdk-024",
+    "total": 24,
+    "changed": 21,
+    "retained": 3,
+    "p5Passed": 24,
+    "p6Pending": 24,
+    "projectSha256": "62b1538e079104d025a4548b0958194e6a9396fb1b1bfebf506fa6a67485d57f",
+    "promptSha256": "6567e4fee355afecd2514259d9943ec1d163af6fab46f6ebf8ba814bc24a8538"
+  },
+  {
+    "project": "jdk-025",
+    "total": 24,
+    "changed": 18,
+    "retained": 6,
+    "p5Passed": 24,
+    "p6Pending": 24,
+    "projectSha256": "9b355f9345965ba6746fc7e16916970b29d1cf8e4fdf88bd7b202a8fce175cba",
+    "promptSha256": "01dfe4c582b16860d0bfe8c2f443fd2e60782c50c853a099eb1661a20c8f7392"
+  }
+]

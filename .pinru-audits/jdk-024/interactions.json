@@ -1,0 +1,26 @@
+[
+  {
+    "from": "tackle",
+    "to": "fishing",
+    "steps": "选择甜玉米粒，蓄力并出竿，等待咬钩。",
+    "expected": "鱼饵与遭遇一致，每次出竿扣1份并增加抛竿次数。",
+    "observed": "甜玉米20→19→18→17，抛竿0→3；咬钩进入搏鱼。",
+    "log": "logs/browser-smoke.md"
+  },
+  {
+    "from": "waters",
+    "to": "collection",
+    "steps": "芦苇浅湾提竿后，聚焦收线按钮并按住 Enter 24秒，捕获锦鲤。",
+    "expected": "水域遭遇进入搏鱼，成功后鱼获进入背包和图鉴，挑战更新。",
+    "observed": "锦鲤2.67kg入袋；背包0→1，图鉴0/6→1/6，累计收获0→1，初次相遇1/1，溪流来信1/2。",
+    "log": "logs/browser-smoke.md"
+  },
+  {
+    "from": "collection",
+    "to": "challenges",
+    "steps": "领取初次相遇奖励；打开背包放流；刷新。",
+    "expected": "奖励只能领一次；放流减少袋内鱼但不清除图鉴和捕获历史。",
+    "observed": "领取按钮消失；背包1→0，放流0→1；刷新后图鉴1/6、捕获1、放流1、玉米17、已领取状态保持。",
+    "log": "logs/browser-smoke.md"
+  }
+]

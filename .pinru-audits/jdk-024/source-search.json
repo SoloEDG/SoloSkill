@@ -1,0 +1,74 @@
+{
+  "gen-01": {
+    "pattern": "expedition|远征|航段",
+    "scope": "src/**/*.ts, src/**/*.tsx；并人工通读全部业务源文件",
+    "matchedLines": [],
+    "conclusion": "未发现对应完整能力；关键词搜索只作导航，不独自证明不存在。基线行为以sourceEvidence与完整源码核对为准。"
+  },
+  "gen-02": {
+    "pattern": "tournament|锦标赛|赛季",
+    "scope": "src/**/*.ts, src/**/*.tsx；并人工通读全部业务源文件",
+    "matchedLines": [],
+    "conclusion": "未发现对应完整能力；关键词搜索只作导航，不独自证明不存在。基线行为以sourceEvidence与完整源码核对为准。"
+  },
+  "gen-03": {
+    "pattern": "sonar|声呐|回波",
+    "scope": "src/**/*.ts, src/**/*.tsx；并人工通读全部业务源文件",
+    "matchedLines": [],
+    "conclusion": "未发现对应完整能力；关键词搜索只作导航，不独自证明不存在。基线行为以sourceEvidence与完整源码核对为准。"
+  },
+  "gen-04": {
+    "pattern": "recipe|工坊|配方",
+    "scope": "src/**/*.ts, src/**/*.tsx；并人工通读全部业务源文件",
+    "matchedLines": [],
+    "conclusion": "未发现对应完整能力；关键词搜索只作导航，不独自证明不存在。基线行为以sourceEvidence与完整源码核对为准。"
+  },
+  "gen-05": {
+    "pattern": "replay|回放|接管",
+    "scope": "src/**/*.ts, src/**/*.tsx；并人工通读全部业务源文件",
+    "matchedLines": [],
+    "conclusion": "未发现对应完整能力；关键词搜索只作导航，不独自证明不存在。基线行为以sourceEvidence与完整源码核对为准。"
+  },
+  "gen-06": {
+    "pattern": "exposure|摄影|连拍",
+    "scope": "src/**/*.ts, src/**/*.tsx；并人工通读全部业务源文件",
+    "matchedLines": [],
+    "conclusion": "未发现对应完整能力；关键词搜索只作导航，不独自证明不存在。基线行为以sourceEvidence与完整源码核对为准。"
+  },
+  "gen-07": {
+    "pattern": "aquarium|水箱|溶氧",
+    "scope": "src/**/*.ts, src/**/*.tsx；并人工通读全部业务源文件",
+    "matchedLines": [],
+    "conclusion": "未发现对应完整能力；关键词搜索只作导航，不独自证明不存在。基线行为以sourceEvidence与完整源码核对为准。"
+  },
+  "gen-08": {
+    "pattern": "流速控制点|流场|flowField",
+    "scope": "src/**/*.ts, src/**/*.tsx；并人工通读全部业务源文件",
+    "matchedLines": [],
+    "conclusion": "未发现对应完整能力；关键词搜索只作导航，不独自证明不存在。基线行为以sourceEvidence与完整源码核对为准。"
+  },
+  "gen-09": {
+    "pattern": "rainfall|预报|洪峰",
+    "scope": "src/**/*.ts, src/**/*.tsx；并人工通读全部业务源文件",
+    "matchedLines": [],
+    "conclusion": "未发现对应完整能力；关键词搜索只作导航，不独自证明不存在。基线行为以sourceEvidence与完整源码核对为准。"
+  },
+  "gen-10": {
+    "pattern": "AudioContext|声诱|声源",
+    "scope": "src/**/*.ts, src/**/*.tsx；并人工通读全部业务源文件",
+    "matchedLines": [],
+    "conclusion": "未发现对应完整能力；关键词搜索只作导航，不独自证明不存在。基线行为以sourceEvidence与完整源码核对为准。"
+  },
+  "gen-11": {
+    "pattern": "tutorial|课程|试炼",
+    "scope": "src/**/*.ts, src/**/*.tsx；并人工通读全部业务源文件",
+    "matchedLines": [],
+    "conclusion": "未发现对应完整能力；关键词搜索只作导航，不独自证明不存在。基线行为以sourceEvidence与完整源码核对为准。"
+  },
+  "gen-12": {
+    "pattern": "pollution|清障|废物",
+    "scope": "src/**/*.ts, src/**/*.tsx；并人工通读全部业务源文件",
+    "matchedLines": [],
+    "conclusion": "未发现对应完整能力；关键词搜索只作导航，不独自证明不存在。基线行为以sourceEvidence与完整源码核对为准。"
+  }
+}

@@ -1,0 +1,8 @@
+command: docker compose -p codex-jdk025-review down
+exit: 0
+ Container codex-jdk025-review-ruinfield-1 Stopping 
+ Container codex-jdk025-review-ruinfield-1 Stopped 
+ Container codex-jdk025-review-ruinfield-1 Removing 
+ Container codex-jdk025-review-ruinfield-1 Removed 
+ Network codex-jdk025-review_default Removing 
+ Network codex-jdk025-review_default Removed 

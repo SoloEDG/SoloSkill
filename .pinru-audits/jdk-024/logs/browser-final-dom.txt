@@ -1,0 +1,154 @@
+- banner:
+  - link "静水手记 STILLWATER 把日子，过成一池涟漪。":
+    - /url: "#"
+    - strong:
+      - text: 静水手记
+      - generic: STILLWATER
+    - generic: 把日子，过成一池涟漪。
+  - navigation "主导航":
+    - link "去钓鱼":
+      - /url: "#fishing"
+      - text: 去钓鱼
+    - link "鱼类图鉴":
+      - /url: "#collection"
+      - text: 鱼类图鉴
+    - link "钓手挑战":
+      - /url: "#challenges"
+      - text: 钓手挑战
+  - text: 手记已保存
+  - button "垂钓指南":
+  - generic: 舟
+- main:
+  - text: A LITTLE TIME BY THE WATER
+  - heading "今天，也去钓鱼吧。" [level=1]
+  - paragraph: 不赶时间，只等一尾心动的鱼。
+  - strong: 晴 · 21°
+  - generic: 一个适合垂钓的早晨
+  - complementary:
+    - heading "寻找一片静水" [level=2]
+    - generic: 03 钓点
+    - paragraph: 每一处水域，都有不同的相遇。
+    - button "01 REED COVE 芦苇浅湾 1.5–3 m · 3 种鱼":
+      - generic: "01"
+      - generic: REED COVE
+      - strong: 芦苇浅湾
+      - generic: 1.5–3 m · 3 种鱼
+    - button "02 STONE BROOK 青石溪流 捕获 2 尾后解锁" [disabled]:
+      - generic: "02"
+      - generic: STONE BROOK
+      - strong: 青石溪流
+      - generic: 捕获 2 尾后解锁
+    - button "03 MIRROR LAKE 镜湖深水 捕获 5 尾后解锁" [disabled]:
+      - generic: "03"
+      - generic: MIRROR LAKE
+      - strong: 镜湖深水
+      - generic: 捕获 5 尾后解锁
+    - text: ANGLER’S NOTE
+    - paragraph:
+      - text: “好的钓手，
+      - text: 先学会等待。”
+    - text: 今日宜放慢脚步
+    - generic: 离线也能享受垂钓时光
+  - text: REED COVE
+  - heading "芦苇浅湾 自由垂钓" [level=2]:
+    - text: 芦苇浅湾
+    - generic: 自由垂钓
+  - generic: 开放水域
+  - img "远山环绕的宁静湖面，前景是木质钓台与鱼竿"
+  - generic: 清晨 / 07:30
+  - generic: 晨雾散去，芦苇旁泛起了细小涟漪。
+  - generic: STILLNESS IS A KIND OF JOY.
+  - text: 19°C 水温
+  - text: 微风 2 级
+  - text: 缓流 · 1.5–3 m
+  - status:
+    - generic: 深呼吸，把时间交给湖面。
+  - text: 点击蓄力，再次点击抛竿
+  - button "开始抛竿":
+    - text: 开始抛竿
+  - heading "鱼饵盒" [level=2]
+  - button "补给":
+    - text: 补给
+  - button "〰 鲜活蚯蚓 均衡 · 鲫鱼 / 河鲈 ×24":
+    - generic: 〰
+    - strong: 鲜活蚯蚓
+    - generic: 均衡 · 鲫鱼 / 河鲈
+    - generic: ×24
+  - button "⠿ 甜玉米粒 素饵 · 锦鲤偏爱 ×17":
+    - generic: ⠿
+    - strong: 甜玉米粒
+    - generic: 素饵 · 锦鲤偏爱
+    - text: ×17
+  - button "⌁ 羽毛拟蝇 拟饵 · 掠食鱼偏爱 ×16":
+    - generic: ⌁
+    - strong: 羽毛拟蝇
+    - generic: 拟饵 · 掠食鱼偏爱
+    - generic: ×16
+  - paragraph: 当前偏好：银鲫、锦鲤
+  - heading "溪流轻竿" [level=2]
+  - generic: 2.4 m
+  - generic: STILLWATER / 240
+  - text: 收线力度
+  - status "收线力度 60": 60%
+  - slider "收线力度": "60"
+  - text: 泄力设置
+  - status "泄力设置 40": 40%
+  - slider "泄力设置": "40"
+  - text: 力度越高收线越快，也越容易绷紧鱼线。
+  - generic: ✳
+  - paragraph:
+    - text: 每一竿都是新的开始。
+    - generic: 不论收获多少，湖面总会给你一个好心情。
+  - complementary:
+    - heading "湖畔图鉴" [level=2]
+    - generic: 1 / 6 已发现
+    - button "鱼类图鉴":
+      - text: 鱼类图鉴
+    - button "我的背包 0":
+      - text: 我的背包
+      - generic: "0"
+    - button "尚未发现的鱼种 待发现 常见":
+      - img "尚未发现的鱼种"
+      - generic: 待发现
+      - text: 常见
+    - button "尚未发现的鱼种 待发现 常见":
+      - img "尚未发现的鱼种"
+      - generic: 待发现
+      - text: 常见
+    - button "锦鲤 锦鲤 少见":
+      - img "锦鲤"
+      - generic: 锦鲤
+      - text: 少见
+    - button "尚未发现的鱼种 待发现 少见":
+      - img "尚未发现的鱼种"
+      - generic: 待发现
+      - text: 少见
+    - button "尚未发现的鱼种 待发现 稀有":
+      - img "尚未发现的鱼种"
+      - generic: 待发现
+      - text: 稀有
+    - button "尚未发现的鱼种 待发现 稀有":
+      - img "尚未发现的鱼种"
+      - generic: 待发现
+      - text: 稀有
+    - paragraph: 把每一次相遇，留在手记里。
+    - heading "钓手的小目标" [level=2]
+    - button "全部":
+      - text: 全部
+    - strong: 初次相遇
+    - generic: 成功捕获你的第一尾鱼
+    - progressbar "初次相遇"
+    - generic: 奖励 · 启程徽章
+    - strong: 溪流来信
+    - generic: 累计捕获 2 尾鱼
+    - progressbar "溪流来信"
+    - generic: 奖励 · 青石溪流
+    - generic: 1/2
+    - strong: "01"
+    - generic: 累计收获
+    - strong: "03"
+    - generic: 抛竿次数
+    - strong: "01"
+    - generic: 已放流
+  - generic: STILLWATER FIELD NOTES · EST. 2026
+  - text: 慢一点，鱼儿会来的。

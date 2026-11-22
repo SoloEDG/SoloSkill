@@ -1,0 +1,18 @@
+COMMAND ['docker', 'compose', '-p', 'codex-jdk025-review', 'up', '-d', '--no-build']
+ Network codex-jdk025-review_default Creating 
+ Network codex-jdk025-review_default Creating 
+ Network codex-jdk025-review_default Created 
+ Network codex-jdk025-review_default Created 
+ Container codex-jdk025-review-ruinfield-1 Creating 
+ Container codex-jdk025-review-ruinfield-1 Created 
+ Container codex-jdk025-review-ruinfield-1 Starting 
+ Container codex-jdk025-review-ruinfield-1 Started 
+
+EXIT_CODE 0
+GET / 200
+GET /assets/index-B1uPJPvU.js 200
+GET /assets/index-BRUJGcRG.css 200
+GET /audit-route 200
+NAME                              IMAGE                           COMMAND                  SERVICE     CREATED        STATUS                  PORTS
+codex-jdk025-review-ruinfield-1   codex-jdk025-review-ruinfield   "/docker-entrypoint.…"   ruinfield   1 second ago   Up Less than a second   0.0.0.0:18225->80/tcp, [::]:18225->80/tcp
+

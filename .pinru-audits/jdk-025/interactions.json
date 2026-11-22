@@ -1,0 +1,26 @@
+[
+  {
+    "from": "terrain",
+    "to": "exploration",
+    "steps": "默认RUIN-025局点击A1。",
+    "expected": "首步生成安全区，展开更新进度、文物和推断。",
+    "observed": "41/86格已探索、1/6文物；推断7条件安全/3危险/22有效线索。",
+    "log": "logs/browser-smoke.md"
+  },
+  {
+    "from": "tools",
+    "to": "inference",
+    "steps": "选择勘探探针并点击D1。",
+    "expected": "道具扣1，公开可靠危险信息，推断重算，日志新增。",
+    "observed": "探针2→1；D1显示探针确认危险；推断危险3→4，线索22→20；日志1→2。",
+    "log": "logs/browser-smoke.md"
+  },
+  {
+    "from": "exploration",
+    "to": "chronicle",
+    "steps": "暂停，验证撤离与道具禁用；继续并确认撤离；刷新。",
+    "expected": "暂停阻止行动，结束只结算已探索成果；刷新不重复记分。",
+    "observed": "暂停2:13时操作禁用；撤离结算41/86、文物1、陷阱0、445分、归档1；刷新后仍445分/归档1/日志3。",
+    "log": "logs/browser-smoke.md"
+  }
+]

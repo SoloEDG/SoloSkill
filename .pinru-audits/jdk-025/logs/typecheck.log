@@ -1,0 +1,8 @@
+COMMAND ['npm', 'run', 'typecheck']
+UTC 2026-11-22T06:33:27.718569+00:00
+
+> jdk-025-ruinfield@1.0.0 typecheck
+> tsc --noEmit
+
+
+EXIT_CODE 0

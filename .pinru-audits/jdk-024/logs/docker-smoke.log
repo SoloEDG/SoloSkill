@@ -1,0 +1,7 @@
+NAME                               IMAGE                            COMMAND                  SERVICE      CREATED         STATUS         PORTS
+codex-jdk024-review-stillwater-1   codex-jdk024-review-stillwater   "/docker-entrypoint.…"   stillwater   2 minutes ago   Up 2 minutes   0.0.0.0:18224->80/tcp, [::]:18224->80/tcp
+
+GET /: 200; bytes=463; content-type=text/html
+GET /audit-route: 200; bytes=463; content-type=text/html
+GET /assets/index-DK_L73mz.js: 200; bytes=259200; content-type=application/javascript
+GET /assets/index-uKpBWwfA.css: 200; bytes=19995; content-type=text/css

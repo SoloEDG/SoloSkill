@@ -1,0 +1,41 @@
+{
+  "domain": "游戏图形与多媒体",
+  "pureFrontend": "React+TypeScript+Vite；状态与规则在浏览器内执行，localStorage本地持久化。Docker多阶段构建静态资源，nginx仅提供文件与SPA回退，无业务后端。",
+  "businessFiles": 41,
+  "cohesion": "五个业务模块各自拥有界面和规则，通过index公开入口由app路由命令；shared保存文档形状和公共纯计算，不反向依赖业务模块。结构检查验证导入边界、别名、循环和文件长度；人工核对gameReducer是编排入口，领域计算仍在各模块model/lib。现有统一命令、时钟和结算防重复能力作为逐题可复用基线，不能重复计难度。",
+  "capacityLog": "capacity.md",
+  "responsibilities": {
+    "terrain": "种子布局、首步安全、公开视图与地图呈现。",
+    "exploration": "揭格、空区扩展、标记、暂停和终局行动。",
+    "tools": "探针、火把和护符的目标有效性、消耗与可靠情报。",
+    "inference": "仅从公开地图建立约束、发现冲突并推导条件安全/危险。",
+    "chronicle": "文物发现、日志、终局报告及按探险身份防重复结算。"
+  },
+  "interactions": [
+    {
+      "from": "terrain",
+      "to": "exploration",
+      "steps": "默认RUIN-025局点击A1。",
+      "expected": "首步生成安全区，展开更新进度、文物和推断。",
+      "observed": "41/86格已探索、1/6文物；推断7条件安全/3危险/22有效线索。",
+      "log": "logs/browser-smoke.md"
+    },
+    {
+      "from": "tools",
+      "to": "inference",
+      "steps": "选择勘探探针并点击D1。",
+      "expected": "道具扣1，公开可靠危险信息，推断重算，日志新增。",
+      "observed": "探针2→1；D1显示探针确认危险；推断危险3→4，线索22→20；日志1→2。",
+      "log": "logs/browser-smoke.md"
+    },
+    {
+      "from": "exploration",
+      "to": "chronicle",
+      "steps": "暂停，验证撤离与道具禁用；继续并确认撤离；刷新。",
+      "expected": "暂停阻止行动，结束只结算已探索成果；刷新不重复记分。",
+      "observed": "暂停2:13时操作禁用；撤离结算41/86、文物1、陷阱0、445分、归档1；刷新后仍445分/归档1/日志3。",
+      "log": "logs/browser-smoke.md"
+    }
+  ],
+  "verificationNotes": "浏览器三条操作链覆盖全部五个模块；见runtime-checks.json及日志。此记录描述基线质量，不等于新增候选题已实现或P6通过。"
+}

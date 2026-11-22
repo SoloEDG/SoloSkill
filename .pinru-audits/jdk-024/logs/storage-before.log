@@ -1,0 +1,14 @@
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+PASS new player automatically saves
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+BASELINE invalid JSON preserved=false writes=2
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+BASELINE unknown version preserved=false writes=2
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+BASELINE invalid fields preserved=false writes=2
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+BASELINE read failure preserved=false writes=2
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+PASS valid document restores and continues saving
+react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+PASS write failure is visible and keeps stored data

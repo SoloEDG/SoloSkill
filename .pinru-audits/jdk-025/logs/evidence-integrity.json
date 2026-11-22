@@ -1,0 +1,7 @@
+{
+  "scope": "existing candidates, 12 generation + 12 Feature",
+  "status": "passed",
+  "tasks": 24,
+  "errors": [],
+  "limitation": "References/paths/fields only; does not establish P5 semantics or measured P6."
+}

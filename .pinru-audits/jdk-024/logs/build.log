@@ -1,0 +1,17 @@
+COMMAND ['npm', 'run', 'build']
+UTC 2026-11-22T06:37:50.638127+00:00
+
+> jdk-024-stillwater@1.0.0 build
+> vite build
+
+vite v7.3.8 building client environment for production...
+transforming...
+✓ 1614 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.46 kB │ gzip:  0.32 kB
+dist/assets/index-uKpBWwfA.css   20.00 kB │ gzip:  5.41 kB
+dist/assets/index-DK_L73mz.js   259.20 kB │ gzip: 83.10 kB
+✓ built in 770ms
+
+EXIT_CODE 0

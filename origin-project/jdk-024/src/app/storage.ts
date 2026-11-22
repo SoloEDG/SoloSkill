@@ -55,18 +55,23 @@ function valid(value: unknown): value is GameDocument {
     )
   );
 }
-export function loadGame(): { doc: GameDocument; notice: string } {
+export function loadGame(): { doc: GameDocument; notice: string; recovery?: true } {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return { doc: newDocument(), notice: "" };
     const parsed: unknown = JSON.parse(raw);
     return valid(parsed)
       ? { doc: parsed, notice: "" }
-      : { doc: newDocument(), notice: "本地手记格式不完整，已打开新手记。" };
+      : {
+          doc: newDocument(),
+          notice: "本地手记格式或版本无法读取，已保留原手记并开启临时游玩。",
+          recovery: true,
+        };
   } catch {
     return {
       doc: newDocument(),
-      notice: "无法读取本地手记，本次可以继续游玩。",
+      notice: "无法读取本地手记，已暂停自动保存，本次可以临时游玩。",
+      recovery: true,
     };
   }
 }

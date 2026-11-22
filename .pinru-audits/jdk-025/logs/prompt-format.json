@@ -1,0 +1,109 @@
+{
+  "scope": "existing candidates: 12 generation + 12 Feature, no Bug",
+  "status": "passed",
+  "promptPath": "/Users/cool/work/self-project/solo/SoloSkill/origin-project/jdk-025/jdk-025_提示词_1120.md",
+  "counts": {
+    "gen": 12,
+    "feature": 12
+  },
+  "lengths": [
+    {
+      "id": "gen-01",
+      "length": 298
+    },
+    {
+      "id": "gen-02",
+      "length": 303
+    },
+    {
+      "id": "gen-03",
+      "length": 298
+    },
+    {
+      "id": "gen-04",
+      "length": 299
+    },
+    {
+      "id": "gen-05",
+      "length": 302
+    },
+    {
+      "id": "gen-06",
+      "length": 320
+    },
+    {
+      "id": "gen-07",
+      "length": 312
+    },
+    {
+      "id": "gen-08",
+      "length": 297
+    },
+    {
+      "id": "gen-09",
+      "length": 286
+    },
+    {
+      "id": "gen-10",
+      "length": 310
+    },
+    {
+      "id": "gen-11",
+      "length": 289
+    },
+    {
+      "id": "gen-12",
+      "length": 303
+    },
+    {
+      "id": "feature-01",
+      "length": 317
+    },
+    {
+      "id": "feature-02",
+      "length": 290
+    },
+    {
+      "id": "feature-03",
+      "length": 311
+    },
+    {
+      "id": "feature-04",
+      "length": 289
+    },
+    {
+      "id": "feature-05",
+      "length": 299
+    },
+    {
+      "id": "feature-06",
+      "length": 314
+    },
+    {
+      "id": "feature-07",
+      "length": 309
+    },
+    {
+      "id": "feature-08",
+      "length": 320
+    },
+    {
+      "id": "feature-09",
+      "length": 343
+    },
+    {
+      "id": "feature-10",
+      "length": 345
+    },
+    {
+      "id": "feature-11",
+      "length": 323
+    },
+    {
+      "id": "feature-12",
+      "length": 314
+    }
+  ],
+  "errors": [],
+  "limitation": "Format only; no semantic P5 or measured P6 claim. Default 22-question check-delivery was not used as a 24-question pass."
+}

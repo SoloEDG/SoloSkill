@@ -1,0 +1,311 @@
+- banner:
+  - link "遗迹探勘 RUINFIELD 在未知之中，寻找文明的回声。":
+    - /url: "#"
+    - strong:
+      - text: 遗迹探勘
+      - generic: RUINFIELD
+    - generic: 在未知之中，寻找文明的回声。
+  - navigation "主导航":
+    - link "遗迹探索":
+      - /url: "#map"
+      - text: 遗迹探索
+    - link "探险手记":
+      - /url: "#chronicle"
+      - text: 探险手记
+  - text: 进度已保存
+  - button "探险指南":
+  - generic: 勘
+- main:
+  - generic: ARCHAEOLOGICAL EXPEDITION / VOL. 025
+  - heading "未知之下，皆是故事。" [level=1]
+  - paragraph: 循着数字的线索，揭开一座失落文明。
+  - button "新的探险":
+    - text: 新的探险
+  - complementary:
+    - heading "远古遗址" [level=2]
+    - generic: 03 区域
+    - button "01 MOSS GALLERY 苔石回廊 10 × 10 · 14 处危险":
+      - generic: "01"
+      - generic: MOSS GALLERY
+      - strong: 苔石回廊
+      - emphasis: 10 × 10 · 14 处危险
+    - button "02 SUNKEN ALTAR 沉沙祭坛 12 × 12 · 27 处危险":
+      - generic: "02"
+      - generic: SUNKEN ALTAR
+      - strong: 沉沙祭坛
+      - emphasis: 12 × 12 · 27 处危险
+    - button "03 ECLIPSE TEMPLE 日蚀神殿 14 × 12 · 38 处危险":
+      - generic: "03"
+      - generic: ECLIPSE TEMPLE
+      - strong: 日蚀神殿
+      - emphasis: 14 × 12 · 38 处危险
+    - text: FIELD NOTE / 001
+    - paragraph:
+      - text: 每一个数字，
+      - text: 都是遗迹的低语。
+    - generic: 先观察，再踏出下一步。
+    - generic: "N"
+    - generic: ✦
+    - generic: EXPEDITION SEED
+    - code: RUIN-025
+    - generic: 同一种子，同一段未知。
+  - text: 已探索区域
+  - strong:
+    - text: "41"
+    - generic: / 86
+  - progressbar
+  - text: 危险标记
+  - strong:
+    - text: "00"
+    - generic: / 14
+  - text: 发现文物
+  - strong: 01 / 6
+  - generic: EXPEDITION 025 / MOSS GALLERY
+  - heading "苔石回廊 初阶勘探" [level=2]:
+    - text: 苔石回廊
+    - generic: 初阶勘探
+  - generic: 探险已结束
+  - button "暂停探险" [disabled]:
+  - button "聚焦地图":
+  - generic: A
+  - generic: B
+  - generic: C
+  - generic: D
+  - generic: E
+  - generic: F
+  - generic: G
+  - generic: H
+  - generic: I
+  - generic: J
+  - generic: "01"
+  - generic: "02"
+  - generic: "03"
+  - generic: "04"
+  - generic: "05"
+  - generic: "06"
+  - generic: "07"
+  - generic: "08"
+  - generic: "09"
+  - generic: "10"
+  - grid "遗迹探索地图":
+    - gridcell "A1，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "B1，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "C1，已探索，邻近危险1": "1"
+    - gridcell "D1，已发现陷阱":
+    - gridcell "E1，未探索"
+    - gridcell "F1，未探索"
+    - gridcell "G1，已发现陷阱":
+    - gridcell "H1，未探索"
+    - gridcell "I1，未探索"
+    - gridcell "J1，未探索"
+    - gridcell "A2，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "B2，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "C2，已探索，邻近危险1": "1"
+    - gridcell "D2，已探索，邻近危险1": "1"
+    - gridcell "E2，已探索，邻近危险1": "1"
+    - gridcell "F2，已探索，邻近危险1": "1"
+    - gridcell "G2，已探索，邻近危险1": "1"
+    - gridcell "H2，未探索"
+    - gridcell "I2，未探索"
+    - gridcell "J2，未探索"
+    - gridcell "A3，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "B3，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "C3，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "D3，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "E3，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "F3，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "G3，已探索，邻近危险1": "1"
+    - gridcell "H3，未探索"
+    - gridcell "I3，已发现陷阱":
+    - gridcell "J3，未探索"
+    - gridcell "A4，已探索，邻近危险1": "1"
+    - gridcell "B4，已探索，邻近危险1": "1"
+    - gridcell "C4，已探索，邻近危险1": "1"
+    - gridcell "D4，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "E4，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "F4，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "G4，已探索，邻近危险1": "1"
+    - gridcell "H4，已发现陷阱":
+    - gridcell "I4，未探索"
+    - gridcell "J4，未探索":
+      - generic: ⌑
+    - gridcell "A5，未探索"
+    - gridcell "B5，已发现陷阱":
+    - gridcell "C5，已探索，邻近危险1": "1"
+    - gridcell "D5，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "E5，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "F5，已探索，邻近危险1": "1"
+    - gridcell "G5，已探索，邻近危险2": "2"
+    - gridcell "H5，未探索"
+    - gridcell "I5，未探索"
+    - gridcell "J5，未探索"
+    - gridcell "A6，已发现陷阱":
+    - gridcell "B6，未探索"
+    - gridcell "C6，已探索，邻近危险1": "1"
+    - gridcell "D6，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "E6，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "F6，已探索，邻近危险1": "1"
+    - gridcell "G6，已发现陷阱":
+    - gridcell "H6，未探索"
+    - gridcell "I6，未探索"
+    - gridcell "J6，未探索"
+    - gridcell "A7，未探索"
+    - gridcell "B7，未探索"
+    - gridcell "C7，已探索，邻近危险1": "1"
+    - gridcell "D7，已探索，邻近危险0":
+      - generic: ·
+    - gridcell "E7，已探索，邻近危险0，发现文物":
+    - gridcell "F7，已探索，邻近危险1": "1"
+    - gridcell "G7，未探索"
+    - gridcell "H7，未探索"
+    - gridcell "I7，已发现陷阱":
+    - gridcell "J7，已发现陷阱":
+    - gridcell "A8，未探索"
+    - gridcell "B8，已发现陷阱":
+    - gridcell "C8，已探索，邻近危险2": "2"
+    - gridcell "D8，已探索，邻近危险1": "1"
+    - gridcell "E8，已探索，邻近危险1": "1"
+    - gridcell "F8，已探索，邻近危险2": "2"
+    - gridcell "G8，未探索"
+    - gridcell "H8，未探索"
+    - gridcell "I8，未探索":
+      - generic: ⌑
+    - gridcell "J8，未探索"
+    - gridcell "A9，已发现陷阱":
+    - gridcell "B9，未探索"
+    - gridcell "C9，已发现陷阱":
+    - gridcell "D9，未探索"
+    - gridcell "E9，未探索"
+    - gridcell "F9，已发现陷阱":
+    - gridcell "G9，已发现陷阱":
+    - gridcell "H9，未探索"
+    - gridcell "I9，未探索"
+    - gridcell "J9，未探索"
+    - gridcell "A10，未探索"
+    - gridcell "B10，未探索":
+      - generic: ⌑
+    - gridcell "C10，未探索"
+    - gridcell "D10，未探索"
+    - gridcell "E10，未探索"
+    - gridcell "F10，未探索"
+    - gridcell "G10，未探索"
+    - gridcell "H10，未探索"
+    - gridcell "I10，未探索"
+    - gridcell "J10，未探索"
+  - text: 北纬 24° 16′ · 东经 102° 32′
+  - generic: "比例 1 : 100"
+  - generic: 未知石板
+  - generic: 安全区域
+  - text: 危险标记
+  - text: 遗迹文物
+  - generic: 右键标记 · 双击数字快速展开
+  - button "探索 01" [pressed]:
+    - text: 探索
+    - generic: "01"
+  - button "标记 02":
+    - text: 标记
+    - generic: "02"
+  - generic "剩余生命":
+  - text: 02:23
+  - button "撤离" [disabled]:
+    - text: 撤离
+  - status:
+    - text: EXPEDITION COMPLETE
+    - heading "平安归营，收获已归档" [level=2]
+    - strong:
+      - text: "445"
+      - generic: 勘探积分
+    - paragraph:
+      - text: 探索 41/86
+      - text: 文物 1
+      - text: 触发陷阱 0
+    - button "开启新的探险":
+      - text: 开启新的探险
+  - paragraph:
+    - text: 藤蔓之下，古老的回廊仍在沉睡。
+    - generic: 谨慎的每一步，都会让故事更完整。
+  - generic: ✦
+  - generic: 自动保存地图、道具与发现 · 随时回来继续
+  - generic: LOCAL FIELD JOURNAL
+  - complementary:
+    - heading "推断笔记" [level=2]
+    - generic: LOGIC NOTES
+    - paragraph: 找到 7 个条件安全格，请核对旗标后探索。
+    - text: "07"
+    - generic: 条件安全
+    - text: "04"
+    - generic: 推断危险
+    - text: "20"
+    - generic: 有效线索
+    - button "在地图上高亮":
+      - text: 在地图上高亮
+    - button "E1 · 可探索":
+      - generic: E1 · 可探索
+    - button "F1 · 可探索":
+      - generic: F1 · 可探索
+    - button "B5 · 需警惕":
+      - generic: B5 · 需警惕
+    - paragraph:
+      - text: 推断以你的旗标为条件，不会读取暗格答案。
+    - heading "随身行囊" [level=2]
+    - generic: 有限补给
+    - button "勘探探针 确认一格是否危险 ×1" [disabled]:
+      - strong: 勘探探针
+      - generic: 确认一格是否危险
+      - generic: ×1
+    - button "照明火把 揭开一格安全石板 ×1" [disabled]:
+      - strong: 照明火把
+      - generic: 揭开一格安全石板
+      - generic: ×1
+    - button "守护符石 抵挡一次陷阱伤害 ×1" [disabled]:
+      - strong: 守护符石
+      - generic: 抵挡一次陷阱伤害
+      - generic: ×1
+    - paragraph:
+      - text: 道具只在成功使用时扣除。
+      - text: 第一步探索后，才能使用补给。
+    - heading "探险手记" [level=2]
+    - generic: 3 条记录
+    - button "遗迹收藏":
+      - text: 遗迹收藏
+    - button "行动日志":
+      - text: 行动日志
+    - button "☼ 未知文物 遗迹深处，等待发现":
+      - generic: ☼
+      - strong: 未知文物
+      - generic: 遗迹深处，等待发现
+    - button "♜ 绿釉陶罐 第三纪 · 生活器皿 +1":
+      - generic: ♜
+      - strong: 绿釉陶罐
+      - generic: 第三纪 · 生活器皿
+      - generic: "+1"
+    - button "⌘ 未知文物 遗迹深处，等待发现":
+      - generic: ⌘
+      - strong: 未知文物
+      - generic: 遗迹深处，等待发现
+    - strong: "01"
+    - generic: 探险归档
+    - strong: "445"
+    - generic: 累计勘探积分
+    - text: 留下足迹，
+    - text: 也带走故事。
+  - text: RUINFIELD EXPLORER’S SOCIETY
+  - text: EST. 2026
+  - text: 让好奇指引方向，让理性守护每一步。

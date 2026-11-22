@@ -1,14 +1,18 @@
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { idleSession } from "../shared/initial";
 import { gameReducer } from "./gameReducer";
 import { loadGame, saveGame } from "./storage";
 export function useGame() {
-  const [state, send] = useReducer(gameReducer, undefined, () => ({
-    ...loadGame(),
+  const loaded = useRef<ReturnType<typeof loadGame> | null>(null);
+  if (!loaded.current) loaded.current = loadGame();
+  const [state, send] = useReducer(gameReducer, loaded.current, (initial) => ({
+    ...initial,
     session: idleSession(),
   }));
-  const [saved, setSaved] = useState(true);
+  const recovery = useRef(loaded.current.recovery === true);
+  const [saved, setSaved] = useState(!recovery.current);
   useEffect(() => {
+    if (recovery.current) return;
     setSaved(saveGame(state.doc));
   }, [state.doc]);
   useEffect(() => {

@@ -1,0 +1,48 @@
+{
+  "install": {
+    "status": "passed",
+    "action": "npm ci --no-audit --no-fund",
+    "log": "logs/install.log",
+    "exitCode": 0
+  },
+  "typecheck": {
+    "status": "passed",
+    "action": "npm run typecheck",
+    "log": "logs/typecheck.log",
+    "exitCode": 0
+  },
+  "build": {
+    "status": "passed",
+    "action": "npm run build",
+    "log": "logs/build.log",
+    "exitCode": 0
+  },
+  "structure": {
+    "status": "passed",
+    "action": "node /Users/cool/.agents/skills/game-media-frontend-prompts-high/scripts/check-cohesion.mjs /Users/cool/work/self-project/solo/SoloSkill/origin-project/jdk-024",
+    "log": "logs/structure.log",
+    "exitCode": 0
+  },
+  "dockerConfig": {
+    "status": "passed",
+    "action": "docker compose config",
+    "log": "logs/dockerConfig.log",
+    "exitCode": 0
+  },
+  "dockerBuild": {
+    "status": "passed",
+    "action": "docker compose -p codex-jdk024-review build",
+    "log": "logs/dockerBuild.log",
+    "exitCode": 0
+  },
+  "dockerSmoke": {
+    "status": "passed",
+    "action": "docker compose -p codex-jdk024-review up -d --no-build; ps; HTTP home, assets and SPA fallback",
+    "log": "logs/docker-smoke.log"
+  },
+  "browserSmoke": {
+    "status": "passed",
+    "action": "CUA操作三个跨模块交互链、刷新与控制台核对",
+    "log": "logs/browser-smoke.md"
+  }
+}

@@ -1,0 +1,2 @@
+git diff --check -- origin-project/jdk-024 origin-project/jdk-025
+exit: 0

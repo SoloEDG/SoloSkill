@@ -1,0 +1,2711 @@
+{
+  "reviewer": "/root/independent024",
+  "author": "/root/audit025",
+  "independent": true,
+  "scope": {
+    "codeGeneration": 12,
+    "feature": 12,
+    "bug": 0
+  },
+  "projectSha256": "9b355f9345965ba6746fc7e16916970b29d1cf8e4fdf88bd7b202a8fce175cba",
+  "promptSha256": "01dfe4c582b16860d0bfe8c2f443fd2e60782c50c853a099eb1661a20c8f7392",
+  "p5Verdict": "pass",
+  "p5Passed": 24,
+  "p6Verdict": "pending",
+  "verdict": "pending",
+  "status": "P5语义通过；整套候选待P6实跑核验",
+  "sourceQuotesVerified": 106,
+  "reviewSequence": "先完整读基线和题文形成首审，再反证修订，最后读取作者证据及日志并核对全部引用和必要职责。未参与题面写作。",
+  "projectReview": {
+    "pureFrontend": true,
+    "moduleCount": 5,
+    "businessFiles": 41,
+    "cohesion": "app路由命令，features各自拥有规则/界面，shared为契约和纯函数；集中状态、暂停、种子和存档均计入基线复用。",
+    "runtime": "核读实际类型/构建/结构/Docker构建启动HTTP/浏览器日志，均有成功输出。浏览器由父代理执行，复核者未重复执行。",
+    "interactionsLog": "interactions.json",
+    "runtimeLog": "runtime-checks.json",
+    "capacityLog": "capacity.md"
+  },
+  "hashProvenance": "最终指纹由复核者直接执行check-delivery --fingerprint获得，与冻结全文和源码绑定。首审哈希只是报告写入时磁盘观测，不能绑定更早首读；曾不足题均按最终文本重新判断。",
+  "limitations": [
+    "内部P5语义结论不等于平台预先批准。",
+    "未逐题实现或取得P6轨迹；必要文件是源码职责复核，不是已实施diff。",
+    "保留12+12，未将默认22题检查器作为本套通过证据。"
+  ],
+  "tasks": [
+    {
+      "id": "gen-01",
+      "goal": "多层约束生成",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "从所有已公开数字、跨层连接、入口保护和危险总数建立联合0-1约束，搜索可行布局与冲突子集。",
+      "remainingDecision": "入口/总数可变而上层读数不可改，要求求解器与生成器共享约束，局部修补不能保证交叠裂隙同时成立；冲突说明和搜索未完成也必须区分。",
+      "designDecisionAnalysis": "从所有已公开数字、跨层连接、入口保护和危险总数建立联合0-1约束，搜索可行布局与冲突子集。 入口/总数可变而上层读数不可改，要求求解器与生成器共享约束，局部修补不能保证交叠裂隙同时成立；冲突说明和搜索未完成也必须区分。",
+      "necessaryFiles": [
+        "src/features/terrain/lib/generator.ts",
+        "src/features/inference/lib/constraints.ts",
+        "src/features/terrain/ui/BoardView.tsx",
+        "src/app/storage.ts",
+        "src/shared/types.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/terrain/lib/generator.ts",
+          "reason": "跨层约束下的可行布局生成，旧随机候选不满足联合约束"
+        },
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "reason": "跨层公开数字与实际邻接引用"
+        },
+        {
+          "path": "src/features/terrain/ui/BoardView.tsx",
+          "reason": "可行选择、跨层关系及冲突展示"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "保存多层版本与确认状态"
+        },
+        {
+          "path": "src/shared/types.ts",
+          "reason": "扩展 Board、Expedition、PublicBoard 等共用数据契约，承载层集合、活动层、稳定层/格身份及跨层邻接；生成、公开推断和存档必须共享该语义，不能继续把单个数字 cell id 当作全遗迹唯一身份。"
+        }
+      ],
+      "excludedFromMinimum": [],
+      "moduleFlow": "terrain 生成多层与关系→inference 联合旧公开线索证明→exploration 入层提交→tools 定位另一层→chronicle 汇总真正到访发现。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "上层裂隙数字会同时约束本层邻格和明确连通的下层格，多个裂隙可以覆盖同一批下层格，关系需能查看。",
+          "reasoning": "决定跨层重叠约束的联合表示、可行域/冲突证明和生成的同源关系；搜索中断不能把暂未找到解称为无解。",
+          "failureCase": "下层三格 a,b,c，上层已公布 a+b=1、b+c=1；玩家选择总危险数1并保护 b。 错误：逐条修补得到 a=c=1，违反总数，或预生成一次后把本可行选择拒绝。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/terrain/lib/generator.ts",
+          "quote": "export function generateBoard(board: Board, first: number): Board {",
+          "meaning": "按种子及首次点击生成单层矩形地图，仅保护首步邻域；没有本题新增生成或门/年代系统"
+        },
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "quote": "return v.exploded || v.intel === \"danger\" || v.mark === \"flag\";",
+          "meaning": "旗标被当危险前提；当前约束仅矩形邻格计数，新增知识语义必须明确改变"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "quote": "e.used === 4 - e.tools.probe - e.tools.flare - e.tools.shield",
+          "meaning": "存档验证要求原单局道具守恒及固定布局，保存整个version1文档；新增状态与兼容需实质调整"
+        },
+        {
+          "path": "src/shared/types.ts",
+          "quote": "export interface Board {\n  width: number;\n  height: number;\n  mines: number;\n  seed: string;\n  difficulty: Difficulty;\n  generated: boolean;\n  cells: Cell[];\n}",
+          "meaning": "基线 Board 只有单层 cells 且没有层身份；Expedition 也只持有一个 Board，公开投影以格编号引用，需扩展共享层集合和跨层关系契约。"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。入口/总数可变而上层读数不可改，要求求解器与生成器共享约束，局部修补不能保证交叠裂隙同时成立；冲突说明和搜索未完成也必须区分。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：跨层约束下的可行布局生成，旧随机候选不满足联合约束；跨层公开数字与实际邻接引用；可行选择、跨层关系及冲突展示；保存多层版本与确认状态；扩展 Board、Expedition、PublicBoard 等共用数据契约，承载层集合、活动层、稳定层/格身份及跨层邻接；生成、公开推断和存档必须共享该语义，不能继续把单个数字 cell id 当作全遗迹唯一身份。。可复用纯函数不强制改写，多文件本身不作为H3依据。从所有已公开数字、跨层连接、入口保护和危险总数建立联合0-1约束，搜索可行布局与冲突子集。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "选择可行入口和密度，确认、往返、使用跨层探针、撤离后刷新，线索及成果对应同一固定布局。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "下层三格 a,b,c，上层已公布 a+b=1、b+c=1；玩家选择总危险数1并保护 b。",
+          "expected": "判为不可行并指出联合冲突；若保护a则可生成 b=1。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "gen-02",
+      "goal": "壁画补全证明",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "以片身份、旋转/翻面和位置做全局拼图约束搜索，输出补全见证或冲突集。",
+      "remainingDecision": "固定锚点与有向铭文破坏部分几何对称，必须推导安全的等价类，不能一般地平移/镜像归并；局部断口匹配不能证明全局可补全。",
+      "designDecisionAnalysis": "以片身份、旋转/翻面和位置做全局拼图约束搜索，输出补全见证或冲突集。 固定锚点与有向铭文破坏部分几何对称，必须推导安全的等价类，不能一般地平移/镜像归并；局部断口匹配不能证明全局可补全。",
+      "necessaryFiles": [
+        "src/features/chronicle/model/mural.ts",
+        "src/features/chronicle/ui/MuralPanel.tsx",
+        "src/features/terrain/ui/BoardView.tsx",
+        "src/features/exploration/model/actions.ts",
+        "src/app/gameReducer.ts",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/chronicle/model/mural.ts",
+          "reason": "新增出土片占用、位姿与完成证明"
+        },
+        {
+          "path": "src/features/chronicle/ui/MuralPanel.tsx",
+          "reason": "新增固定片、补全、最小冲突及拆门交互"
+        },
+        {
+          "path": "src/features/terrain/ui/BoardView.tsx",
+          "reason": "封门与区域出口的真实展示/交互"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "reason": "封门约束探索和闭门前撤回"
+        },
+        {
+          "path": "src/app/gameReducer.ts",
+          "reason": "成品确认及地图变更的原子提交"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "恢复占用与证明版本"
+        }
+      ],
+      "excludedFromMinimum": [],
+      "moduleFlow": "chronicle 真实出土身份→修复室占用及全局证明→terrain 封门可达域→exploration 撤回/闭门边界→inference 公开证据版本。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "每片只能被一幅占用，暂存不解封；确认后地图开放并更新相关推断。",
+          "reasoning": "决定全局补全搜索及等价类：固定位置、方向纹样和证据会破坏通常的旋转/反射对称；最小冲突解释须对应当前固定片而非任意搜索失败。",
+          "failureCase": "四片形成2×2候选，前三条缝各有可配解，但最后一片唯一朝向与已固定有向铭文冲突。 错误：局部吸附全部成功就开封，或把镜像当等价排掉唯一合法完整解。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "quote": "const relics = safe.flatMap((c) => (c.relic ? [c.relic] : []));",
+          "meaning": "现有结算按揭开安全格直接收文物，尚无新归属或认证粒度"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "quote": "const result = revealArea(e.board, ids);",
+          "meaning": "集中探索提交可复用，但当前一次同步揭整片，不含本题增量/规划/异代规则"
+        },
+        {
+          "path": "src/app/gameReducer.ts",
+          "quote": "export function gameReducer(state: Workspace, c: Command): Workspace {",
+          "meaning": "集中命令分发及统一终结已存在，普通暂停、唯一提交等本身不增加H3"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "quote": "e.used === 4 - e.tools.probe - e.tools.flare - e.tools.shield",
+          "meaning": "存档验证要求原单局道具守恒及固定布局，保存整个version1文档；新增状态与兼容需实质调整"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。固定锚点与有向铭文破坏部分几何对称，必须推导安全的等价类，不能一般地平移/镜像归并；局部断口匹配不能证明全局可补全。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增出土片占用、位姿与完成证明；新增固定片、补全、最小冲突及拆门交互；封门与区域出口的真实展示/交互；封门约束探索和闭门前撤回；成品确认及地图变更的原子提交；恢复占用与证明版本。可复用纯函数不强制改写，多文件本身不作为H3依据。以片身份、旋转/翻面和位置做全局拼图约束搜索，输出补全见证或冲突集。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "从出土片建立壁画，固定两片、补全、确认开门，再拆除前撤回；刷新占用和门状态一致。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "四片形成2×2候选，前三条缝各有可配解，但最后一片唯一朝向与已固定有向铭文冲突。",
+          "expected": "局部可接但整体不可补，列出导致冲突的固定片组；取消固定后能给可补示例。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "gen-03",
+      "goal": "离线接力资源",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "分配不可重复花费的权利份额，用因果依赖行动包记录转移与消费，缺依赖保持待定。",
+      "remainingDecision": "转交后的发送方不可再次花费，接收方离线确认又不能依赖在线主机，旧档恢复需要确定哪些权利还能确认；普通各端计数或按导入顺序扣减不能满足。",
+      "designDecisionAnalysis": "分配不可重复花费的权利份额，用因果依赖行动包记录转移与消费，缺依赖保持待定。 转交后的发送方不可再次花费，接收方离线确认又不能依赖在线主机，旧档恢复需要确定哪些权利还能确认；普通各端计数或按导入顺序扣减不能满足。",
+      "necessaryFiles": [
+        "src/features/exploration/model/relay.ts",
+        "src/features/tools/model/useTool.ts",
+        "src/features/terrain/lib/visibility.ts",
+        "src/features/inference/lib/constraints.ts",
+        "src/features/chronicle/model/settlement.ts",
+        "src/app/storage.ts",
+        "src/features/exploration/ui/RelayPanel.tsx"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/exploration/model/relay.ts",
+          "reason": "新增离线确认、转交和因果导入规则"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "reason": "检查实际可用份额并生成可核对消费"
+        },
+        {
+          "path": "src/features/terrain/lib/visibility.ts",
+          "reason": "按分区和已共享事实投影"
+        },
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "reason": "排除草案和未共享边界前提"
+        },
+        {
+          "path": "src/features/chronicle/model/settlement.ts",
+          "reason": "按共同确认事实去重结算"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "持久化已确认资源链及缺包状态"
+        },
+        {
+          "path": "src/features/exploration/ui/RelayPanel.tsx",
+          "reason": "导入结果与份额转交界面"
+        }
+      ],
+      "excludedFromMinimum": [],
+      "moduleFlow": "tools 份额消耗→exploration 确认事件→inference 仅共享事实→terrain 分区公开视图→chronicle 共同成绩收敛。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "已合法确认的行动不能因包到达顺序不同被撤销；乱序、缺前包、重复导入和恢复旧档后重新交换，都须说明待确认原因并最终得到一致余额。",
+          "reasoning": "离线已确认事实不能撤销与共享份额可转移相互制约；需推导消耗/转交的因果承诺和旧状态重放界限，明确受益人收到前的资源不可用区间。",
+          "failureCase": "A将唯一探针转给B，B未收到；A从旧档提交消费，随后B收到转交包并消费，双方按不同顺序导入。 错误：两个本地余额分别扣成0并各增加一次探针发现，或最后到达者覆盖先前确认事实。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/features/terrain/lib/visibility.ts",
+          "quote": "adjacent: c.revealed && !c.mine ? c.adjacent : null,",
+          "meaning": "已有公开地图投影只公开已揭数字，可复用事实/隐藏边界，不能代替新增证据语义"
+        },
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "quote": "return v.exploded || v.intel === \"danger\" || v.mark === \"flag\";",
+          "meaning": "旗标被当危险前提；当前约束仅矩形邻格计数，新增知识语义必须明确改变"
+        },
+        {
+          "path": "src/features/chronicle/model/settlement.ts",
+          "quote": "if (!isTerminal(e.status) || archive.reports.some((r) => r.id === e.id))",
+          "meaning": "已有按探险ID幂等归档，重放/对象级或研究修订不能只复用一次整局去重"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "quote": "e.used === 4 - e.tools.probe - e.tools.flare - e.tools.shield",
+          "meaning": "存档验证要求原单局道具守恒及固定布局，保存整个version1文档；新增状态与兼容需实质调整"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。转交后的发送方不可再次花费，接收方离线确认又不能依赖在线主机，旧档恢复需要确定哪些权利还能确认；普通各端计数或按导入顺序扣减不能满足。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增离线确认、转交和因果导入规则；检查实际可用份额并生成可核对消费；按分区和已共享事实投影；排除草案和未共享边界前提；按共同确认事实去重结算；持久化已确认资源链及缺包状态；导入结果与份额转交界面。可复用纯函数不强制改写，多文件本身不作为H3依据。分配不可重复花费的权利份额，用因果依赖行动包记录转移与消费，缺依赖保持待定。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "双方离线分别探索并花自身份额，交换乱序包和重复包，再转交剩余份额，最终公开区域和余额一致。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "A将唯一探针转给B，B未收到；A从旧档提交消费，随后B收到转交包并消费，双方按不同顺序导入。",
+          "expected": "仅有同一有效所有权链上的一次消费，另一条明确待确认/冲突，所有合法已确认探索不因到包次序回滚。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "gen-04",
+      "goal": "关卡创作与可解证明",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "分离编辑答案与试玩公开视图，在公开知识状态和道具余量上搜索无猜测探索策略，绑定发布版本。",
+      "remainingDecision": "相同已揭集合但不同知识/剩余道具不能随便合并，局部安全贪心可能浪费必要道具；验证器必须证明每个选择不靠答案，不能仅重放答案路径。",
+      "designDecisionAnalysis": "分离编辑答案与试玩公开视图，在公开知识状态和道具余量上搜索无猜测探索策略，绑定发布版本。 相同已揭集合但不同知识/剩余道具不能随便合并，局部安全贪心可能浪费必要道具；验证器必须证明每个选择不靠答案，不能仅重放答案路径。",
+      "necessaryFiles": [
+        "src/features/terrain/model/editor.ts",
+        "src/features/terrain/ui/EditorPanel.tsx",
+        "src/features/inference/lib/verification.ts",
+        "src/features/exploration/model/actions.ts",
+        "src/features/chronicle/model/settlement.ts",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/terrain/model/editor.ts",
+          "reason": "新增关卡创作与版本模型"
+        },
+        {
+          "path": "src/features/terrain/ui/EditorPanel.tsx",
+          "reason": "新增绘制/导入/发布及证明反馈"
+        },
+        {
+          "path": "src/features/inference/lib/verification.ts",
+          "reason": "新增带资源的公开信息策略搜索"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "reason": "试玩可达及版本隔离"
+        },
+        {
+          "path": "src/features/chronicle/model/settlement.ts",
+          "reason": "旧试玩不能认证当前关卡成绩"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "关卡、证明版本及编辑/试玩恢复"
+        }
+      ],
+      "excludedFromMinimum": [
+        "terrain/lib/generator.ts"
+      ],
+      "moduleFlow": "terrain 作者地图→exploration 公开试玩状态→tools 有限预算→inference 知识策略证明→chronicle 仅正式版本记成绩。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "发布前需验证每件目标文物都能从入口到达，且给定道具下存在无需猜测的完整探索过程，并展示无法证明时卡在哪组公开约束。",
+          "reasoning": "知识状态等价与道具保留的联合搜索；剪枝必须保留未来可达性和可观测结果，异步证明只提交相同版本。",
+          "failureCase": "两处候选都能用唯一探针推进，一处只有普通安全格，另一处是通往目标文物的唯一封门线索。 错误：贪心先消费探针后报告关卡无解，或只展示一条读取暗格的伪证明。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/terrain/lib/generator.ts",
+          "quote": "export function generateBoard(board: Board, first: number): Board {",
+          "meaning": "按种子及首次点击生成单层矩形地图，仅保护首步邻域；没有本题新增生成或门/年代系统"
+        },
+        {
+          "path": "src/features/terrain/lib/visibility.ts",
+          "quote": "adjacent: c.revealed && !c.mine ? c.adjacent : null,",
+          "meaning": "已有公开地图投影只公开已揭数字，可复用事实/隐藏边界，不能代替新增证据语义"
+        },
+        {
+          "path": "src/features/inference/lib/deduce.ts",
+          "quote": "const initial = [...known.values()];",
+          "meaning": "已有一次初始约束子集差与零/全危险推断，没有全局搜索或证明策略"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/features/chronicle/model/settlement.ts",
+          "quote": "if (!isTerminal(e.status) || archive.reports.some((r) => r.id === e.id))",
+          "meaning": "已有按探险ID幂等归档，重放/对象级或研究修订不能只复用一次整局去重"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。相同已揭集合但不同知识/剩余道具不能随便合并，局部安全贪心可能浪费必要道具；验证器必须证明每个选择不靠答案，不能仅重放答案路径。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增关卡创作与版本模型；新增绘制/导入/发布及证明反馈；新增带资源的公开信息策略搜索；试玩可达及版本隔离；旧试玩不能认证当前关卡成绩；关卡、证明版本及编辑/试玩恢复。可复用纯函数不强制改写，多文件本身不作为H3依据。分离编辑答案与试玩公开视图，在公开知识状态和道具余量上搜索无猜测探索策略，绑定发布版本。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "创作带门和目标文物的地图，验证、修改、导入后重新验证，只有与当前地图一致的证明可发布。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "两处候选都能用唯一探针推进，一处只有普通安全格，另一处是通往目标文物的唯一封门线索。",
+          "expected": "找到保留探针给封门的策略，或明确尚未证明；不能用真值选安全格冒充公开推导。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "gen-05",
+      "goal": "稳定光路机关",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "按颜色建立能量传递关系，分解环路并求稳定能量，阈值附近用可证误差界进一步求解。",
+      "remainingDecision": "有损环可能多轮后越阈值，无损环可能不收敛，有限迭代截图无法裁定；需选择稳定解判据、环分解与精度边界，后续陷阱变化还需观测版本隔离。",
+      "designDecisionAnalysis": "按颜色建立能量传递关系，分解环路并求稳定能量，阈值附近用可证误差界进一步求解。 有损环可能多轮后越阈值，无损环可能不收敛，有限迭代截图无法裁定；需选择稳定解判据、环分解与精度边界，后续陷阱变化还需观测版本隔离。",
+      "necessaryFiles": [
+        "src/features/terrain/lib/optics.ts",
+        "src/features/terrain/ui/OpticsPanel.tsx",
+        "src/features/terrain/lib/visibility.ts",
+        "src/features/inference/lib/constraints.ts",
+        "src/features/tools/model/useTool.ts",
+        "src/features/exploration/model/actions.ts",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/terrain/lib/optics.ts",
+          "reason": "新增稳态求解、环路及阈值误差判断"
+        },
+        {
+          "path": "src/features/terrain/ui/OpticsPanel.tsx",
+          "reason": "新增镜阵预览和稳定/待定/失稳解释"
+        },
+        {
+          "path": "src/features/terrain/lib/visibility.ts",
+          "reason": "当前危险和历史数字投影分离"
+        },
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "reason": "按观测版本建立约束"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "reason": "当前镜阵上的新扫描读数"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "reason": "按当前门/陷阱状态执行揭格"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "镜阵版本和历史证据恢复"
+        }
+      ],
+      "excludedFromMinimum": [],
+      "moduleFlow": "光路模型→terrain 当前陷阱/门→inference 带版本的历史数字→tools 新扫描→chronicle 不重复奖励。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "镜面有损耗，分光的各路能量总和不超过输入，同色光在接收器相加，闭环会让后续光再次叠加；确认依据有限稳定能量而非动画帧累计值。",
+          "reasoning": "决定环路解算/误差证书及颜色合流边界，区别有限稳态、不可稳定和精度待定；能量的精度决策必须先于地图危险提交。",
+          "failureCase": "光源1，回路每轮保留0.9，接收器叠加阈值9.5；前10轮累加约6.51，稳定值10。 错误：固定轮数截断判定永远不开门，或按动画时间持续累加把耗散系统当能量无限增长。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/terrain/lib/visibility.ts",
+          "quote": "adjacent: c.revealed && !c.mine ? c.adjacent : null,",
+          "meaning": "已有公开地图投影只公开已揭数字，可复用事实/隐藏边界，不能代替新增证据语义"
+        },
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "quote": "return v.exploded || v.intel === \"danger\" || v.mark === \"flag\";",
+          "meaning": "旗标被当危险前提；当前约束仅矩形邻格计数，新增知识语义必须明确改变"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "quote": "const result = revealArea(e.board, ids);",
+          "meaning": "集中探索提交可复用，但当前一次同步揭整片，不含本题增量/规划/异代规则"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。有损环可能多轮后越阈值，无损环可能不收敛，有限迭代截图无法裁定；需选择稳定解判据、环分解与精度边界，后续陷阱变化还需观测版本隔离。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增稳态求解、环路及阈值误差判断；新增镜阵预览和稳定/待定/失稳解释；当前危险和历史数字投影分离；按观测版本建立约束；当前镜阵上的新扫描读数；按当前门/陷阱状态执行揭格；镜阵版本和历史证据恢复。可复用纯函数不强制改写，多文件本身不作为H3依据。按颜色建立能量传递关系，分解环路并求稳定能量，阈值附近用可证误差界进一步求解。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "调整分光镜观察预览，确认稳定解后开启门；快速改镜阵、刷新，只有当前版本结果可提交。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "光源1，回路每轮保留0.9，接收器叠加阈值9.5；前10轮累加约6.51，稳定值10。",
+          "expected": "计算未达阈值证明前显示待定，最终确认可开门；改为无损环则拒绝稳定判定。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "gen-06",
+      "goal": "双年代最少改动",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "对过去干预和材料约束求所有相容未来，搜索满足锁定发现/目标通路的最低成本干预。",
+      "remainingDecision": "因果相互依赖可有多个固定点，逐障碍贪心及单一未来都不能证明返程安全；方案最优与所有未来安全是不同量词，必须一起求解。",
+      "designDecisionAnalysis": "对过去干预和材料约束求所有相容未来，搜索满足锁定发现/目标通路的最低成本干预。 因果相互依赖可有多个固定点，逐障碍贪心及单一未来都不能证明返程安全；方案最优与所有未来安全是不同量词，必须一起求解。",
+      "necessaryFiles": [
+        "src/features/terrain/model/eras.ts",
+        "src/features/inference/lib/causalPlans.ts",
+        "src/features/tools/model/useTool.ts",
+        "src/features/terrain/ui/EraPanel.tsx",
+        "src/app/gameReducer.ts",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/terrain/model/eras.ts",
+          "reason": "新增双年代事实及因果规则求解"
+        },
+        {
+          "path": "src/features/inference/lib/causalPlans.ts",
+          "reason": "新增最省修缮与所有未来的返程验证"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "reason": "按确认方案消耗修缮材料"
+        },
+        {
+          "path": "src/features/terrain/ui/EraPanel.tsx",
+          "reason": "新增锁定发现/目标、方案和后果预览"
+        },
+        {
+          "path": "src/app/gameReducer.ts",
+          "reason": "因果变更与当前探索状态联合提交"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "世界候选、身份、旧观察及已花资源恢复"
+        }
+      ],
+      "excludedFromMinimum": [
+        "chronicle/model/relics.ts"
+      ],
+      "moduleFlow": "terrain 因果世界→inference 一致未来与安全结论→tools 修缮材料→chronicle 单一器物身份与旧观察→exploration 确认历史变更。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "过去的修缮、器物迁移与封路共同决定未来通道和陷阱，因果规则应可查看，多个原因可能共同产生或互相阻止一个结果。",
+          "reasoning": "决定因果规则的模型集合、优化下界及共享材料的组合搜索；历史观测是约束或失效记录而不是未来真值，安全必须对所有一致未来成立。",
+          "failureCase": "修缮A花2同时开门X/Y，修缮B和C各花1分别开门但组合封住锁定器物出口；另有循环规则产生可返/不可返两个一致未来。 错误：逐门贪心选择B+C破坏已锁定发现，或只取第一个稳定未来承诺可返。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/terrain/lib/generator.ts",
+          "quote": "export function generateBoard(board: Board, first: number): Board {",
+          "meaning": "按种子及首次点击生成单层矩形地图，仅保护首步邻域；没有本题新增生成或门/年代系统"
+        },
+        {
+          "path": "src/features/inference/lib/deduce.ts",
+          "quote": "const initial = [...known.values()];",
+          "meaning": "已有一次初始约束子集差与零/全危险推断，没有全局搜索或证明策略"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "quote": "const relics = safe.flatMap((c) => (c.relic ? [c.relic] : []));",
+          "meaning": "现有结算按揭开安全格直接收文物，尚无新归属或认证粒度"
+        },
+        {
+          "path": "src/app/gameReducer.ts",
+          "quote": "export function gameReducer(state: Workspace, c: Command): Workspace {",
+          "meaning": "集中命令分发及统一终结已存在，普通暂停、唯一提交等本身不增加H3"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。因果相互依赖可有多个固定点，逐障碍贪心及单一未来都不能证明返程安全；方案最优与所有未来安全是不同量词，必须一起求解。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增双年代事实及因果规则求解；新增最省修缮与所有未来的返程验证；按确认方案消耗修缮材料；新增锁定发现/目标、方案和后果预览；因果变更与当前探索状态联合提交；世界候选、身份、旧观察及已花资源恢复。可复用纯函数不强制改写，多文件本身不作为H3依据。对过去干预和材料约束求所有相容未来，搜索满足锁定发现/目标通路的最低成本干预。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "锁定未来发现，选择开通目标，比较材料最省方案、取消再确认，切换年代查看旧线索失效与新可达区。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "修缮A花2同时开门X/Y，修缮B和C各花1分别开门但组合封住锁定器物出口；另有循环规则产生可返/不可返两个一致未来。",
+          "expected": "选择A或说明约束冲突；返程只在全部一致未来都可返时安全。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "gen-07",
+      "goal": "未知守卫联合追踪",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "维护与历次数字、区域脚步数相容的联合守卫状态，推进冲突排除后的公开巡逻转移。",
+      "remainingDecision": "各守卫边际集合的笛卡尔积会产生不可能共处状态；联合历史压缩必须保未来转移及证据差异，需推导足够状态和可交换身份的等价条件。",
+      "designDecisionAnalysis": "维护与历次数字、区域脚步数相容的联合守卫状态，推进冲突排除后的公开巡逻转移。 各守卫边际集合的笛卡尔积会产生不可能共处状态；联合历史压缩必须保未来转移及证据差异，需推导足够状态和可交换身份的等价条件。",
+      "necessaryFiles": [
+        "src/features/terrain/model/guards.ts",
+        "src/features/exploration/model/actions.ts",
+        "src/features/inference/lib/guards.ts",
+        "src/features/tools/model/useTool.ts",
+        "src/features/inference/ui/InferencePanel.tsx",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/terrain/model/guards.ts",
+          "reason": "新增守卫转移及共同占位规则"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "reason": "探索/守卫移动固定回合顺序"
+        },
+        {
+          "path": "src/features/inference/lib/guards.ts",
+          "reason": "新增联合相位推断及安全全称判断"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "reason": "绑定当回合探测"
+        },
+        {
+          "path": "src/features/inference/ui/InferencePanel.tsx",
+          "reason": "候选情形、回合和风险解释"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "保存足够继续联合推断的状态"
+        }
+      ],
+      "excludedFromMinimum": [
+        "shared/initial.ts"
+      ],
+      "moduleFlow": "exploration 动作回合→terrain 守卫真实转移→tools 当回合观测→inference 联合历史约束→chronicle 可解释回合记录。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "守卫按公开巡逻规则行动，但暗处初始相位未知，彼此不能占同一格，脚步仅报告某区域的数量；石板数字包含观测时的固定陷阱和守卫，旧数字应保留回合。",
+          "reasoning": "决定联合信念状态与可安全合并的历史摘要；等价需保留未来转移、观测似然/可行性及证据来源，不能仅按当前位置边际合并。",
+          "failureCase": "两守卫各自候选{a,b}，区域脚步证明一人在a一人在b；不同相位下一步分别可进c，某组合因相撞非法。 错误：独立边际笛卡尔积加入两人在a的世界，错误判险；反向合并也可能删掉唯一危险情形。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "quote": "const result = revealArea(e.board, ids);",
+          "meaning": "集中探索提交可复用，但当前一次同步揭整片，不含本题增量/规划/异代规则"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/features/inference/lib/deduce.ts",
+          "quote": "const initial = [...known.values()];",
+          "meaning": "已有一次初始约束子集差与零/全危险推断，没有全局搜索或证明策略"
+        },
+        {
+          "path": "src/shared/initial.ts",
+          "quote": "].slice(-80),",
+          "meaning": "只有最近80条文字行动，没有支持本题的可重放载荷或完整证明依赖"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。各守卫边际集合的笛卡尔积会产生不可能共处状态；联合历史压缩必须保未来转移及证据差异，需推导足够状态和可交换身份的等价条件。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增守卫转移及共同占位规则；探索/守卫移动固定回合顺序；新增联合相位推断及安全全称判断；绑定当回合探测；候选情形、回合和风险解释；保存足够继续联合推断的状态。可复用纯函数不强制改写，多文件本身不作为H3依据。维护与历次数字、区域脚步数相容的联合守卫状态，推进冲突排除后的公开巡逻转移。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "等待、探针、揭数字后逐步缩小相位候选，暂停/面板不推进，刷新后下一回合与未刷新一致。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "两守卫各自候选{a,b}，区域脚步证明一人在a一人在b；不同相位下一步分别可进c，某组合因相撞非法。",
+          "expected": "保留仅合法的联合情形，风险由合法的下一步联合状态求得。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "gen-08",
+      "goal": "系留侦察傀儡",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "用端点、障碍接触序列与绷紧线几何共同表达线缆，规划具有电量/线长限制的可返航动作。",
+      "remainingDecision": "同端点可处于不同绕柱同伦类；路径长度累计与端点最短路都错误，收线时如何消去接触点取决于几何可见性和历史，普通网格最短路不够。",
+      "designDecisionAnalysis": "用端点、障碍接触序列与绷紧线几何共同表达线缆，规划具有电量/线长限制的可返航动作。 同端点可处于不同绕柱同伦类；路径长度累计与端点最短路都错误，收线时如何消去接触点取决于几何可见性和历史，普通网格最短路不够。",
+      "necessaryFiles": [
+        "src/features/exploration/lib/tether.ts",
+        "src/features/exploration/model/scout.ts",
+        "src/features/terrain/ui/BoardView.tsx",
+        "src/features/tools/model/useTool.ts",
+        "src/app/gameReducer.ts",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/exploration/lib/tether.ts",
+          "reason": "新增线缆接触点/绕障与可达规划"
+        },
+        {
+          "path": "src/features/exploration/model/scout.ts",
+          "reason": "新增电量、传回和任务接管状态"
+        },
+        {
+          "path": "src/features/terrain/ui/BoardView.tsx",
+          "reason": "路线、线缆及已知障碍投影"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "reason": "远程真实探测与备用线消耗"
+        },
+        {
+          "path": "src/app/gameReducer.ts",
+          "reason": "移动、收线、截断和接管联合提交"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "恢复实际绕线状态及任务"
+        }
+      ],
+      "excludedFromMinimum": [
+        "inference/lib/constraints.ts"
+      ],
+      "moduleFlow": "terrain 已知障碍→侦察几何与电量→tools 真实探测→inference 已传回信息→chronicle 实际回收成果。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "线缆从入口拉紧，可沿石柱和墙角滑动收回，却不能穿越障碍或凭空换到石柱另一侧；绕柱后回到相同格，也可能有不同的剩余线长与返程路线。",
+          "reasoning": "决定线缆绕障拓扑与接触点连续变化的表示，路线状态须包含能影响可行长度/返回的同伦信息；路径缩短不能跨过障碍。",
+          "failureCase": "入口和傀儡位于柱子同侧，傀儡顺时针绕柱一周回原格，随后沿原路回退半周。 错误：全局最短路把绕线瞬间消除，累计路程又在回退时继续增长而错判无法收回。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/shared/geometry.ts",
+          "quote": "export function neighbors(id: number, width: number, height: number): number[] {",
+          "meaning": "共用8邻接矩形几何，可复用坐标投影，但没有新拓扑/连续几何"
+        },
+        {
+          "path": "src/features/terrain/lib/visibility.ts",
+          "quote": "adjacent: c.revealed && !c.mine ? c.adjacent : null,",
+          "meaning": "已有公开地图投影只公开已揭数字，可复用事实/隐藏边界，不能代替新增证据语义"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/app/gameReducer.ts",
+          "quote": "export function gameReducer(state: Workspace, c: Command): Workspace {",
+          "meaning": "集中命令分发及统一终结已存在，普通暂停、唯一提交等本身不增加H3"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。同端点可处于不同绕柱同伦类；路径长度累计与端点最短路都错误，收线时如何消去接触点取决于几何可见性和历史，普通网格最短路不够。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增线缆接触点/绕障与可达规划；新增电量、传回和任务接管状态；路线、线缆及已知障碍投影；远程真实探测与备用线消耗；移动、收线、截断和接管联合提交；恢复实际绕线状态及任务。可复用纯函数不强制改写，多文件本身不作为H3依据。用端点、障碍接触序列与绷紧线几何共同表达线缆，规划具有电量/线长限制的可返航动作。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "规划已知安全路线绕柱、探测、收线、替换任务，刷新后接触点和电量一致。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "入口和傀儡位于柱子同侧，傀儡顺时针绕柱一周回原格，随后沿原路回退半周。",
+          "expected": "回到原格仍有绕柱线长，回退时适量收线，剩余电量和线长共同决定返航。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "gen-09",
+      "goal": "歧义文字解读",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "为磨损印记保留分词/符号候选格网，以句式和确认铭文做跨句约束传播，正式结论携带来源。",
+      "remainingDecision": "连字与缺笔使字符级独立映射失效，候选合并需保留共享符号约束与依赖；撤销某假设时只有相关证明失效，已发生地图行动则保留。",
+      "designDecisionAnalysis": "为磨损印记保留分词/符号候选格网，以句式和确认铭文做跨句约束传播，正式结论携带来源。 连字与缺笔使字符级独立映射失效，候选合并需保留共享符号约束与依赖；撤销某假设时只有相关证明失效，已发生地图行动则保留。",
+      "necessaryFiles": [
+        "src/features/chronicle/model/inscriptions.ts",
+        "src/features/inference/lib/decipher.ts",
+        "src/features/inference/ui/DecipherPanel.tsx",
+        "src/features/exploration/model/actions.ts",
+        "src/app/gameReducer.ts",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/chronicle/model/inscriptions.ts",
+          "reason": "新增拓片候选分段与来源"
+        },
+        {
+          "path": "src/features/inference/lib/decipher.ts",
+          "reason": "新增跨句候选格网与依赖推断"
+        },
+        {
+          "path": "src/features/inference/ui/DecipherPanel.tsx",
+          "reason": "新增歧义、试译、证据提交界面"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "reason": "按已解封区域限制真实探索"
+        },
+        {
+          "path": "src/app/gameReducer.ts",
+          "reason": "提交口令与有限尝试/门状态联合变化"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "候选版本、尝试和门状态持久化"
+        }
+      ],
+      "excludedFromMinimum": [],
+      "moduleFlow": "chronicle 拓片来源→解读候选→inference 跨句依赖→terrain 封门→tools/结算记录有限尝试。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "拓片可能有磨损和相连笔画，一处模糊印记可以对应多个符号，不能先替玩家选定答案再声称推理成立。",
+          "reasoning": "选择同时保留字形分段与跨句一致性的候选结构，压缩必须保留歧义来源，口令证据须覆盖当前所有前提而非使用隐藏答案。",
+          "failureCase": "同一印记可分成AB或单连字X，两句共享印记，只有把一句的连字解释与另一句约束联合后才能排除AB。 错误：先按字符切割锁定AB，随后用已锁定结论自证口令；或删除一假设连带删掉独立支持。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "quote": "const relics = safe.flatMap((c) => (c.relic ? [c.relic] : []));",
+          "meaning": "现有结算按揭开安全格直接收文物，尚无新归属或认证粒度"
+        },
+        {
+          "path": "src/features/inference/lib/deduce.ts",
+          "quote": "const initial = [...known.values()];",
+          "meaning": "已有一次初始约束子集差与零/全危险推断，没有全局搜索或证明策略"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "quote": "const result = revealArea(e.board, ids);",
+          "meaning": "集中探索提交可复用，但当前一次同步揭整片，不含本题增量/规划/异代规则"
+        },
+        {
+          "path": "src/app/gameReducer.ts",
+          "quote": "export function gameReducer(state: Workspace, c: Command): Workspace {",
+          "meaning": "集中命令分发及统一终结已存在，普通暂停、唯一提交等本身不增加H3"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。连字与缺笔使字符级独立映射失效，候选合并需保留共享符号约束与依赖；撤销某假设时只有相关证明失效，已发生地图行动则保留。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增拓片候选分段与来源；新增跨句候选格网与依赖推断；新增歧义、试译、证据提交界面；按已解封区域限制真实探索；提交口令与有限尝试/门状态联合变化；候选版本、尝试和门状态持久化。可复用纯函数不强制改写，多文件本身不作为H3依据。为磨损印记保留分词/符号候选格网，以句式和确认铭文做跨句约束传播，正式结论携带来源。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "出土重复语料、试译、撤销局部译法、正式提交并开门，刷新保留封门和已用尝试。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "同一印记可分成AB或单连字X，两句共享印记，只有把一句的连字解释与另一句约束联合后才能排除AB。",
+          "expected": "保留两种解释直到公开证据排除，正式口令说明剩余支持；撤回证据后恢复歧义。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "gen-10",
+      "goal": "证据庭共享复验",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "用来源依赖图保存独立证明和冲突组，在预算内联合选择覆盖待澄清器物的最低成本复验。",
+      "remainingDecision": "重复摘录非独立证据，共享复验同时修复多链；逐物最低价与简单清空依赖都不满足，须处理最小冲突、替代证明及全局测试组合。",
+      "designDecisionAnalysis": "用来源依赖图保存独立证明和冲突组，在预算内联合选择覆盖待澄清器物的最低成本复验。 重复摘录非独立证据，共享复验同时修复多链；逐物最低价与简单清空依赖都不满足，须处理最小冲突、替代证明及全局测试组合。",
+      "necessaryFiles": [
+        "src/features/chronicle/model/evidenceCourt.ts",
+        "src/features/inference/lib/retests.ts",
+        "src/features/tools/model/useTool.ts",
+        "src/features/chronicle/lib/score.ts",
+        "src/features/chronicle/ui/CourtPanel.tsx",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/chronicle/model/evidenceCourt.ts",
+          "reason": "新增来源链、标签和不可变修订账本"
+        },
+        {
+          "path": "src/features/inference/lib/retests.ts",
+          "reason": "新增最小冲突和全局复验方案"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "reason": "实际试剂消耗与证据生成"
+        },
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "reason": "研究积分修订及重复提交保护"
+        },
+        {
+          "path": "src/features/chronicle/ui/CourtPanel.tsx",
+          "reason": "新增依赖、冲突、预算及认证状态交互"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "保存来源、正式提交与修订记录"
+        }
+      ],
+      "excludedFromMinimum": [],
+      "moduleFlow": "chronicle 实际文物/来源→inference 证明冲突及复验方案→tools 试剂→研究标签/积分修订→结算。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "玩家可指定要澄清的一组器物，系统在试剂预算内推荐总成本最低的复验组合，一次复验可能同时修复多条来源链，必须区分已证最优与搜索未完的可行方案。",
+          "reasoning": "共享污染/证明链造成多个器物联合优化，决定冲突组与测试覆盖的联合表示、最优性下界及撤回后仍独立成立的证明保留。",
+          "failureCase": "器物A/B分别可花2单测，也可花3复验共同污染源，同时解除两者冲突。 错误：逐器物贪心花2+2超预算，或来源撤回一律清空仍有独立依据的器物。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "quote": "const relics = safe.flatMap((c) => (c.relic ? [c.relic] : []));",
+          "meaning": "现有结算按揭开安全格直接收文物，尚无新归属或认证粒度"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/features/inference/lib/deduce.ts",
+          "quote": "const initial = [...known.values()];",
+          "meaning": "已有一次初始约束子集差与零/全危险推断，没有全局搜索或证明策略"
+        },
+        {
+          "path": "src/features/chronicle/model/settlement.ts",
+          "quote": "if (!isTerminal(e.status) || archive.reports.some((r) => r.id === e.id))",
+          "meaning": "已有按探险ID幂等归档，重放/对象级或研究修订不能只复用一次整局去重"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。重复摘录非独立证据，共享复验同时修复多链；逐物最低价与简单清空依赖都不满足，须处理最小冲突、替代证明及全局测试组合。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增来源链、标签和不可变修订账本；新增最小冲突和全局复验方案；实际试剂消耗与证据生成；研究积分修订及重复提交保护；新增依赖、冲突、预算及认证状态交互；保存来源、正式提交与修订记录。可复用纯函数不强制改写，多文件本身不作为H3依据。用来源依赖图保存独立证明和冲突组，在预算内联合选择覆盖待澄清器物的最低成本复验。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "选择多件器物复验，查看方案依据，执行、提交研究积分，再加入反证并刷新检查修订账本。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "器物A/B分别可花2单测，也可花3复验共同污染源，同时解除两者冲突。",
+          "expected": "预算3推荐共享复验，不把两份同源摘录计作独立支持；搜索未完成不称最优。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "gen-11",
+      "goal": "地震层析勘测",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "联合格子危险变量、衰减未知量与测线观测，保留相容解集；从公开解集评估候选测线的信息价值。",
+      "remainingDecision": "各测线单独求解不能表达交叠约束及地下结构非唯一性；估计图与确定事实需区分，选择测线时还受电量/布置距离限制且不得从真实暗格选答案。",
+      "designDecisionAnalysis": "联合格子危险变量、衰减未知量与测线观测，保留相容解集；从公开解集评估候选测线的信息价值。 各测线单独求解不能表达交叠约束及地下结构非唯一性；估计图与确定事实需区分，选择测线时还受电量/布置距离限制且不得从真实暗格选答案。",
+      "necessaryFiles": [
+        "src/features/tools/model/tomography.ts",
+        "src/features/terrain/lib/sections.ts",
+        "src/features/inference/lib/tomography.ts",
+        "src/features/tools/ui/TomographyPanel.tsx",
+        "src/app/gameReducer.ts",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/tools/model/tomography.ts",
+          "reason": "新增测量布置、成本、原始读数"
+        },
+        {
+          "path": "src/features/terrain/lib/sections.ts",
+          "reason": "新增测线穿格和介质衰减"
+        },
+        {
+          "path": "src/features/inference/lib/tomography.ts",
+          "reason": "新增欠定联合推断及推荐"
+        },
+        {
+          "path": "src/features/tools/ui/TomographyPanel.tsx",
+          "reason": "新增可解释范围和测线选择"
+        },
+        {
+          "path": "src/app/gameReducer.ts",
+          "reason": "测量确认与公开读数/耗电联合提交"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "恢复原读数及消耗归属"
+        }
+      ],
+      "excludedFromMinimum": [],
+      "moduleFlow": "tools 震源与能量→terrain 足迹/衰减→inference 数字与测线联合→chronicle 已公布读数和辅助结算。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "逐测线独立求解容易重复计算，先合成整幅估计图又可能把多个同样符合读数的解误画成唯一地下结构，请保留欠定情形并解释结论依赖哪些测线。",
+          "reasoning": "决定欠定解集表达及测线选择的信息收益估计，有限电量/布置距离使最能消歧和最便宜相互制约；推荐必须只用公开后验候选。",
+          "failureCase": "两条测线分别约束a+b=1、b+c=1，候选为010与101；推荐一条穿a+c的测线能区分，而重复原线不能。 错误：取第一解010显示a安全，或读取实际真值挑恰好能照出文物的测线。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "quote": "return v.exploded || v.intel === \"danger\" || v.mark === \"flag\";",
+          "meaning": "旗标被当危险前提；当前约束仅矩形邻格计数，新增知识语义必须明确改变"
+        },
+        {
+          "path": "src/features/terrain/lib/visibility.ts",
+          "quote": "adjacent: c.revealed && !c.mine ? c.adjacent : null,",
+          "meaning": "已有公开地图投影只公开已揭数字，可复用事实/隐藏边界，不能代替新增证据语义"
+        },
+        {
+          "path": "src/app/gameReducer.ts",
+          "quote": "export function gameReducer(state: Workspace, c: Command): Workspace {",
+          "meaning": "集中命令分发及统一终结已存在，普通暂停、唯一提交等本身不增加H3"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。各测线单独求解不能表达交叠约束及地下结构非唯一性；估计图与确定事实需区分，选择测线时还受电量/布置距离限制且不得从真实暗格选答案。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增测量布置、成本、原始读数；新增测线穿格和介质衰减；新增欠定联合推断及推荐；新增可解释范围和测线选择；测量确认与公开读数/耗电联合提交；恢复原读数及消耗归属。可复用纯函数不强制改写，多文件本身不作为H3依据。联合格子危险变量、衰减未知量与测线观测，保留相容解集；从公开解集评估候选测线的信息价值。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "布置重叠测线、查看未知区间与推荐、取消未发测量，再执行并刷新确认耗电一次。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "两条测线分别约束a+b=1、b+c=1，候选为010与101；推荐一条穿a+c的测线能区分，而重复原线不能。",
+          "expected": "显示两种可行结构共有结论和歧义，推荐依据公开候选且计入成本。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "gen-12",
+      "goal": "歧义声纹封印",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "对公开片段形成的候选音型、起拍和统一速度联合匹配，维护一对一拍对应与校准误差区间。",
+      "remainingDecision": "局部最近匹配会消耗同一拍或过早选分支，完整匹配须处理全局同一速度与循环起拍，并在误差区间跨界时避免假唯一；暂停/扣费只属附属状态要求。",
+      "designDecisionAnalysis": "对公开片段形成的候选音型、起拍和统一速度联合匹配，维护一对一拍对应与校准误差区间。 局部最近匹配会消耗同一拍或过早选分支，完整匹配须处理全局同一速度与循环起拍，并在误差区间跨界时避免假唯一；暂停/扣费只属附属状态要求。",
+      "necessaryFiles": [
+        "src/features/chronicle/model/rhythmFragments.ts",
+        "src/features/tools/lib/rhythmMatcher.ts",
+        "src/features/tools/ui/RhythmPanel.tsx",
+        "src/features/exploration/model/actions.ts",
+        "src/app/gameReducer.ts",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/chronicle/model/rhythmFragments.ts",
+          "reason": "新增公开碎片与候选口令"
+        },
+        {
+          "path": "src/features/tools/lib/rhythmMatcher.ts",
+          "reason": "新增全序列匹配与校准误差裁决"
+        },
+        {
+          "path": "src/features/tools/ui/RhythmPanel.tsx",
+          "reason": "新增输入/试听/视觉及歧义反馈"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "reason": "封印解锁前后真实探索边界"
+        },
+        {
+          "path": "src/app/gameReducer.ts",
+          "reason": "尝试中断/恢复与资源和开门提交"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "保存尝试事务、公开碎片和封印状态"
+        }
+      ],
+      "excludedFromMinimum": [],
+      "moduleFlow": "chronicle 已出土符号→节拍识别→tools 有限共鸣石→terrain 解封→inference 新公开区域及奖励。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "多个口令可能共享前缀，缺碎片时保留歧义，不显示隐藏完整答案；一次输入只能对应一拍，少敲、重复敲和持续变速不能靠重复匹配变成正确。",
+          "reasoning": "决定全序列匹配的状态与裁决边界，符号/节奏候选共享前缀和时钟误差会相互作用；一对一匹配及唯一性必须对整段判定。",
+          "failureCase": "两候选前两拍相同但第三间隔不同，输入前两拍略有误差、第三拍符合第二候选；另一次输入落在校准误差可使成败翻转的边界。 错误：逐拍贪心锁第一候选而拒绝完整合法输入，或重复使用一拍补齐漏拍。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "quote": "const relics = safe.flatMap((c) => (c.relic ? [c.relic] : []));",
+          "meaning": "现有结算按揭开安全格直接收文物，尚无新归属或认证粒度"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "quote": "const result = revealArea(e.board, ids);",
+          "meaning": "集中探索提交可复用，但当前一次同步揭整片，不含本题增量/规划/异代规则"
+        },
+        {
+          "path": "src/app/gameReducer.ts",
+          "quote": "export function gameReducer(state: Workspace, c: Command): Workspace {",
+          "meaning": "集中命令分发及统一终结已存在，普通暂停、唯一提交等本身不增加H3"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。局部最近匹配会消耗同一拍或过早选分支，完整匹配须处理全局同一速度与循环起拍，并在误差区间跨界时避免假唯一；暂停/扣费只属附属状态要求。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增公开碎片与候选口令；新增全序列匹配与校准误差裁决；新增输入/试听/视觉及歧义反馈；封印解锁前后真实探索边界；尝试中断/恢复与资源和开门提交；保存尝试事务、公开碎片和封印状态。可复用纯函数不强制改写，多文件本身不作为H3依据。对公开片段形成的候选音型、起拍和统一速度联合匹配，维护一对一拍对应与校准误差区间。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "公开碎片生成候选，校准、试听、视觉模式敲完整口令，成功解封后回放与刷新不重复扣/奖。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "两候选前两拍相同但第三间隔不同，输入前两拍略有误差、第三拍符合第二候选；另一次输入落在校准误差可使成败翻转的边界。",
+          "expected": "整段唯一匹配第二候选；边界输入要求重校准，不扣成确定失败或错误开门。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "feature-01",
+      "goal": "无猜地图生成",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "生成候选布局后用只见公开事实的求解器验证，或在保留已证区域约束下改布局，预算耗尽标未证。",
+      "remainingDecision": "生成改变布局会使历史推导前提失效，且工具预算是知识状态搜索的一部分；只做首步保护或用隐藏安全格展示伪证明均不满足。",
+      "designDecisionAnalysis": "生成候选布局后用只见公开事实的求解器验证，或在保留已证区域约束下改布局，预算耗尽标未证。 生成改变布局会使历史推导前提失效，且工具预算是知识状态搜索的一部分；只做首步保护或用隐藏安全格展示伪证明均不满足。",
+      "necessaryFiles": [
+        "src/features/terrain/lib/generator.ts",
+        "src/features/inference/lib/verification.ts",
+        "src/features/terrain/ui/RegionPanel.tsx",
+        "src/features/chronicle/lib/score.ts",
+        "src/app/gameReducer.ts",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/terrain/lib/generator.ts",
+          "reason": "生成与证明预算协同"
+        },
+        {
+          "path": "src/features/inference/lib/verification.ts",
+          "reason": "新增公开信息策略证明"
+        },
+        {
+          "path": "src/features/terrain/ui/RegionPanel.tsx",
+          "reason": "选择模式与未完成结果展示"
+        },
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "reason": "有证明探险标识和实际完成情况"
+        },
+        {
+          "path": "src/app/gameReducer.ts",
+          "reason": "异步生成版本提交"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "保存已确认地图及证明版本"
+        }
+      ],
+      "excludedFromMinimum": [
+        "tools/model/useTool.ts"
+      ],
+      "moduleFlow": "terrain 布局→inference 公共策略证明→tools 预算→exploration 实际执行→chronicle 认证模式。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "证明要包含何时花道具，不能读取隐藏答案挑中安全格后把它伪装成推导；玩家旗标也不能成为未经证实的前提。",
+          "reasoning": "生成约束与知识策略证明相互影响，决定从候选布局筛选还是按证明约束修图，并维护已证明前提及搜索预算的诚实终止。",
+          "failureCase": "两处未决区域各有公开约束，一处无需道具可通过后续线索解开，另一处必须唯一探针；生成器先对前处用探针。 错误：贪心断言无解或直接从隐藏图挑后处安全格，标为无猜测。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/terrain/lib/generator.ts",
+          "quote": "export function generateBoard(board: Board, first: number): Board {",
+          "meaning": "按种子及首次点击生成单层矩形地图，仅保护首步邻域；没有本题新增生成或门/年代系统"
+        },
+        {
+          "path": "src/features/inference/lib/deduce.ts",
+          "quote": "const initial = [...known.values()];",
+          "meaning": "已有一次初始约束子集差与零/全危险推断，没有全局搜索或证明策略"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "quote": "const relics = safe.flatMap((c) => (c.relic ? [c.relic] : []));",
+          "meaning": "现有结算按揭开安全格直接收文物，尚无新归属或认证粒度"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。生成改变布局会使历史推导前提失效，且工具预算是知识状态搜索的一部分；只做首步保护或用隐藏安全格展示伪证明均不满足。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：生成与证明预算协同；新增公开信息策略证明；选择模式与未完成结果展示；有证明探险标识和实际完成情况；异步生成版本提交；保存已确认地图及证明版本。可复用纯函数不强制改写，多文件本身不作为H3依据。生成候选布局后用只见公开事实的求解器验证，或在保留已证区域约束下改布局，预算耗尽标未证。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "选择无猜测模式和首步，展开证明直到全部安全格；取消生成、改首步、恢复旧随机档均正确。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "两处未决区域各有公开约束，一处无需道具可通过后续线索解开，另一处必须唯一探针；生成器先对前处用探针。",
+          "expected": "搜索保留工具的策略，证明只引用公开前提，若预算不足明确返回未完成。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "feature-02",
+      "goal": "全局概率地图",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "按前沿分量枚举危险计数分布，并用剩余总雷数与未约束暗区组合权重做卷积；大分量估计与确定结论分离。",
+      "remainingDecision": "分量内等概率不等于全图等概率，未约束区组合数改变边界概率；样本零命中不证明安全，必须设计精确/估计边界并保护异步版本。",
+      "designDecisionAnalysis": "按前沿分量枚举危险计数分布，并用剩余总雷数与未约束暗区组合权重做卷积；大分量估计与确定结论分离。 分量内等概率不等于全图等概率，未约束区组合数改变边界概率；样本零命中不证明安全，必须设计精确/估计边界并保护异步版本。",
+      "necessaryFiles": [
+        "src/features/inference/lib/constraints.ts",
+        "src/features/inference/lib/deduce.ts",
+        "src/features/inference/ui/InferencePanel.tsx",
+        "src/features/terrain/ui/BoardView.tsx",
+        "src/features/chronicle/lib/score.ts",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "reason": "分离旗标假设与已知危险"
+        },
+        {
+          "path": "src/features/inference/lib/deduce.ts",
+          "reason": "全局概率分布、精确/估计来源"
+        },
+        {
+          "path": "src/features/inference/ui/InferencePanel.tsx",
+          "reason": "区间与冲突来源及安全按钮权限"
+        },
+        {
+          "path": "src/features/terrain/ui/BoardView.tsx",
+          "reason": "概率地图投影与版本展示"
+        },
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "reason": "辅助使用记录"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "概率辅助标识及版本保存"
+        }
+      ],
+      "excludedFromMinimum": [
+        "exploration/model/actions.ts"
+      ],
+      "moduleFlow": "terrain 公开投影→inference 全局加权→exploration 仅已证安全动作→chronicle 辅助使用记录→storage 版本恢复。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "希望升级成考虑剩余危险总数的概率地图，把相互关联的边界分组求解后再合成全局分布，未接触数字的暗区也要分到正确权重，不能把各组内部等概率直接当成全图等概率。",
+          "reasoning": "决定组件危险数量分布的全局合成及精确/估计边界，保守安全证明与快速估计必须分开保留而非共用0值。",
+          "failureCase": "某边界分量有1雷的一种布局和2雷的一种布局，另有3个自由暗格，剩余总雷2。 错误：组件内均分给50%并忽略自由暗区权重，或采样没命中便标0%。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "quote": "return v.exploded || v.intel === \"danger\" || v.mark === \"flag\";",
+          "meaning": "旗标被当危险前提；当前约束仅矩形邻格计数，新增知识语义必须明确改变"
+        },
+        {
+          "path": "src/features/inference/lib/deduce.ts",
+          "quote": "const initial = [...known.values()];",
+          "meaning": "已有一次初始约束子集差与零/全危险推断，没有全局搜索或证明策略"
+        },
+        {
+          "path": "src/features/terrain/lib/visibility.ts",
+          "quote": "adjacent: c.revealed && !c.mine ? c.adjacent : null,",
+          "meaning": "已有公开地图投影只公开已揭数字，可复用事实/隐藏边界，不能代替新增证据语义"
+        },
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "quote": "const relics = safe.flatMap((c) => (c.relic ? [c.relic] : []));",
+          "meaning": "现有结算按揭开安全格直接收文物，尚无新归属或认证粒度"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。分量内等概率不等于全图等概率，未约束区组合数改变边界概率；样本零命中不证明安全，必须设计精确/估计边界并保护异步版本。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：分离旗标假设与已知危险；全局概率分布、精确/估计来源；区间与冲突来源及安全按钮权限；概率地图投影与版本展示；辅助使用记录；概率辅助标识及版本保存。可复用纯函数不强制改写，多文件本身不作为H3依据。按前沿分量枚举危险计数分布，并用剩余总雷数与未约束暗区组合权重做卷积；大分量估计与确定结论分离。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "对可手算小布局核对全局概率，再增加公开信息，异步旧结果失效且不覆盖新局。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "某边界分量有1雷的一种布局和2雷的一种布局，另有3个自由暗格，剩余总雷2。",
+          "expected": "前两类权重分别为3与1而不是1与1；未证零风险不能一键探索。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "feature-03",
+      "goal": "假设分支覆盖",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "从公共约束独立求各分支可行域，证明分支并集覆盖全部可能世界且各可行分支均蕴含提交结论。",
+      "remainingDecision": "分支数相等或结论相同不能证明覆盖；删除来源与新信息可能只使部分证明失效，需要共享依赖或重算保持量词和事实边界。",
+      "designDecisionAnalysis": "从公共约束独立求各分支可行域，证明分支并集覆盖全部可能世界且各可行分支均蕴含提交结论。 分支数相等或结论相同不能证明覆盖；删除来源与新信息可能只使部分证明失效，需要共享依赖或重算保持量词和事实边界。",
+      "necessaryFiles": [
+        "src/features/inference/lib/branches.ts",
+        "src/features/inference/lib/constraints.ts",
+        "src/features/inference/ui/InferencePanel.tsx",
+        "src/features/terrain/ui/BoardView.tsx",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/inference/lib/branches.ts",
+          "reason": "新增假设覆盖、蕴涵与依赖证明"
+        },
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "reason": "把真实事实/旗标/分支前提分离"
+        },
+        {
+          "path": "src/features/inference/ui/InferencePanel.tsx",
+          "reason": "分支管理及覆盖反例"
+        },
+        {
+          "path": "src/features/terrain/ui/BoardView.tsx",
+          "reason": "真实标记与假设投影区分"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "分支与共享证明恢复"
+        }
+      ],
+      "excludedFromMinimum": [
+        "exploration/model/actions.ts"
+      ],
+      "moduleFlow": "exploration 真实旗标→inference 分支/覆盖证明→terrain 真实安全操作→chronicle 仅实际发现；storage 保存依赖。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "分支内不真实揭格、花道具或收文物；合并结论时须证明所选分支覆盖全部符合公开数字的可能情况，并且每个可行分支都得到该结论，重复覆盖和遗漏情况应能说明。",
+          "reasoning": "决定分支覆盖和结论蕴涵的验证方式，重叠分支共享证明可节省空间但覆盖/依赖不是简单引用计数；删除后应保留独立证明并撤回欠覆盖认证。",
+          "failureCase": "公开约束为a+b+c=1，只选a危险与b危险两分支，两者都推出c安全。 错误：两分支共同结论直接提交c安全，用真假隔离并不能修复覆盖遗漏。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "quote": "return v.exploded || v.intel === \"danger\" || v.mark === \"flag\";",
+          "meaning": "旗标被当危险前提；当前约束仅矩形邻格计数，新增知识语义必须明确改变"
+        },
+        {
+          "path": "src/features/inference/lib/deduce.ts",
+          "quote": "const initial = [...known.values()];",
+          "meaning": "已有一次初始约束子集差与零/全危险推断，没有全局搜索或证明策略"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "quote": "const result = revealArea(e.board, ids);",
+          "meaning": "集中探索提交可复用，但当前一次同步揭整片，不含本题增量/规划/异代规则"
+        },
+        {
+          "path": "src/features/terrain/lib/visibility.ts",
+          "quote": "adjacent: c.revealed && !c.mine ? c.adjacent : null,",
+          "meaning": "已有公开地图投影只公开已揭数字，可复用事实/隐藏边界，不能代替新增证据语义"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。分支数相等或结论相同不能证明覆盖；删除来源与新信息可能只使部分证明失效，需要共享依赖或重算保持量词和事实边界。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增假设覆盖、蕴涵与依赖证明；把真实事实/旗标/分支前提分离；分支管理及覆盖反例；真实标记与假设投影区分；分支与共享证明恢复。可复用纯函数不强制改写，多文件本身不作为H3依据。从公共约束独立求各分支可行域，证明分支并集覆盖全部可能世界且各可行分支均蕴含提交结论。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "创建穷尽的二分假设，逐分支证明同一结论后提交，再加入新数字检查证明和覆盖失效。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "公开约束为a+b+c=1，只选a危险与b危险两分支，两者都推出c安全。",
+          "expected": "拒绝无条件合并并指出遗漏c危险的可行世界；补入第三分支后也不会认证c安全。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "feature-04",
+      "goal": "带相关误差的范围测量",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "将几何足迹与校准误差来源显式纳入联合读数约束，使用共同潜变量而非独立缩区间。",
+      "remainingDecision": "重叠足迹共享系统误差，按区域粗并可能丢相关性；几何遮挡与历史位置共同决定约束域，局部边界钳制不能保证联合上下界。",
+      "designDecisionAnalysis": "将几何足迹与校准误差来源显式纳入联合读数约束，使用共同潜变量而非独立缩区间。 重叠足迹共享系统误差，按区域粗并可能丢相关性；几何遮挡与历史位置共同决定约束域，局部边界钳制不能保证联合上下界。",
+      "necessaryFiles": [
+        "src/features/tools/model/useTool.ts",
+        "src/features/tools/lib/targets.ts",
+        "src/features/inference/lib/constraints.ts",
+        "src/features/inference/lib/deduce.ts",
+        "src/features/tools/ui/ToolPanel.tsx",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "reason": "范围确认和共享校准来源"
+        },
+        {
+          "path": "src/features/tools/lib/targets.ts",
+          "reason": "足迹/遮挡/边界合法性"
+        },
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "reason": "区间及相关误差联合约束"
+        },
+        {
+          "path": "src/features/inference/lib/deduce.ts",
+          "reason": "保守上下界推断"
+        },
+        {
+          "path": "src/features/tools/ui/ToolPanel.tsx",
+          "reason": "范围成本和精度预览"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "原始足迹、校准和燃料记录"
+        }
+      ],
+      "excludedFromMinimum": [],
+      "moduleFlow": "terrain 遮挡足迹→tools 成本和同源测量→inference 联合数字/误差→chronicle 辅助记录。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "重叠测量会共享同一次设备校准误差，不能把它们当独立证据反复缩窄到虚假确定，逐格存误差来源直观却占空间，按区域合并更省却可能丢掉相关性，请选择能保留可解释上下界的表示方式。",
+          "reasoning": "决定带共享误差来源的联合约束表示及投影界；压缩足迹时必须保留相关性/遮挡历史，不能只存每格最终上下界。",
+          "failureCase": "两测量共享未知偏差e，读数分别a+b+e=2与b+c+e=2；重复测同一区域多次。 错误：按独立误差平均后声称a或b唯一确定，进而自动安全揭格。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/features/tools/lib/targets.ts",
+          "quote": "export function canTarget(e: Expedition, id: number) {",
+          "meaning": "现有工具只校验单格目标和库存，没有范围几何及方向传播"
+        },
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "quote": "return v.exploded || v.intel === \"danger\" || v.mark === \"flag\";",
+          "meaning": "旗标被当危险前提；当前约束仅矩形邻格计数，新增知识语义必须明确改变"
+        },
+        {
+          "path": "src/features/inference/lib/deduce.ts",
+          "quote": "const initial = [...known.values()];",
+          "meaning": "已有一次初始约束子集差与零/全危险推断，没有全局搜索或证明策略"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。重叠足迹共享系统误差，按区域粗并可能丢相关性；几何遮挡与历史位置共同决定约束域，局部边界钳制不能保证联合上下界。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：范围确认和共享校准来源；足迹/遮挡/边界合法性；区间及相关误差联合约束；保守上下界推断；范围成本和精度预览；原始足迹、校准和燃料记录。可复用纯函数不强制改写，多文件本身不作为H3依据。将几何足迹与校准误差来源显式纳入联合读数约束，使用共同潜变量而非独立缩区间。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "预览圆/扇/线足迹，取消和确认，改变遮挡后旧读数保持历史来源，刷新余额和约束一致。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "两测量共享未知偏差e，读数分别a+b+e=2与b+c+e=2；重复测同一区域多次。",
+          "expected": "可得a=c而不能以重复次数把e误差压到0；读取新独立校准才可能增加信息。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "feature-05",
+      "goal": "多队时空路径",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "在已知安全图上对位置、占道时刻、期限和相互避让联合规划，提交前验证冲突，重规划只继承未执行尾段。",
+      "remainingDecision": "固定优先级和独立最短路可能把可行会车方案堵死，需时空冲突搜索和可证终止界；动作去重与持久化不能找回规划漏解。",
+      "designDecisionAnalysis": "在已知安全图上对位置、占道时刻、期限和相互避让联合规划，提交前验证冲突，重规划只继承未执行尾段。 固定优先级和独立最短路可能把可行会车方案堵死，需时空冲突搜索和可证终止界；动作去重与持久化不能找回规划漏解。",
+      "necessaryFiles": [
+        "src/features/exploration/lib/flood.ts",
+        "src/features/exploration/lib/teamRoutes.ts",
+        "src/features/exploration/model/actions.ts",
+        "src/features/terrain/ui/BoardView.tsx",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/exploration/lib/flood.ts",
+          "reason": "瞬时BFS改为到达后揭格前沿"
+        },
+        {
+          "path": "src/features/exploration/lib/teamRoutes.ts",
+          "reason": "新增占道/期限联合规划"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "reason": "部分执行事实及队伍调度提交"
+        },
+        {
+          "path": "src/features/terrain/ui/BoardView.tsx",
+          "reason": "队伍/会车/时刻/路线交互"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "保存位置、时刻和未执行路线"
+        }
+      ],
+      "excludedFromMinimum": [
+        "tools/model/useTool.ts"
+      ],
+      "moduleFlow": "terrain 已知安全图→exploration 多队到达/前沿→inference 到达后公开数字→tools 共享库存→chronicle 实际成果。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "窄道同时只能容一队，不能迎面穿越，等候也消耗行动时间；可设置汇合点与抵达期限，系统需给出可执行的联合路线，找不到时区分已证无解和搜索未完成。",
+          "reasoning": "决定联合时空规划、冲突修复和部分执行后重规划；固定优先级的局部失败不能证明联合无解，已提交探索和未知通道限制不能当作可重算假想动作。",
+          "failureCase": "两队在窄道两端相向去对侧，中央有一格会车空位，双方期限允许一队先让入空位。 错误：独立最短路在中央相撞，固定优先等待后判无解。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/exploration/lib/flood.ts",
+          "quote": "export function revealArea(",
+          "meaning": "已有同步BFS，输出整批opened/hit；待办前沿、时间/路径或知识策略须另建"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "quote": "const result = revealArea(e.board, ids);",
+          "meaning": "集中探索提交可复用，但当前一次同步揭整片，不含本题增量/规划/异代规则"
+        },
+        {
+          "path": "src/features/terrain/lib/visibility.ts",
+          "quote": "adjacent: c.revealed && !c.mine ? c.adjacent : null,",
+          "meaning": "已有公开地图投影只公开已揭数字，可复用事实/隐藏边界，不能代替新增证据语义"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。固定优先级和独立最短路可能把可行会车方案堵死，需时空冲突搜索和可证终止界；动作去重与持久化不能找回规划漏解。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：瞬时BFS改为到达后揭格前沿；新增占道/期限联合规划；部分执行事实及队伍调度提交；队伍/会车/时刻/路线交互；保存位置、时刻和未执行路线。可复用纯函数不强制改写，多文件本身不作为H3依据。在已知安全图上对位置、占道时刻、期限和相互避让联合规划，提交前验证冲突，重规划只继承未执行尾段。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "安排两队会车与汇合，过程中插旗阻路后重排未来，暂停、恢复及撤离不公布未到达发现。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "两队在窄道两端相向去对侧，中央有一格会车空位，双方期限允许一队先让入空位。",
+          "expected": "找到包含让路的联合时序；移除空位且无退路时才证明不可同时完成。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "feature-06",
+      "goal": "条件连锁计划",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "对所有公开信息相容世界按方案分支推进，合并具有同等未来知识、资源和待办的状态，给最坏资源界。",
+      "remainingDecision": "空区揭露可能让后续步骤消失，危险相关性使每步最坏损失相加过保守；必须保观察后能区分的条件策略，不能全知分别选最优动作。",
+      "designDecisionAnalysis": "对所有公开信息相容世界按方案分支推进，合并具有同等未来知识、资源和待办的状态，给最坏资源界。 空区揭露可能让后续步骤消失，危险相关性使每步最坏损失相加过保守；必须保观察后能区分的条件策略，不能全知分别选最优动作。",
+      "necessaryFiles": [
+        "src/features/inference/lib/plans.ts",
+        "src/features/exploration/model/actions.ts",
+        "src/features/exploration/ui/ActionBar.tsx",
+        "src/app/storage.ts",
+        "src/shared/types.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/inference/lib/plans.ts",
+          "reason": "新增条件计划信念验证"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "reason": "执行分支和不可逆发现"
+        },
+        {
+          "path": "src/features/exploration/ui/ActionBar.tsx",
+          "reason": "编排/验证/停止/释放交互"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "恢复分支位置、知识及余额"
+        },
+        {
+          "path": "src/shared/types.ts",
+          "reason": "条件计划、可行分支检查点、知识版本、资源预留与已消费进度必须由动作执行、界面和存档共用，扩展 Expedition/GameDocument 等共享契约，避免恢复时把计划账本与实际工具库存混为同一状态。"
+        }
+      ],
+      "excludedFromMinimum": [],
+      "moduleFlow": "inference 公开信念状态→tools 防护与预留→exploration 条件计划执行→terrain 已揭数字→chronicle 不可逆成果。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "确认前依据公开信息检查每条可行分支的生命和道具下界，能证明全程够用才标为保证可执行，否则指出待人工确认处，不能读取隐藏布局。",
+          "reasoning": "决定知识/资源/队列共同构成的信念状态等价和最坏资源界，相关危险及重叠空区使逐步最坏损失求和既可能过保守也可能漏条件分支。",
+          "failureCase": "公开约束a+b=1，计划依次探a和b，生命能承受一次伤害；另一计划按a的数字决定是否用唯一护符。 错误：每步按最坏一雷相加拒绝第一计划，或合并同生命不同知识状态而错放行后续。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "quote": "const result = revealArea(e.board, ids);",
+          "meaning": "集中探索提交可复用，但当前一次同步揭整片，不含本题增量/规划/异代规则"
+        },
+        {
+          "path": "src/features/exploration/lib/flood.ts",
+          "quote": "export function revealArea(",
+          "meaning": "已有同步BFS，输出整批opened/hit；待办前沿、时间/路径或知识策略须另建"
+        },
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "quote": "return v.exploded || v.intel === \"danger\" || v.mark === \"flag\";",
+          "meaning": "旗标被当危险前提；当前约束仅矩形邻格计数，新增知识语义必须明确改变"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/shared/types.ts",
+          "quote": "export interface Expedition {\n  id: string;\n  board: Board;\n  status: Status;\n  mode: Mode;\n  lives: number;\n  shield: boolean;\n  tools: { probe: number; flare: number; shield: number };",
+          "meaning": "基线 Expedition 只有即时道具余额和护符状态，没有条件计划、知识分支检查点或预留/已消费的计划进度；这些状态要由执行和恢复统一解释。"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。空区揭露可能让后续步骤消失，危险相关性使每步最坏损失相加过保守；必须保观察后能区分的条件策略，不能全知分别选最优动作。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增条件计划信念验证；执行分支和不可逆发现；编排/验证/停止/释放交互；恢复分支位置、知识及余额；条件计划、可行分支检查点、知识版本、资源预留与已消费进度必须由动作执行、界面和存档共用，扩展 Expedition/GameDocument 等共享契约，避免恢复时把计划账本与实际工具库存混为同一状态。。可复用纯函数不强制改写，多文件本身不作为H3依据。对所有公开信息相容世界按方案分支推进，合并具有同等未来知识、资源和待办的状态，给最坏资源界。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "编排探索/护符/数字分支，查看保证/待确认位置，执行中取消后半段并刷新恢复已付成本。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "公开约束a+b=1，计划依次探a和b，生命能承受一次伤害；另一计划按a的数字决定是否用唯一护符。",
+          "expected": "第一计划最多一次伤害，第二按所有可行观测分支验证预留；未证明分支需确认。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "feature-07",
+      "goal": "搬运与包装联合规划",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "联合选择器物、共用包装、批次路线和交卸时机，按动态负重核算路段补给。",
+      "remainingDecision": "固定装包再最短路会错过包装回收和多次短途的更优方案；材料/重量/路径成本相互影响，必须共同优化与输出可执行见证。",
+      "designDecisionAnalysis": "联合选择器物、共用包装、批次路线和交卸时机，按动态负重核算路段补给。 固定装包再最短路会错过包装回收和多次短途的更优方案；材料/重量/路径成本相互影响，必须共同优化与输出可执行见证。",
+      "necessaryFiles": [
+        "src/features/chronicle/model/relics.ts",
+        "src/features/exploration/lib/transport.ts",
+        "src/features/exploration/model/actions.ts",
+        "src/features/tools/model/useTool.ts",
+        "src/features/chronicle/lib/score.ts",
+        "src/features/chronicle/ui/ChroniclePanel.tsx",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/chronicle/model/relics.ts",
+          "reason": "重量、易碎和发现/交付身份"
+        },
+        {
+          "path": "src/features/exploration/lib/transport.ts",
+          "reason": "新增负重路线与批次联合优化"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "reason": "移动/起取/交卸真实进度"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "reason": "补给与复用包装账目"
+        },
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "reason": "区分现场发现和完好交付价值"
+        },
+        {
+          "path": "src/features/chronicle/ui/ChroniclePanel.tsx",
+          "reason": "锁定物品、方案、损伤与结算明细"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "运输进度和旧规则迁移"
+        }
+      ],
+      "excludedFromMinimum": [],
+      "moduleFlow": "chronicle 文物价值/完好度→tools 包装补给→terrain 已知路径→exploration 运输执行→score 带回奖励。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "器物有重量、易碎程度与可共用包装，背负越重每段路耗补给越多，包装可送回后复用；玩家可以分批往返，锁定必须带回的器物，要求在承重和补给内最大化完好带回价值。",
+          "reasoning": "联合决定装包分组、分趟访问顺序和路径，价值目标受途中最大负重/补给与包装时间占用约束；需报告可行解及最优性界。",
+          "failureCase": "两件低单值器物共包后重量3，单件高值器物重4；唯一包装可复用，近出口两次运输的补给比带高值走远路少。 错误：只按价值选高值导致返程耗尽，或同一包装在两趟尚未归还时同时占用。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/chronicle/model/relics.ts",
+          "quote": "export const relicCatalog: {",
+          "meaning": "静态三类文物目录，没有器物身份、重量/碎片或因果关系"
+        },
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "quote": "const relics = safe.flatMap((c) => (c.relic ? [c.relic] : []));",
+          "meaning": "现有结算按揭开安全格直接收文物，尚无新归属或认证粒度"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "quote": "const result = revealArea(e.board, ids);",
+          "meaning": "集中探索提交可复用，但当前一次同步揭整片，不含本题增量/规划/异代规则"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。固定装包再最短路会错过包装回收和多次短途的更优方案；材料/重量/路径成本相互影响，必须共同优化与输出可执行见证。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：重量、易碎和发现/交付身份；新增负重路线与批次联合优化；移动/起取/交卸真实进度；补给与复用包装账目；区分现场发现和完好交付价值；锁定物品、方案、损伤与结算明细；运输进度和旧规则迁移。可复用纯函数不强制改写，多文件本身不作为H3依据。联合选择器物、共用包装、批次路线和交卸时机，按动态负重核算路段补给。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "规划多趟共包运输，交卸回收包装，中途封路/破损重排剩余部分，刷新和旧档结算正确。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "两件低单值器物共包后重量3，单件高值器物重4；唯一包装可复用，近出口两次运输的补给比带高值走远路少。",
+          "expected": "找到满足锁定器物及补给的最高完好价值计划，逐段负重和包装占用合法。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "feature-08",
+      "goal": "最大可证事实恢复",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "将残档片段变成带来源的事实/资源约束，寻找最大可证一致子集及相互冲突恢复分支，再一次提交。",
+      "remainingDecision": "逐段合法不代表合并资源守恒，暗格缺失也不能由旗标定答案；需推导依赖闭包、唯一性与最大保留的共同边界，简单字段补默认或回退检查点不足。",
+      "designDecisionAnalysis": "将残档片段变成带来源的事实/资源约束，寻找最大可证一致子集及相互冲突恢复分支，再一次提交。 逐段合法不代表合并资源守恒，暗格缺失也不能由旗标定答案；需推导依赖闭包、唯一性与最大保留的共同边界，简单字段补默认或回退检查点不足。",
+      "necessaryFiles": [
+        "src/app/storage.ts",
+        "src/features/inference/lib/recovery.ts",
+        "src/features/tools/model/useTool.ts",
+        "src/shared/initial.ts",
+        "src/features/chronicle/model/settlement.ts",
+        "src/app/App.tsx"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/app/storage.ts",
+          "reason": "从全有全无变为恢复分支及联合校验"
+        },
+        {
+          "path": "src/features/inference/lib/recovery.ts",
+          "reason": "新增公开事实依赖/冲突证明"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "reason": "消费记录具备可核对资源来源"
+        },
+        {
+          "path": "src/shared/initial.ts",
+          "reason": "可验证行动负载与因果依据"
+        },
+        {
+          "path": "src/features/chronicle/model/settlement.ts",
+          "reason": "恢复分支不能二次结算"
+        },
+        {
+          "path": "src/app/App.tsx",
+          "reason": "残档差异、损失和只读/确认交互"
+        }
+      ],
+      "excludedFromMinimum": [
+        "terrain/lib/generator.ts"
+      ],
+      "moduleFlow": "storage 残档/来源→terrain 种子与首步唯一性→tools 守恒→inference 公开证据→chronicle 不重复恢复积分。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "损坏一段不能丢掉无关的完整发现，但依赖缺失消耗记录的成果也不能直接保留；在保留最多可证事实的前提下展示互相冲突的恢复分支及其损失，让玩家确认。",
+          "reasoning": "恢复不是逐段合法的并集：需决定事实依赖闭包、资源守恒和冲突分支，以及布局唯一性证明；最多可证事实与不引入不确定消费相互制约。",
+          "failureCase": "完整检查点剩1探针，后有两段各声称独立用了同一探针；第三段是无需探针的独立安全发现，另一个地图字段缺失。 错误：逐段通过后合并两次消费；或第一坏段后全部丢弃，包括第三段独立发现。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/app/storage.ts",
+          "quote": "e.used === 4 - e.tools.probe - e.tools.flare - e.tools.shield",
+          "meaning": "存档验证要求原单局道具守恒及固定布局，保存整个version1文档；新增状态与兼容需实质调整"
+        },
+        {
+          "path": "src/features/terrain/lib/generator.ts",
+          "quote": "export function generateBoard(board: Board, first: number): Board {",
+          "meaning": "按种子及首次点击生成单层矩形地图，仅保护首步邻域；没有本题新增生成或门/年代系统"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/shared/initial.ts",
+          "quote": "].slice(-80),",
+          "meaning": "只有最近80条文字行动，没有支持本题的可重放载荷或完整证明依赖"
+        },
+        {
+          "path": "src/features/chronicle/model/settlement.ts",
+          "quote": "if (!isTerminal(e.status) || archive.reports.some((r) => r.id === e.id))",
+          "meaning": "已有按探险ID幂等归档，重放/对象级或研究修订不能只复用一次整局去重"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。逐段合法不代表合并资源守恒，暗格缺失也不能由旗标定答案；需推导依赖闭包、唯一性与最大保留的共同边界，简单字段补默认或回退检查点不足。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：从全有全无变为恢复分支及联合校验；新增公开事实依赖/冲突证明；消费记录具备可核对资源来源；可验证行动负载与因果依据；恢复分支不能二次结算；残档差异、损失和只读/确认交互。可复用纯函数不强制改写，多文件本身不作为H3依据。将残档片段变成带来源的事实/资源约束，寻找最大可证一致子集及相互冲突恢复分支，再一次提交。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "损坏非关键段，预览可证事实和损失，取消保持原局，确认后刷新仍有相同来源和不确定项。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "完整检查点剩1探针，后有两段各声称独立用了同一探针；第三段是无需探针的独立安全发现，另一个地图字段缺失。",
+          "expected": "保留第三段；前两段展示互斥恢复分支，布局仅唯一可证时恢复可玩，否则只读。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "feature-09",
+      "goal": "共享门方向的全局最少改动",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "集中邻接关系并按格、方向、余射程遍历，可完整计算一个固定配置的足迹。",
+      "remainingDecision": "新题要求共享门朝向同时满足必照和禁照区并最少改动；逐目标修门会破坏别处目标，单配置遍历只是验证器，不能独立给全局最优或无解证明。",
+      "designDecisionAnalysis": "集中邻接关系并按格、方向、余射程遍历，可完整计算一个固定配置的足迹。 新题要求共享门朝向同时满足必照和禁照区并最少改动；逐目标修门会破坏别处目标，单配置遍历只是验证器，不能独立给全局最优或无解证明。",
+      "necessaryFiles": [
+        "src/shared/geometry.ts",
+        "src/features/terrain/lib/generator.ts",
+        "src/features/tools/lib/targets.ts",
+        "src/features/inference/lib/portalPlans.ts",
+        "src/features/exploration/lib/flood.ts",
+        "src/features/terrain/ui/BoardView.tsx",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/shared/geometry.ts",
+          "reason": "计数/行走/朝向及变换公共接口"
+        },
+        {
+          "path": "src/features/terrain/lib/generator.ts",
+          "reason": "新拓扑计数和门关系生成"
+        },
+        {
+          "path": "src/features/tools/lib/targets.ts",
+          "reason": "有向射程足迹与唯一计费"
+        },
+        {
+          "path": "src/features/inference/lib/portalPlans.ts",
+          "reason": "新增共享门朝向的最少改动求解"
+        },
+        {
+          "path": "src/features/exploration/lib/flood.ts",
+          "reason": "按激活后的行走关系展开"
+        },
+        {
+          "path": "src/features/terrain/ui/BoardView.tsx",
+          "reason": "关系解释、目标/禁区与方案"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "新门朝向及旧档规则恢复"
+        }
+      ],
+      "excludedFromMinimum": [],
+      "moduleFlow": "terrain 统一关系与共享门配置→tools 有向足迹/计费→inference 目标配置证明→exploration 门激活与连锁→storage 旧方格规则。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "新增直线与扇形勘探，穿门后方向按门的旋转或镜像变化，射程继续扣除；同一格从不同方向到达可能照向不同后继，但最终探测与扣费不能重复。",
+          "reasoning": "决定配置级搜索及下界：一门的取向为多条光路共享变量，局部最短路径/逐目标改门会互相破坏；遍历仅是候选配置的验证器。",
+          "failureCase": "门P朝向0可照目标A但也照禁区，朝向1照目标B；加改门Q可使P朝向0同时照A/B且避禁区。 错误：逐目标分别设P为0和1并合并两条互不共存的光路，宣称只改一门完成。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/shared/geometry.ts",
+          "quote": "export function neighbors(id: number, width: number, height: number): number[] {",
+          "meaning": "共用8邻接矩形几何，可复用坐标投影，但没有新拓扑/连续几何"
+        },
+        {
+          "path": "src/features/terrain/lib/generator.ts",
+          "quote": "export function generateBoard(board: Board, first: number): Board {",
+          "meaning": "按种子及首次点击生成单层矩形地图，仅保护首步邻域；没有本题新增生成或门/年代系统"
+        },
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "quote": "return v.exploded || v.intel === \"danger\" || v.mark === \"flag\";",
+          "meaning": "旗标被当危险前提；当前约束仅矩形邻格计数，新增知识语义必须明确改变"
+        },
+        {
+          "path": "src/features/tools/lib/targets.ts",
+          "quote": "export function canTarget(e: Expedition, id: number) {",
+          "meaning": "现有工具只校验单格目标和库存，没有范围几何及方向传播"
+        },
+        {
+          "path": "src/features/exploration/lib/flood.ts",
+          "quote": "export function revealArea(",
+          "meaning": "已有同步BFS，输出整批opened/hit；待办前沿、时间/路径或知识策略须另建"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。新题要求共享门朝向同时满足必照和禁照区并最少改动；逐目标修门会破坏别处目标，单配置遍历只是验证器，不能独立给全局最优或无解证明。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：计数/行走/朝向及变换公共接口；新拓扑计数和门关系生成；有向射程足迹与唯一计费；新增共享门朝向的最少改动求解；按激活后的行走关系展开；关系解释、目标/禁区与方案；新门朝向及旧档规则恢复。可复用纯函数不强制改写，多文件本身不作为H3依据。集中邻接关系并按格、方向、余射程遍历，可完整计算一个固定配置的足迹。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "选必照目标/禁照区及转门预算，查看最省配置并确认，核对每格足迹及旧档保持八邻接。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "门P朝向0可照目标A但也照禁区，朝向1照目标B；加改门Q可使P朝向0同时照A/B且避禁区。",
+          "expected": "找到改P/Q的全局最少方案或证明预算不足；每候选内覆盖仍去重。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "feature-10",
+      "goal": "稳态坍塌与加固",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "按全部过载同时失效求受力固定点，联合搜索有限加固方案并检验所有未暴露结构的相容情况。",
+      "remainingDecision": "接触拓扑变化造成非局部重新分配，顺序处理会改变结果；稳态求解与最省鲁棒加固组合需一起证明，简单单件阈值守卫不够。",
+      "designDecisionAnalysis": "按全部过载同时失效求受力固定点，联合搜索有限加固方案并检验所有未暴露结构的相容情况。 接触拓扑变化造成非局部重新分配，顺序处理会改变结果；稳态求解与最省鲁棒加固组合需一起证明，简单单件阈值守卫不够。",
+      "necessaryFiles": [
+        "src/features/terrain/model/excavation.ts",
+        "src/features/exploration/lib/supports.ts",
+        "src/features/tools/model/useTool.ts",
+        "src/features/inference/lib/constraints.ts",
+        "src/features/chronicle/lib/score.ts",
+        "src/features/terrain/ui/BoardView.tsx",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/terrain/model/excavation.ts",
+          "reason": "新增层、支撑及断裂现场"
+        },
+        {
+          "path": "src/features/exploration/lib/supports.ts",
+          "reason": "新增级联稳定和稳健加固搜索"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "reason": "刷土/加固/起取消耗及确认边界"
+        },
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "reason": "观测层及未知支撑的公开约束"
+        },
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "reason": "避免残片与完整原件双奖励"
+        },
+        {
+          "path": "src/features/terrain/ui/BoardView.tsx",
+          "reason": "层/支撑预览及未知后果"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "已稳定现场和材料恢复"
+        }
+      ],
+      "excludedFromMinimum": [
+        "chronicle/model/relics.ts"
+      ],
+      "moduleFlow": "terrain 分层支撑→tools 加固材料→exploration 稳定现场提交→inference 观测层→chronicle 断裂身份及完整奖励。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "刷土、加固和起取会改变支撑，重量按接触面积分给各支点，支点失效后重新分配，超过承重上限会断裂并继续传递影响；玩家需预览能确定的坍塌链及因未暴露结构而未知的部分。",
+          "reasoning": "决定承重再分配的固定点与未知结构上的稳健加固搜索：公开不确定性不能替换成实际真值，材料预算迫使共享支点方案全局比较。",
+          "failureCase": "同一重器物由两支点分重，一支点下方还有隐藏二级支撑；给单支点加固看似够用，但另一公开一致结构发生二级失效后重分配超载。 错误：只用暗处实际结构选加固点泄密，或只检查当前负载不算级联，承诺安全后断裂。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/terrain/lib/generator.ts",
+          "quote": "export function generateBoard(board: Board, first: number): Board {",
+          "meaning": "按种子及首次点击生成单层矩形地图，仅保护首步邻域；没有本题新增生成或门/年代系统"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/features/inference/lib/constraints.ts",
+          "quote": "return v.exploded || v.intel === \"danger\" || v.mark === \"flag\";",
+          "meaning": "旗标被当危险前提；当前约束仅矩形邻格计数，新增知识语义必须明确改变"
+        },
+        {
+          "path": "src/features/chronicle/model/relics.ts",
+          "quote": "export const relicCatalog: {",
+          "meaning": "静态三类文物目录，没有器物身份、重量/碎片或因果关系"
+        },
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "quote": "const relics = safe.flatMap((c) => (c.relic ? [c.relic] : []));",
+          "meaning": "现有结算按揭开安全格直接收文物，尚无新归属或认证粒度"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。接触拓扑变化造成非局部重新分配，顺序处理会改变结果；稳态求解与最省鲁棒加固组合需一起证明，简单单件阈值守卫不够。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增层、支撑及断裂现场；新增级联稳定和稳健加固搜索；刷土/加固/起取消耗及确认边界；观测层及未知支撑的公开约束；避免残片与完整原件双奖励；层/支撑预览及未知后果；已稳定现场和材料恢复。可复用纯函数不强制改写，多文件本身不作为H3依据。按全部过载同时失效求受力固定点，联合搜索有限加固方案并检验所有未暴露结构的相容情况。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "观察局部、比较加固、刷土和起取，稳定后扣工具并记录来源；取消、刷新、撤离分别核对未提交/完整/损坏。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "同一重器物由两支点分重，一支点下方还有隐藏二级支撑；给单支点加固看似够用，但另一公开一致结构发生二级失效后重分配超载。",
+          "expected": "预览未知链，找对所有一致结构安全且材料最少的方案；不足则明确不能保证。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "feature-11",
+      "goal": "有限容量证据档案",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "把可核验区间及其共享前提作为依赖图，在固定保留项和字节容量下选择可独立验证的最大区间集合。",
+      "remainingDecision": "相同前提可共享但删除后会失去后续认证，逐段贪心按大小/价值无法保证容量可行或最优；摘要不可替代证明的契约迫使真实依赖成本优化。",
+      "designDecisionAnalysis": "把可核验区间及其共享前提作为依赖图，在固定保留项和字节容量下选择可独立验证的最大区间集合。 相同前提可共享但删除后会失去后续认证，逐段贪心按大小/价值无法保证容量可行或最优；摘要不可替代证明的契约迫使真实依赖成本优化。",
+      "necessaryFiles": [
+        "src/shared/initial.ts",
+        "src/features/chronicle/lib/archiveProofs.ts",
+        "src/features/chronicle/ui/ChroniclePanel.tsx",
+        "src/features/terrain/lib/visibility.ts",
+        "src/features/chronicle/lib/score.ts",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/shared/initial.ts",
+          "reason": "结构化行动事实取代限长文字"
+        },
+        {
+          "path": "src/features/chronicle/lib/archiveProofs.ts",
+          "reason": "新增规则重放、依赖认证与容量选择"
+        },
+        {
+          "path": "src/features/chronicle/ui/ChroniclePanel.tsx",
+          "reason": "容量目标、检查点及失证范围交互"
+        },
+        {
+          "path": "src/features/terrain/lib/visibility.ts",
+          "reason": "历史时点只公开当时知识"
+        },
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "reason": "成绩绑定完整证明来源"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "分段、检查点及规则版本导入校验"
+        }
+      ],
+      "excludedFromMinimum": [
+        "tools/model/useTool.ts"
+      ],
+      "moduleFlow": "exploration 真实动作→tools 资源转移→chronicle 证明档案/压缩→terrain 历史公开图→inference 只读分支知识。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "完整快照占空间，增量段共享前提较省，但删掉一次道具消耗会使依赖它的后续积分失证；挑选保留段时需计算共享前提成本，不能逐段贪心后才发现证据放不下。",
+          "reasoning": "决定共享前提的存储成本/证明依赖与随机访问精度的联合选取；保留区间的价值不能单独计价，丢失资源转移须污染依赖闭包而非全部后缀。",
+          "failureCase": "区间A/B各占2且共用前提P占3；区间C独占4，容量7，A/B共保占7而单独估各5会选错。删除P内护符消费后，另一个独立检查点D仍完整。 错误：逐段按成本相加拒绝A+B，或摘要代替P继续认证，或首处分歧后误停无关D。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/shared/initial.ts",
+          "quote": "].slice(-80),",
+          "meaning": "只有最近80条文字行动，没有支持本题的可重放载荷或完整证明依赖"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "quote": "const relics = safe.flatMap((c) => (c.relic ? [c.relic] : []));",
+          "meaning": "现有结算按揭开安全格直接收文物，尚无新归属或认证粒度"
+        },
+        {
+          "path": "src/features/terrain/lib/visibility.ts",
+          "quote": "adjacent: c.revealed && !c.mine ? c.adjacent : null,",
+          "meaning": "已有公开地图投影只公开已揭数字，可复用事实/隐藏边界，不能代替新增证据语义"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "quote": "e.used === 4 - e.tools.probe - e.tools.flare - e.tools.shield",
+          "meaning": "存档验证要求原单局道具守恒及固定布局，保存整个version1文档；新增状态与兼容需实质调整"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。相同前提可共享但删除后会失去后续认证，逐段贪心按大小/价值无法保证容量可行或最优；摘要不可替代证明的契约迫使真实依赖成本优化。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：结构化行动事实取代限长文字；新增规则重放、依赖认证与容量选择；容量目标、检查点及失证范围交互；历史时点只公开当时知识；成绩绑定完整证明来源；分段、检查点及规则版本导入校验。可复用纯函数不强制改写，多文件本身不作为H3依据。把可核验区间及其共享前提作为依赖图，在固定保留项和字节容量下选择可独立验证的最大区间集合。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "记录含工具和发现的档案，设容量及必须保留成绩，压缩预览后导入核验，篡改一段可定位失证范围。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "区间A/B各占2且共用前提P占3；区间C独占4，容量7，A/B共保占7而单独估各5会选错。删除P内护符消费后，另一个独立检查点D仍完整。",
+          "expected": "正确展示可保A+B及跳转精度；丢P使依赖的A/B失证而D仍可核验。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    },
+    {
+      "id": "feature-12",
+      "goal": "守恒环境安全推进",
+      "H1": true,
+      "H2": true,
+      "H3": true,
+      "difficultyGates": {
+        "H1": true,
+        "H2": true,
+        "H3": true
+      },
+      "actualDifficulty": "困难",
+      "verdict": "pass",
+      "p5Verdict": "pass",
+      "featureKinds": [
+        "多模块整合",
+        "关键设计取舍",
+        "复杂技术关注点"
+      ],
+      "simpleSolutionSuffices": false,
+      "simplestApproach": "按房间容量/通道流量建立物质平衡，连续推进到第一次安全边界触及；对未知连接给保守范围并细化误差。",
+      "remainingDecision": "不能把封闭区与全图平均，跳步误差必须不会跨越阈值；未知拓扑与首次到达事件共同决定安全推进边界，按步末退回无法保持已走与已揭因果。",
+      "designDecisionAnalysis": "按房间容量/通道流量建立物质平衡，连续推进到第一次安全边界触及；对未知连接给保守范围并细化误差。 不能把封闭区与全图平均，跳步误差必须不会跨越阈值；未知拓扑与首次到达事件共同决定安全推进边界，按步末退回无法保持已走与已揭因果。",
+      "necessaryFiles": [
+        "src/features/terrain/lib/environment.ts",
+        "src/features/exploration/lib/flood.ts",
+        "src/features/exploration/model/actions.ts",
+        "src/features/tools/model/useTool.ts",
+        "src/features/exploration/ui/ProgressStrip.tsx",
+        "src/features/chronicle/lib/score.ts",
+        "src/app/storage.ts"
+      ],
+      "necessaryFileReasons": [
+        {
+          "path": "src/features/terrain/lib/environment.ts",
+          "reason": "新增房间通量和守恒求解"
+        },
+        {
+          "path": "src/features/exploration/lib/flood.ts",
+          "reason": "按时间与预算分段揭格"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "reason": "首次触阈停止及已执行进度"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "reason": "点火/补给/护符效果分离"
+        },
+        {
+          "path": "src/features/exploration/ui/ProgressStrip.tsx",
+          "reason": "环境范围与阈值/停点反馈"
+        },
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "reason": "实际环境消耗解释"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "reason": "连续环境进度及旧规则版本"
+        }
+      ],
+      "excludedFromMinimum": [],
+      "moduleFlow": "terrain 房间/通道→tools 点火与补给→exploration 时间/位置部分提交→inference 已知环境范围→chronicle 实际损耗。",
+      "hardConstraintEvidence": [
+        {
+          "quote": "移动及探索耗时由地形与负重决定，一次操作中环境持续变化；预测到氧气或粉尘触及玩家设定边界即停在首次触及处，保留已走和已揭成果。",
+          "reasoning": "决定守恒通量更新、事件步长/误差证书和首次触阈定位；跳时提高响应但须保留门/火把事件与局部阈值，未知连接只能给范围。",
+          "failureCase": "房间A火把耗氧，B高氧；关闭通道后A会在长动作中先缺氧，而动作结束前再开门可让终值恢复到阈值以上。 错误：只算动作结束状态判安全，或全图平均使封闭A得到不存在的补氧。"
+        }
+      ],
+      "sourceEvidenceChecked": [
+        {
+          "path": "src/features/exploration/lib/flood.ts",
+          "quote": "export function revealArea(",
+          "meaning": "已有同步BFS，输出整批opened/hit；待办前沿、时间/路径或知识策略须另建"
+        },
+        {
+          "path": "src/features/exploration/model/actions.ts",
+          "quote": "const result = revealArea(e.board, ids);",
+          "meaning": "集中探索提交可复用，但当前一次同步揭整片，不含本题增量/规划/异代规则"
+        },
+        {
+          "path": "src/features/tools/model/useTool.ts",
+          "quote": "tools: { ...e.tools, [tool]: e.tools[tool] - 1 },",
+          "meaning": "道具消耗与单格观测已集中，可复用原子扣费，但不是新资源/知识协议"
+        },
+        {
+          "path": "src/features/chronicle/lib/score.ts",
+          "quote": "const relics = safe.flatMap((c) => (c.relic ? [c.relic] : []));",
+          "meaning": "现有结算按揭开安全格直接收文物，尚无新归属或认证粒度"
+        },
+        {
+          "path": "src/app/storage.ts",
+          "quote": "e.used === 4 - e.tools.probe - e.tools.flare - e.tools.shield",
+          "meaning": "存档验证要求原单局道具守恒及固定布局，保存整个version1文档；新增状态与兼容需实质调整"
+        }
+      ],
+      "categoryVerdict": "pass",
+      "independenceVerdict": "pass",
+      "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
+      "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。不能把封闭区与全图平均，跳步误差必须不会跨越阈值；未知拓扑与首次到达事件共同决定安全推进边界，按步末退回无法保持已走与已揭因果。",
+      "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增房间通量和守恒求解；按时间与预算分段揭格；首次触阈停止及已执行进度；点火/补给/护符效果分离；环境范围与阈值/停点反馈；实际环境消耗解释；连续环境进度及旧规则版本。可复用纯函数不强制改写，多文件本身不作为H3依据。按房间容量/通道流量建立物质平衡，连续推进到第一次安全边界触及；对未知连接给保守范围并细化误差。",
+      "acceptanceReviewed": [
+        {
+          "kind": "normal",
+          "steps": "设边界并点火、开关通风、执行长移动，查看首次停止和已揭成果；暂停/刷新不推进，旧档原规则继续。",
+          "expected": "功能按题面完成，各模块依据同一已确认事实工作；涉及刷新/取消/旧档时结果仍对应原提交范围。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "房间A火把耗氧，B高氧；关闭通道后A会在长动作中先缺氧，而动作结束前再开门可让终值恢复到阈值以上。",
+          "expected": "停在首次缺氧时刻并保留此前进度，不能因末值安全越过危险；总物质量按通量和燃烧守恒。"
+        }
+      ],
+      "p6Verdict": "pending",
+      "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。"
+    }
+  ]
+}
