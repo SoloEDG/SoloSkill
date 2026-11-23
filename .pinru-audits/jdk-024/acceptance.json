@@ -115,7 +115,7 @@
       "id": "gen-01",
       "difficulty": "困难",
       "goal": "有一次性补给和通行窗口的可续玩远征规划",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题有窗口与资源，但“快搜索/不漏路径”没有说明常规最早到达搜索为何不适用；资源与回访语义不足。",
@@ -281,139 +281,31 @@
         "runs": []
       },
       "review": {
-        "id": "gen-01",
-        "goal": "资源受限远征规划",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "以位置、时刻、库存、已领取补给为搜索状态，枚举合法路段和等待，以截止时间终止；对相同完整状态复用结果。",
-        "remainingDecision": "需要推导可安全合并/支配的标签：早到但已领补给不支配晚到未领取；只按位置去重丢解，全路径枚举又无法处理回访。正确的资源状态抽象和终止界是核心算法，现有点选水域没有该能力。",
-        "designDecisionAnalysis": "以位置、时刻、库存、已领取补给为搜索状态，枚举合法路段和等待，以截止时间终止；对相同完整状态复用结果。 需要推导可安全合并/支配的标签：早到但已领补给不支配晚到未领取；只按位置去重丢解，全路径枚举又无法处理回访。正确的资源状态抽象和终止界是核心算法，现有点选水域没有该能力。",
-        "necessaryFiles": [
-          "src/features/waters/model/waters.ts",
-          "src/features/tackle/model/loadout.ts",
-          "src/features/collection/model/collection.ts",
-          "src/features/challenges/model/challenges.ts",
-          "src/app/gameReducer.ts",
-          "src/app/storage.ts",
-          "src/features/waters/lib/expedition.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/waters/model/waters.ts",
-            "reason": "路段、窗口与补给站定义替代仅显示三水域描述，规划与执行都需读取。"
-          },
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "reason": "容量和一次性补给授权成为资源规则，现有无条件补满会破坏路线可行性。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "鱼获记录关联真实远征段，避免返回后重复结算。"
-          },
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "reason": "远征目标依据已执行路线及资源结果，不能沿用累计鱼数。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "执行/改道/捕获使用同一远征事务。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "恢复行程及已领站点，旧手记迁移。"
-          },
-          {
-            "path": "src/features/waters/lib/expedition.ts",
-            "reason": "实现携带资源标签、支配和可行性证明的路线规划。"
-          }
-        ],
-        "excludedFromMinimum": [
-          "fishing/model/session.ts"
-        ],
-        "moduleFlow": "水域路网产生可达性，装备提供容量/补给，真实捕鱼消耗时间与库存，日志与远征奖章以执行结果结算。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "现在每次只能选一个钓点自由垂钓，想增加多日远征：在地图上安排停靠、补给和返岸，航行、等待与搏鱼都耗时，路段有开放窗口，船上鱼饵与口粮有容量限制，补给站整次远征只能领取一次。",
-            "reasoning": "路线状态必须同时保有到达时间、库存、容量和各站是否已领取；回访不能重领。",
-            "failureCase": "早到站点库存1且已领补给，晚到库存0但仍能领5；后续需要4时只留早到会误判无路。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/waters/model/waters.ts",
-            "quote": "catchesRequired: 2,",
-            "line": 32,
-            "meaning": "水域只有固定深度、温度、流速文案与累计捕获解锁。"
-          },
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "quote": "stock: { ...doc.stock, [doc.bait]: doc.stock[doc.bait] - 1 },",
-            "line": 13,
-            "meaning": "每竿单饵扣1，补给直接恢复固定数量。"
-          },
-          {
-            "path": "src/features/fishing/model/session.ts",
-            "quote": "return clock - s.biteAt > 4",
-            "line": 28,
-            "meaning": "纯阶段推进，四秒咬钩窗口，可复用而非新增难度。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "quote": "updated = landCatch(doc, next, Date.now());",
-            "line": 78,
-            "meaning": "集中命令入口负责捕获与状态转换，可直接复用生命周期提交。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。需要推导可安全合并/支配的标签：早到但已领补给不支配晚到未领取；只按位置去重丢解，全路径枚举又无法处理回访。正确的资源状态抽象和终止界是核心算法，现有点选水域没有该能力。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：路段、窗口与补给站定义替代仅显示三水域描述，规划与执行都需读取。；容量和一次性补给授权成为资源规则，现有无条件补满会破坏路线可行性。；鱼获记录关联真实远征段，避免返回后重复结算。；远征目标依据已执行路线及资源结果，不能沿用累计鱼数。；执行/改道/捕获使用同一远征事务。；恢复行程及已领站点，旧手记迁移。；实现携带资源标签、支配和可行性证明的路线规划。。可复用纯函数不强制改写，多文件本身不作为H3依据。以位置、时刻、库存、已领取补给为搜索状态，枚举合法路段和等待，以截止时间终止；对相同完整状态复用结果。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "规划含补给与截止窗口的出发—钓鱼—返岸路线，执行后查看资源与日志。",
-            "expected": "水域路网产生可达性，装备提供容量/补给，真实捕鱼消耗时间与库存，日志与远征奖章以执行结果结算。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "在唯一可行补给绕路中途改计划并退出恢复；搜索未结束先编辑。；关键反例：设同站两标签：甲8点到、饵1、已领；乙9点到、饵0、未领，补给5，10点关门的下一段需4饵。",
-            "expected": "保留乙并给出可达路线，甲不可支配乙。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "gen-02",
       "difficulty": "困难",
       "goal": "未知对手类型下可保证晋级的锦标赛策略",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题因果快进可由确定性离线逐步模拟完整满足，性能措辞不能证明H3；二轮实质改为不完全信息下的保证晋级规划。",
@@ -574,137 +466,31 @@
         "runs": []
       },
       "review": {
-        "id": "gen-02",
-        "goal": "未知对手下的保证晋级策略",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "固定小步模拟、种子和赛事副本仍足够执行比赛；把每个隐藏类型分别求最优后拼接，不能形成玩家可执行的策略。",
-        "remainingDecision": "必须对相同公开观察采用同一动作；试探选择同时改变共享鱼群及后续信息，需要在信息集合上求可执行策略和最坏排名。",
-        "designDecisionAnalysis": "固定小步模拟、种子和赛事副本仍足够执行比赛；把每个隐藏类型分别求最优后拼接，不能形成玩家可执行的策略。 必须对相同公开观察采用同一动作；试探选择同时改变共享鱼群及后续信息，需要在信息集合上求可执行策略和最坏排名。",
-        "necessaryFiles": [
-          "src/features/fishing/lib/encounter.ts",
-          "src/features/tackle/model/loadout.ts",
-          "src/features/collection/model/collection.ts",
-          "src/features/challenges/model/rewards.ts",
-          "src/app/gameReducer.ts",
-          "src/app/storage.ts",
-          "src/features/fishing/model/tournament.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "reason": "由无限独立抽鱼改为赛事有限鱼群预留/归属，不能各自生成同一资源。"
-          },
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "reason": "本轮合法装备和额度限制须进入实际扣饵。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "同一捕获同时生成独立赛事成绩和鱼袋流转，不因放流重算。"
-          },
-          {
-            "path": "src/features/challenges/model/rewards.ts",
-            "reason": "赛季奖章按固定有效排名提交。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "协调赛事时钟、同刻事件和自由进度隔离。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "恢复对手已决策状态与未完成赛事。"
-          },
-          {
-            "path": "src/features/fishing/model/tournament.ts",
-            "reason": "共享鱼群比赛、信息集合与可执行保证策略求解。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "装备与共享鱼群定义行动，比赛引擎产生公开观察，策略规划用同样规则生成可执行建议，排名及奖章消费真实有效成绩。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "公开结果相同的阶段仍须采用相同决策，观察分歧后才可分支；共同抢最后一尾鱼时，这次选择又会改变对手下一步。",
-            "reasoning": "策略只能依赖届时可见历史；相同观察历史下隐藏类型不同也必须作相同决策。",
-            "failureCase": "若对手甲类型时建议浅水、乙类型时建议深水，但当前榜单观察完全相同，这两条不能拼成可执行保证。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "quote": "biteAt: delay(wait) + (1 - charge) * 0.8,",
-            "line": 28,
-            "meaning": "抛竿即按种子预选鱼种、重量与等候时刻，没有真实落点/空间资源。"
-          },
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "quote": "stock: { ...doc.stock, [doc.bait]: doc.stock[doc.bait] - 1 },",
-            "line": 13,
-            "meaning": "每竿单饵扣1，补给直接恢复固定数量。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          },
-          {
-            "path": "src/features/challenges/model/rewards.ts",
-            "quote": "? { ...doc, claimed: [...doc.claimed, id] }",
-            "line": 5,
-            "meaning": "已有集中领取与防重，不应作为新增H3。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。必须对相同公开观察采用同一动作；试探选择同时改变共享鱼群及后续信息，需要在信息集合上求可执行策略和最坏排名。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：由无限独立抽鱼改为赛事有限鱼群预留/归属，不能各自生成同一资源。；本轮合法装备和额度限制须进入实际扣饵。；同一捕获同时生成独立赛事成绩和鱼袋流转，不因放流重算。；赛季奖章按固定有效排名提交。；协调赛事时钟、同刻事件和自由进度隔离。；恢复对手已决策状态与未完成赛事。；共享鱼群比赛、信息集合与可执行保证策略求解。。可复用纯函数不强制改写，多文件本身不作为H3依据。固定小步模拟、种子和赛事副本仍足够执行比赛；把每个隐藏类型分别求最优后拼接，不能形成玩家可执行的策略。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "赛前设置晋级目标，查看策略分支，实际参赛按公开榜单建议行动并领奖。",
-            "expected": "装备与共享鱼群定义行动，比赛引擎产生公开观察，策略规划用同样规则生成可执行建议，排名及奖章消费真实有效成绩。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "相同观察不同类型、争最后一鱼导致后续反应、未完成搜索、刷新固定类型及截止后上岸。；关键反例：两种类型在首轮都钓相同小鱼，甲类型后续抢浅水最后大鱼、乙类型抢深水；先选高分路线分别有最优，但一个试探选择可让它们公开反应不同。",
-            "expected": "规划使用同一首轮动作，可选择试探后按观察分支；最坏排名覆盖所有仍可能类型，未证实保持待判断。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "gen-03",
       "difficulty": "困难",
       "goal": "保留回波关联歧义的可操作声呐",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题的粗细网格性能选择没有可验证精度边界，可能只是移动目标加缓存；补入非身份回波、多次观测关联和群数区间。",
@@ -865,137 +651,31 @@
         "runs": []
       },
       "review": {
-        "id": "gen-03",
-        "goal": "带歧义的声呐追踪",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "保存每次观测时刻、发射姿态、回波区间与可见区域，基于最大游速维护相容的轨迹匹配假设。",
-        "remainingDecision": "需在交叉/遮挡下选择保留哪些联合假设，才能给出真实群数上下界并把捕获约束回传；独立亮点/最近邻归并不能满足。拓扑连通和时间传播需共享同一几何解释。",
-        "designDecisionAnalysis": "保存每次观测时刻、发射姿态、回波区间与可见区域，基于最大游速维护相容的轨迹匹配假设。 需在交叉/遮挡下选择保留哪些联合假设，才能给出真实群数上下界并把捕获约束回传；独立亮点/最近邻归并不能满足。拓扑连通和时间传播需共享同一几何解释。",
-        "necessaryFiles": [
-          "src/features/waters/lib/habitat.ts",
-          "src/features/fishing/lib/encounter.ts",
-          "src/features/fishing/ui/LakeScene.tsx",
-          "src/features/collection/model/collection.ts",
-          "src/app/gameReducer.ts",
-          "src/app/storage.ts",
-          "src/features/waters/lib/sonar.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "reason": "提供可通水区域与真实移动鱼群，现有种类过滤不支持有限个体。"
-          },
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "reason": "按实际标记区域遭遇并消耗对应群，不能继续全水域独立抽。"
-          },
-          {
-            "path": "src/features/fishing/ui/LakeScene.tsx",
-            "reason": "声呐空间选择需与真实世界位置一致。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "捕获归属传播回观察并保留实际区域。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "扫描、回波到达与捕获更新按同一时序提交。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "保存发射中的扫描与观察歧义，不能刷新全知。"
-          },
-          {
-            "path": "src/features/waters/lib/sonar.ts",
-            "reason": "传播、遮挡与关联界算法。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "水域连通性约束鱼群移动和探测，声呐产生可用但不完全的知识，瞄准影响实际遭遇，捕鱼后反向收紧观察范围。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "扫描耗电且回波按传播时间陆续返回，岸线和水草遮挡会形成未知区；回波只提供位置误差范围与强弱，不能显示隐藏鱼群编号。",
-            "reasoning": "观测必须与隐藏世界分开；传播延迟、扫描方向、可见区域和游速限制共同约束群数。",
-            "failureCase": "同一鱼先后被两次扫描看到时，不能显示确定两群；两个隔岸无法互达的回波也不能合成一群。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "quote": "return fishCatalog.filter((f) => f.waters.includes(spot));",
-            "line": 5,
-            "meaning": "物种只按整片水域名单过滤，没有有限空间个体。"
-          },
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "quote": "biteAt: delay(wait) + (1 - charge) * 0.8,",
-            "line": 28,
-            "meaning": "抛竿即按种子预选鱼种、重量与等候时刻，没有真实落点/空间资源。"
-          },
-          {
-            "path": "src/features/fishing/ui/LakeScene.tsx",
-            "quote": "const x = 460 + session.castPower * 160;",
-            "line": 10,
-            "meaning": "SVG浮标只由力度映射屏幕位置，没有世界轨迹/可编辑水下场景。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。需在交叉/遮挡下选择保留哪些联合假设，才能给出真实群数上下界并把捕获约束回传；独立亮点/最近邻归并不能满足。拓扑连通和时间传播需共享同一几何解释。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：提供可通水区域与真实移动鱼群，现有种类过滤不支持有限个体。；按实际标记区域遭遇并消耗对应群，不能继续全水域独立抽。；声呐空间选择需与真实世界位置一致。；捕获归属传播回观察并保留实际区域。；扫描、回波到达与捕获更新按同一时序提交。；保存发射中的扫描与观察歧义，不能刷新全知。；传播、遮挡与关联界算法。。可复用纯函数不强制改写，多文件本身不作为H3依据。保存每次观测时刻、发射姿态、回波区间与可见区域，基于最大游速维护相容的轨迹匹配假设。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "扫描、标记回波、据此抛竿捕获并核对知识与真实数量更新。",
-            "expected": "水域连通性约束鱼群移动和探测，声呐产生可用但不完全的知识，瞄准影响实际遭遇，捕鱼后反向收紧观察范围。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "交叉回波、隔岸细通道、发射后转向、迟到返回和低电量恢复。；关键反例：两次扫描间隔允许鱼移动从左误差区到右误差区；也可能本来有两群；第三次扫描再出现分离回波。",
-            "expected": "先显示1至2群等可证范围，新增证据后收紧；不使用隐藏编号提前确定。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "gen-04",
       "difficulty": "困难",
       "goal": "可证可行的多订单配料与追溯工坊",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题只需要批次数组、数量与到期字段，取消守卫即可；本轮新增相互竞争的配方约束、全组可行计划及部分投料。",
@@ -1156,137 +836,31 @@
         "runs": []
       },
       "review": {
-        "id": "gen-04",
-        "goal": "联合配料制作",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "有限库存上做多订单联合约束搜索，计划锁定批次后重新求解，开工重验证并保留消耗记录。",
-        "remainingDecision": "替代料的局部最佳选择会耗尽后单唯一原料，期限/成分/品质同时约束全局可行性，必须推导联合分配与剩余材料边界；添加守卫不能找回被贪心排除的解。",
-        "designDecisionAnalysis": "有限库存上做多订单联合约束搜索，计划锁定批次后重新求解，开工重验证并保留消耗记录。 替代料的局部最佳选择会耗尽后单唯一原料，期限/成分/品质同时约束全局可行性，必须推导联合分配与剩余材料边界；添加守卫不能找回被贪心排除的解。",
-        "necessaryFiles": [
-          "src/features/tackle/model/loadout.ts",
-          "src/features/tackle/lib/affinity.ts",
-          "src/features/collection/model/collection.ts",
-          "src/features/challenges/model/challenges.ts",
-          "src/app/gameReducer.ts",
-          "src/app/storage.ts",
-          "src/features/tackle/lib/recipeAllocation.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "reason": "实际库存改为可分配批次并支持按阶段消耗。"
-          },
-          {
-            "path": "src/features/tackle/lib/affinity.ts",
-            "reason": "成品成分/年龄与水温共同决定吸引，而非固定三饵权重。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "捕获产副产物并记实际成品来源。"
-          },
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "reason": "研究解锁必须查可追溯配方效果。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "整组开工与钓鱼耗料互斥校验，统一物料提交。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "持久化任务已消耗部分、混料来源及版本迁移。"
-          },
-          {
-            "path": "src/features/tackle/lib/recipeAllocation.ts",
-            "reason": "多订单约束可行性规划。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "采集/捕获副产物进入工坊，装备消费真实批次，水域条件调整成品效果，捕获记录和研究读取当时来源。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "制作会分段消耗原料，取消只退未用部分；剩余混合料可继续投料，但重新混合不能延长旧成分期限。",
-            "reasoning": "每次物料流转守恒且保留不可被混合刷新掉的年龄来源；预览不等于库存预留提交。",
-            "failureCase": "同一珍稀原料两份被两张单都当可用；或者旧混料投新料后全部换成新到期日。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "quote": "stock: { ...doc.stock, [doc.bait]: doc.stock[doc.bait] - 1 },",
-            "line": 13,
-            "meaning": "每竿单饵扣1，补给直接恢复固定数量。"
-          },
-          {
-            "path": "src/features/tackle/lib/affinity.ts",
-            "quote": "(f.baits.includes(bait) ? 5 : 1) *",
-            "line": 9,
-            "meaning": "静态鱼种/饵料权重，不含历史环境效应。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          },
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "quote": "measure: (d) => d.stats.catches,",
-            "line": 19,
-            "meaning": "挑战只按累计统计，不含窗口/过程证据/策略。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。替代料的局部最佳选择会耗尽后单唯一原料，期限/成分/品质同时约束全局可行性，必须推导联合分配与剩余材料边界；添加守卫不能找回被贪心排除的解。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：实际库存改为可分配批次并支持按阶段消耗。；成品成分/年龄与水温共同决定吸引，而非固定三饵权重。；捕获产副产物并记实际成品来源。；研究解锁必须查可追溯配方效果。；整组开工与钓鱼耗料互斥校验，统一物料提交。；持久化任务已消耗部分、混料来源及版本迁移。；多订单约束可行性规划。。可复用纯函数不强制改写，多文件本身不作为H3依据。有限库存上做多订单联合约束搜索，计划锁定批次后重新求解，开工重验证并保留消耗记录。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "制作两配方、固定一单、分段消耗、用成品钓鱼并追溯记录。",
-            "expected": "采集/捕获副产物进入工坊，装备消费真实批次，水域条件调整成品效果，捕获记录和研究读取当时来源。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "唯一替代分配、旧混料掺新料、预览后耗库存、取消及刷新重入。；关键反例：单A可用普通或珍稀材料，单B只能用珍稀；库存各1，先给A珍稀后B看似缺料。",
-            "expected": "找到A普通、B珍稀的全组计划；途中消费普通后拒绝旧计划并重算。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "gen-05",
       "difficulty": "困难",
       "goal": "有限操作预算与锁定片段下最晚可救的回放接管",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "固定张力/时长/救线认证可由录制时摘要加关键帧满足，原H3不成立；二轮改为可执行挽救方案及最晚接管点求解。",
@@ -1431,114 +1005,24 @@
         "runs": []
       },
       "review": {
-        "id": "gen-05",
-        "goal": "受限操作的最晚挽救接管",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "输入日志、原引擎重放和固定摘要可以覆盖观看；原轨迹峰值不能产生受切换次数、最短间隔和锁定片段约束的救线控制。",
-        "remainingDecision": "接管时刻与后续控制计划必须联合搜索，周期及锁定片段可能形成分离可行区间；须定义时间精度和可重演见证，不得把锁定输入当作锁定末状态。",
-        "designDecisionAnalysis": "输入日志、原引擎重放和固定摘要可以覆盖观看；原轨迹峰值不能产生受切换次数、最短间隔和锁定片段约束的救线控制。 接管时刻与后续控制计划必须联合搜索，周期及锁定片段可能形成分离可行区间；须定义时间精度和可重演见证，不得把锁定输入当作锁定末状态。",
-        "necessaryFiles": [
-          "src/features/collection/model/collection.ts",
-          "src/features/challenges/lib/progress.ts",
-          "src/app/gameReducer.ts",
-          "src/app/storage.ts",
-          "src/features/fishing/lib/replay.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "真实鱼获绑定原始片段身份及证据能力。"
-          },
-          {
-            "path": "src/features/challenges/lib/progress.ts",
-            "reason": "张力/用时挑战只能采用原始成功片段，接管见证不混入正式认证。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "重放和接管的提交域与正式资源隔离。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "保存真实回放、规则版本、锁定操作片段与验证状态；旧规则不可重演时保留观看数据并停止提供可救保证，不要求录制空间预算或淘汰策略。"
-          },
-          {
-            "path": "src/features/fishing/lib/replay.ts",
-            "reason": "可重演回放、有限控制挽救搜索及最晚点界。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "真实捕鱼规则产生回放；挽救搜索和练习执行共同消费规则与控制约束；图鉴/挑战只接收原始成功过程，正式库存不被分支修改。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "玩家可限制接管后最多切换几次收线、两次动作的最短间隔，并锁定不许改动的原操作片段；系统需给出满足这些限制且能上岸的具体操作示例，原片段锁定不代表其结束时的鱼况也能强行恢复。",
-            "reasoning": "锁定的是控制输入而非未来状态；接管后状态变化会传播进锁定片段，并影响余下可用切换次数和间隔。",
-            "failureCase": "接管前少收线导致进入锁定片段时进度不同，不能在锁定片段结束把进度跳回原回放。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/fishing/lib/physics.ts",
-            "quote": "const surge = (Math.sin(duration * 2.3) + 1) * 0.5 * fish.strength;",
-            "line": 10,
-            "meaning": "纯确定性对抗，冲刺是固定周期，不含弹性/个体反应。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          },
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "quote": "measure: (d) => d.stats.catches,",
-            "line": 19,
-            "meaning": "挑战只按累计统计，不含窗口/过程证据/策略。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。接管时刻与后续控制计划必须联合搜索，周期及锁定片段可能形成分离可行区间；须定义时间精度和可重演见证，不得把锁定输入当作锁定末状态。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：真实鱼获绑定原始片段身份及证据能力。；张力/用时挑战只能采用原始成功片段，接管见证不混入正式认证。；重放和接管的提交域与正式资源隔离。；保存真实回放、规则版本、锁定操作片段与验证状态；旧规则不可重演时保留观看数据并停止提供可救保证，不要求录制空间预算或淘汰策略。；可重演回放、有限控制挽救搜索及最晚点界。。可复用纯函数不强制改写，多文件本身不作为H3依据。输入日志、原引擎重放和固定摘要可以覆盖观看；原轨迹峰值不能产生受切换次数、最短间隔和锁定片段约束的救线控制。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "录制失败，设置切换预算与锁定片段，搜索并实际接管验证。",
-            "expected": "真实捕鱼规则产生回放；挽救搜索和练习执行共同消费规则与控制约束；图鉴/挑战只接收原始成功过程，正式库存不被分支修改。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "非单调可救区间、间隔恰等阈值、限制修改导致旧结果失效、旧规则只观看。；关键反例：鱼冲刺周期、锁定收线片段和最多两次切换共同形成两个分离的可救时间窗；中间时刻切换间隔不够而失败。",
-            "expected": "保留两个可行岛并验证较晚岛的操作见证；明确最晚点精度，锁定片段只锁输入。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       },
       "reusedFiles": [
         {
@@ -1555,7 +1039,7 @@
       "id": "gen-06",
       "difficulty": "困难",
       "goal": "曝光过程一致的摄影与物种识别",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题异步成片主要可由快照+任务令牌覆盖；补出整段光迹、身份遮挡、有限轨迹预算与可信精度。",
@@ -1716,137 +1200,31 @@
         "runs": []
       },
       "review": {
-        "id": "gen-06",
-        "goal": "曝光摄影与识别",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "保存可重演的鱼群/镜头分段运动与遮挡事件，积分成片，并保留按鱼身份分离的可辨区域证据；异步输出版本隔离。",
-        "remainingDecision": "精确分段求交虽可能简洁，但分段依据、遮挡/交叉像素归属与曝光积分需实质推导。只用帧采样或累计单鱼可见时间不能解释成片中两鱼重叠；两兆预算要求精度承诺与实际识别共同使用同一证据。",
-        "designDecisionAnalysis": "保存可重演的鱼群/镜头分段运动与遮挡事件，积分成片，并保留按鱼身份分离的可辨区域证据；异步输出版本隔离。 精确分段求交虽可能简洁，但分段依据、遮挡/交叉像素归属与曝光积分需实质推导。只用帧采样或累计单鱼可见时间不能解释成片中两鱼重叠；两兆预算要求精度承诺与实际识别共同使用同一证据。",
-        "necessaryFiles": [
-          "src/features/waters/lib/habitat.ts",
-          "src/features/fishing/ui/LakeScene.tsx",
-          "src/features/collection/ui/CollectionPanel.tsx",
-          "src/features/challenges/lib/progress.ts",
-          "src/app/gameReducer.ts",
-          "src/app/storage.ts",
-          "src/features/collection/lib/exposure.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "reason": "新增可运动水下场景与遮挡，静态鱼种表不能构成曝光事实。"
-          },
-          {
-            "path": "src/features/fishing/ui/LakeScene.tsx",
-            "reason": "镜头操作与真实鱼/水草空间一致。"
-          },
-          {
-            "path": "src/features/collection/ui/CollectionPanel.tsx",
-            "reason": "封面选择按照片身份与识别结果操作，不能由迟到任务覆盖。"
-          },
-          {
-            "path": "src/features/challenges/lib/progress.ts",
-            "reason": "清晰识别按曝光证据而非捕获次数发放。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "连拍、取消、封面提交与实际捕获分开结算。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "照片元数据和被选封面持久化，处理预算淘汰。"
-          },
-          {
-            "path": "src/features/collection/lib/exposure.ts",
-            "reason": "时间积分、遮挡身份与有限记录精度。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "水域运动提供场景，摄影积分产生画面与识别，图鉴选择并保存封面，研究奖励读取识别而不进入鱼袋。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "照片表现整段曝光累积的光迹；鱼只在快门中途进入、两鱼交叉或被水草短暂遮挡时，清晰识别奖励须依据成片中该鱼实际可辨的部分，不能按开头或结尾一帧判定，也不能把两条鱼的局部拼成一条完整鱼。",
-            "reasoning": "时间积分须保留每条鱼的身份与可见部分，最终成片和识别必须共享同一曝光事实。",
-            "failureCase": "鱼A只露头、鱼B只露尾，交叉轨迹合成完整轮廓也不能认证任一完整鱼。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "quote": "return fishCatalog.filter((f) => f.waters.includes(spot));",
-            "line": 5,
-            "meaning": "物种只按整片水域名单过滤，没有有限空间个体。"
-          },
-          {
-            "path": "src/features/fishing/ui/LakeScene.tsx",
-            "quote": "const x = 460 + session.castPower * 160;",
-            "line": 10,
-            "meaning": "SVG浮标只由力度映射屏幕位置，没有世界轨迹/可编辑水下场景。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          },
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "quote": "measure: (d) => d.stats.catches,",
-            "line": 19,
-            "meaning": "挑战只按累计统计，不含窗口/过程证据/策略。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。精确分段求交虽可能简洁，但分段依据、遮挡/交叉像素归属与曝光积分需实质推导。只用帧采样或累计单鱼可见时间不能解释成片中两鱼重叠；两兆预算要求精度承诺与实际识别共同使用同一证据。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：新增可运动水下场景与遮挡，静态鱼种表不能构成曝光事实。；镜头操作与真实鱼/水草空间一致。；封面选择按照片身份与识别结果操作，不能由迟到任务覆盖。；清晰识别按曝光证据而非捕获次数发放。；连拍、取消、封面提交与实际捕获分开结算。；照片元数据和被选封面持久化，处理预算淘汰。；时间积分、遮挡身份与有限记录精度。。可复用纯函数不强制改写，多文件本身不作为H3依据。保存可重演的鱼群/镜头分段运动与遮挡事件，积分成片，并保留按鱼身份分离的可辨区域证据；异步输出版本隔离。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "比较一张长曝光与多张短曝光并选封面、导出明信片。",
-            "expected": "水域运动提供场景，摄影积分产生画面与识别，图鉴选择并保存封面，研究奖励读取识别而不进入鱼袋。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "快速遮挡、交叉个体、预算边界、异步乱序完成及取消后刷新。；关键反例：长曝光期间A从左移出，B从右进入，水草在快门中段短暂遮住A；轨迹预算接近两兆。",
-            "expected": "画面展示实际光迹，A/B分别按可见信息判断；不足精度在接拍前声明。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "gen-07",
       "difficulty": "困难",
       "goal": "有限布局预算下六小时全程健康的水箱修复规划",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "离线六小时可直接沿已有固定步进在后台紧循环完整求解，原“快速补算”不成立H3；二轮新增锁定布局和预算下的最少改动全程健康配置求解。",
@@ -2001,128 +1379,31 @@
         "runs": []
       },
       "review": {
-        "id": "gen-07",
-        "goal": "全程健康的最少生态修复",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "同一固定步长函数在线离线重放可以覆盖过程；单配置仿真不能选择满足共同空间、预算、锁定约束的最少修复。",
-        "remainingDecision": "需联合布局与六小时反馈轨迹优化；共同掩体改变两鱼应激及耗氧，独立健康或终点健康不能作为全程安全剪枝，最少移鱼及设施改变须有全局依据。",
-        "designDecisionAnalysis": "同一固定步长函数在线离线重放可以覆盖过程；单配置仿真不能选择满足共同空间、预算、锁定约束的最少修复。 需联合布局与六小时反馈轨迹优化；共同掩体改变两鱼应激及耗氧，独立健康或终点健康不能作为全程安全剪枝，最少移鱼及设施改变须有全局依据。",
-        "necessaryFiles": [
-          "src/features/collection/model/collection.ts",
-          "src/shared/catalog.ts",
-          "src/features/challenges/model/challenges.ts",
-          "src/app/gameReducer.ts",
-          "src/app/storage.ts",
-          "src/features/collection/lib/aquarium.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "背包与水箱个体转移须保持唯一归属，放流记录读取健康。"
-          },
-          {
-            "path": "src/shared/catalog.ts",
-            "reason": "物种体积/食性/领地/耗氧参数是可查看生态规则。"
-          },
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "reason": "按健康持续时段衡量目标。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "编辑设施、转移个体与补算统一推进。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "保存补算边界及生态充分状态。"
-          },
-          {
-            "path": "src/features/collection/lib/aquarium.ts",
-            "reason": "领地生态与全程健康验证、最少布局修复求解。"
-          }
-        ],
-        "excludedFromMinimum": [
-          "collection/lib/records.ts"
-        ],
-        "moduleFlow": "鱼袋提供真实个体，布局/生态引擎评价修复方案，确认结果进入实际离线推进，放流及健康目标按真实结果结算。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "不能把各鱼分别健康当整箱健康，也不能把终点恢复或平均氧量合格当作中途没有持续缺氧，两条掠食鱼争一处掩体与各占一处应有不同结论。",
-            "reasoning": "可行性要求整段轨迹满足健康阈值持续条件，反馈和日夜不能由终点/均值代替。",
-            "failureCase": "半夜长时间缺氧后天亮恢复，6小时末健康数字正常也不能称方案全程健康。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          },
-          {
-            "path": "src/features/collection/lib/records.ts",
-            "quote": "best: Math.max(old?.best ?? 0, catchItem.weight),",
-            "line": 11,
-            "meaning": "图鉴仅计次数/最佳重量/首次时刻。"
-          },
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "quote": "measure: (d) => d.stats.catches,",
-            "line": 19,
-            "meaning": "挑战只按累计统计，不含窗口/过程证据/策略。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。需联合布局与六小时反馈轨迹优化；共同掩体改变两鱼应激及耗氧，独立健康或终点健康不能作为全程安全剪枝，最少移鱼及设施改变须有全局依据。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：背包与水箱个体转移须保持唯一归属，放流记录读取健康。；物种体积/食性/领地/耗氧参数是可查看生态规则。；按健康持续时段衡量目标。；编辑设施、转移个体与补算统一推进。；保存补算边界及生态充分状态。；领地生态与全程健康验证、最少布局修复求解。。可复用纯函数不强制改写，多文件本身不作为H3依据。同一固定步长函数在线离线重放可以覆盖过程；单配置仿真不能选择满足共同空间、预算、锁定约束的最少修复。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "导入鱼并锁定纪念鱼/设施，设置预算，计算修复方案后确认运行六小时。",
-            "expected": "鱼袋提供真实个体，布局/生态引擎评价修复方案，确认结果进入实际离线推进，放流及健康目标按真实结果结算。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "终点健康中途缺氧、共同领地冲突、唯一可行布局、修改锁定使旧保证失效及离线恢复。；关键反例：两掠食鱼争同一掩体，在夜间同时应激导致持续缺氧；仅增氧可过终点却预算不足，移动一处未锁掩体可消除冲突且无需移鱼。",
-            "expected": "在锁定和预算下给不移鱼的最少设施调整方案，显示夜间危险消失并可用真实引擎复验。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "gen-08",
       "difficulty": "困难",
       "goal": "守恒并支持版本编辑的漂钓流场",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题只写吸点与实时负担，插值+边界夹取可能足够；补出净流量约束、冲突控制输入、细通道连通与跨版本结果。",
@@ -2288,142 +1569,31 @@
         "runs": []
       },
       "review": {
-        "id": "gen-08",
-        "goal": "守恒水流编辑",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "对岸线约束的离散水域做局部目标速度与全局流量约束求解，保留物理版本并供浮标、鱼饵和鱼线共用。",
-        "remainingDecision": "需要选择网格/边界/流量表示以同时保住细窄通道连通与全局散度约束；局部插值或简单截断岸边速度不能保证源汇平衡。编辑反馈与确认可用状态也必须匹配求解残差。",
-        "designDecisionAnalysis": "对岸线约束的离散水域做局部目标速度与全局流量约束求解，保留物理版本并供浮标、鱼饵和鱼线共用。 需要选择网格/边界/流量表示以同时保住细窄通道连通与全局散度约束；局部插值或简单截断岸边速度不能保证源汇平衡。编辑反馈与确认可用状态也必须匹配求解残差。",
-        "necessaryFiles": [
-          "src/features/waters/model/waters.ts",
-          "src/features/waters/lib/habitat.ts",
-          "src/features/fishing/lib/physics.ts",
-          "src/features/fishing/lib/encounter.ts",
-          "src/features/collection/model/collection.ts",
-          "src/app/gameReducer.ts",
-          "src/app/storage.ts",
-          "src/features/waters/lib/flow.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/waters/model/waters.ts",
-            "reason": "定义水域边界/进出水口与控制点。"
-          },
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "reason": "鱼群驻留与连通性读取解算结果。"
-          },
-          {
-            "path": "src/features/fishing/lib/physics.ts",
-            "reason": "竿尖与水流合力真正改变张力和位置。"
-          },
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "reason": "遭遇按真实漂流位置发生。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "捕获保存上钩坐标和水流版本。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "预览/确认和在竿版本边界。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "场版本与历史引用持久化。"
-          },
-          {
-            "path": "src/features/waters/lib/flow.ts",
-            "reason": "守恒空间表示及约束解算。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "水域编辑产生物理流场，装备/捕鱼合成受力，鱼群分布改变遭遇，捕获手记保存位置和场版本。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "没有进出水口的区域不能凭空吸走或产生水，岸线法向流量为零，有进出水口时总流量应平衡；玩家画出的相互冲突箭头需显示实际调整结果，不能靠把速度越放越大掩盖冲突。",
-            "reasoning": "流速场须满足不可穿岸、局部无源与进出流量平衡；显示速度和实际漂移来自同一可用解。",
-            "failureCase": "封闭池四个箭头都指向中心，不能用中心吸走浮标或水量。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/waters/model/waters.ts",
-            "quote": "catchesRequired: 2,",
-            "line": 32,
-            "meaning": "水域只有固定深度、温度、流速文案与累计捕获解锁。"
-          },
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "quote": "return fishCatalog.filter((f) => f.waters.includes(spot));",
-            "line": 5,
-            "meaning": "物种只按整片水域名单过滤，没有有限空间个体。"
-          },
-          {
-            "path": "src/features/fishing/lib/physics.ts",
-            "quote": "const surge = (Math.sin(duration * 2.3) + 1) * 0.5 * fish.strength;",
-            "line": 10,
-            "meaning": "纯确定性对抗，冲刺是固定周期，不含弹性/个体反应。"
-          },
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "quote": "biteAt: delay(wait) + (1 - charge) * 0.8,",
-            "line": 28,
-            "meaning": "抛竿即按种子预选鱼种、重量与等候时刻，没有真实落点/空间资源。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。需要选择网格/边界/流量表示以同时保住细窄通道连通与全局散度约束；局部插值或简单截断岸边速度不能保证源汇平衡。编辑反馈与确认可用状态也必须匹配求解残差。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：定义水域边界/进出水口与控制点。；鱼群驻留与连通性读取解算结果。；竿尖与水流合力真正改变张力和位置。；遭遇按真实漂流位置发生。；捕获保存上钩坐标和水流版本。；预览/确认和在竿版本边界。；场版本与历史引用持久化。；守恒空间表示及约束解算。。可复用纯函数不强制改写，多文件本身不作为H3依据。对岸线约束的离散水域做局部目标速度与全局流量约束求解，保留物理版本并供浮标、鱼饵和鱼线共用。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "编辑流场、确认下一竿版本、漂流收线并查看捕获位置。",
-            "expected": "水域编辑产生物理流场，装备/捕鱼合成受力，鱼群分布改变遭遇，捕获手记保存位置和场版本。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "相反流、封闭池不相容箭头、细通道、解算未完成即改点及刷新。；关键反例：封闭池内全部控制点指向中心，再开一条细窄连通道接到有出口的支流。",
-            "expected": "封闭时修正为守恒流并显示偏离；开通道后允许合法交换，浮标不穿岸。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "gen-09",
       "difficulty": "困难",
       "goal": "有相关雨带和保守风险界的出钓日历",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "保留候选",
         "reason": "原题已含相关天气、洪峰延迟与全程风险上限，保留目标；仍需独立审查是否真正计算了风险界，不能靠标签过审。",
@@ -2589,139 +1759,31 @@
         "runs": []
       },
       "review": {
-        "id": "gen-09",
-        "goal": "相关天气风险计划",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "在保留跨天雨带相关性的场景上推进上游蓄水、下游洪峰和通路，累计整段行程至少一次受困概率。",
-        "remainingDecision": "场景合并必须保留对封路极端事件的概率界，不能只保均值；联合风险和迟到洪峰使独立小时/钓点边际统计失效。完整情景推演仍需场景状态及风险上界推导。",
-        "designDecisionAnalysis": "在保留跨天雨带相关性的场景上推进上游蓄水、下游洪峰和通路，累计整段行程至少一次受困概率。 场景合并必须保留对封路极端事件的概率界，不能只保均值；联合风险和迟到洪峰使独立小时/钓点边际统计失效。完整情景推演仍需场景状态及风险上界推导。",
-        "necessaryFiles": [
-          "src/features/waters/model/waters.ts",
-          "src/features/waters/lib/habitat.ts",
-          "src/features/tackle/model/loadout.ts",
-          "src/features/collection/model/collection.ts",
-          "src/features/challenges/model/challenges.ts",
-          "src/app/storage.ts",
-          "src/features/waters/lib/weatherRisk.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/waters/model/waters.ts",
-            "reason": "水位通行和上下游关系取代静态环境。"
-          },
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "reason": "实际水文影响可达鱼群。"
-          },
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "reason": "温度/时间真实改变鱼饵保鲜。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "保存当时环境事实。"
-          },
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "reason": "季节目标按实际天气而非新预报。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "已揭晓天气与预报来源保存。"
-          },
-          {
-            "path": "src/features/waters/lib/weatherRisk.ts",
-            "reason": "相关情景水文演算与风险界。"
-          }
-        ],
-        "excludedFromMinimum": [
-          "fishing/model/session.ts"
-        ],
-        "moduleFlow": "天气产生水位/通行和保鲜，日程控制实际出钓，捕鱼和季节目标归属已经揭晓环境。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "玩家可设最大受困风险，请推荐满足整个出钓期间风险上限的返岸时间，不能把每个小时分别安全误当成全程安全。",
-            "reasoning": "概率事件跨时间和地点相关；水量传输滞后决定封路，风险是全程至少一次受困。",
-            "failureCase": "两次风险各5%不等于全程5%；同一雨带导致的两次封路也不应简单相加成10%。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/waters/model/waters.ts",
-            "quote": "catchesRequired: 2,",
-            "line": 32,
-            "meaning": "水域只有固定深度、温度、流速文案与累计捕获解锁。"
-          },
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "quote": "return fishCatalog.filter((f) => f.waters.includes(spot));",
-            "line": 5,
-            "meaning": "物种只按整片水域名单过滤，没有有限空间个体。"
-          },
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "quote": "stock: { ...doc.stock, [doc.bait]: doc.stock[doc.bait] - 1 },",
-            "line": 13,
-            "meaning": "每竿单饵扣1，补给直接恢复固定数量。"
-          },
-          {
-            "path": "src/features/fishing/model/session.ts",
-            "quote": "return clock - s.biteAt > 4",
-            "line": 28,
-            "meaning": "纯阶段推进，四秒咬钩窗口，可复用而非新增难度。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。场景合并必须保留对封路极端事件的概率界，不能只保均值；联合风险和迟到洪峰使独立小时/钓点边际统计失效。完整情景推演仍需场景状态及风险上界推导。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：水位通行和上下游关系取代静态环境。；实际水文影响可达鱼群。；温度/时间真实改变鱼饵保鲜。；保存当时环境事实。；季节目标按实际天气而非新预报。；已揭晓天气与预报来源保存。；相关情景水文演算与风险界。。可复用纯函数不强制改写，多文件本身不作为H3依据。在保留跨天雨带相关性的场景上推进上游蓄水、下游洪峰和通路，累计整段行程至少一次受困概率。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "按预报设风险上限规划出钓、揭晓天气并返岸，核对保鲜与季节目标。",
-            "expected": "天气产生水位/通行和保鲜，日程控制实际出钓，捕鱼和季节目标归属已经揭晓环境。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "同均值不同尾部、上游延迟、跨时段相关封路、取消刷新防重抽。；关键反例：两份预报平均水位相同，第一份始终中水，第二份有5%极端上游雨带产生延迟洪峰；风险上限2%。",
-            "expected": "第二份拒绝相同出发/返岸建议或调整到上界内，第一份可接受。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "gen-10",
       "difficulty": "困难",
       "goal": "保留到达因果的空间声诱系统",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题声部管理、静音逻辑与生命周期常规组合已很强，H3不足；转为鱼的空间刺激传播、反射与阈值累积。",
@@ -2881,136 +1943,31 @@
         "runs": []
       },
       "review": {
-        "id": "gen-10",
-        "goal": "传播型空间声诱",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "保留声源发射与路径族，求运动接收者的到达事件，按同源直达/反射分组结算惊扰，音频渲染另做声部控制。",
-        "remainingDecision": "需要决定事件聚合所保留的时间/来源信息，否则跨阈值累计或迟到反射被误算；该决策由移动接收、传播时延与非线性刺激共同要求，普通音效池只解决听觉输出。",
-        "designDecisionAnalysis": "保留声源发射与路径族，求运动接收者的到达事件，按同源直达/反射分组结算惊扰，音频渲染另做声部控制。 需要决定事件聚合所保留的时间/来源信息，否则跨阈值累计或迟到反射被误算；该决策由移动接收、传播时延与非线性刺激共同要求，普通音效池只解决听觉输出。",
-        "necessaryFiles": [
-          "src/features/waters/lib/habitat.ts",
-          "src/features/tackle/lib/affinity.ts",
-          "src/features/fishing/lib/encounter.ts",
-          "src/features/collection/model/collection.ts",
-          "src/features/challenges/model/challenges.ts",
-          "src/app/useGame.ts",
-          "src/app/storage.ts",
-          "src/features/waters/lib/acousticField.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "reason": "鱼群位置与传播边界为声诱提供接收条件。"
-          },
-          {
-            "path": "src/features/tackle/lib/affinity.ts",
-            "reason": "鱼饵与接收到的音型/惊扰共同决定偏好。"
-          },
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "reason": "遭遇读取实际接收效果，不能在抛竿时固定无声结果。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "捕获保存实际影响片段及版本。"
-          },
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "reason": "研究按实际刺激证据判定。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "reason": "逻辑时钟与音频生命周期协调。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "循环与在途刺激恢复。"
-          },
-          {
-            "path": "src/features/waters/lib/acousticField.ts",
-            "reason": "传播路径、接收时序和可合并区间。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "水域传播改变鱼行为，鱼饵和声音共同进入遭遇概率，声音实际效果经捕获传入研究；音频可降级但不能改逻辑。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "声音到达鱼的位置需要传播时间，岸后反射可迟到，同一声源的直达与反射不能误当两次独立刺激；鱼在途中移动时，实际收到的顺序可能不同于发射顺序。",
-            "reasoning": "一次发射有多条传播路径但共享刺激身份；移动接收者的到达顺序影响重复惊扰。",
-            "failureCase": "相距很近的直达/反射不应作为两个独立声诱触发重复刺激阈值。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "quote": "return fishCatalog.filter((f) => f.waters.includes(spot));",
-            "line": 5,
-            "meaning": "物种只按整片水域名单过滤，没有有限空间个体。"
-          },
-          {
-            "path": "src/features/tackle/lib/affinity.ts",
-            "quote": "(f.baits.includes(bait) ? 5 : 1) *",
-            "line": 9,
-            "meaning": "静态鱼种/饵料权重，不含历史环境效应。"
-          },
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "quote": "biteAt: delay(wait) + (1 - charge) * 0.8,",
-            "line": 28,
-            "meaning": "抛竿即按种子预选鱼种、重量与等候时刻，没有真实落点/空间资源。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。需要决定事件聚合所保留的时间/来源信息，否则跨阈值累计或迟到反射被误算；该决策由移动接收、传播时延与非线性刺激共同要求，普通音效池只解决听觉输出。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：鱼群位置与传播边界为声诱提供接收条件。；鱼饵与接收到的音型/惊扰共同决定偏好。；遭遇读取实际接收效果，不能在抛竿时固定无声结果。；捕获保存实际影响片段及版本。；研究按实际刺激证据判定。；逻辑时钟与音频生命周期协调。；循环与在途刺激恢复。；传播路径、接收时序和可合并区间。。可复用纯函数不强制改写，多文件本身不作为H3依据。保留声源发射与路径族，求运动接收者的到达事件，按同源直达/反射分组结算惊扰，音频渲染另做声部控制。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "编排循环片段、试听位置变化、钓鱼并回看生效片段。",
-            "expected": "水域传播改变鱼行为，鱼饵和声音共同进入遭遇概率，声音实际效果经捕获传入研究；音频可降级但不能改逻辑。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "移动鱼接收乱序、反射双路径、编辑循环后旧声在途、静音和后台返回。；关键反例：鱼向一个声源游去，两声源相隔发射；一声源还有反射，按发射时刻近邻但接收时刻分离。",
-            "expected": "按实际到达间隔判断惊扰，直达/反射仍算同一次刺激。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "gen-11",
       "difficulty": "困难",
       "goal": "具备资源可达性验证的教学试炼编辑器",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题独立副本+步骤状态机+一次毕业领取即可完整满足，H3不成立；更换为编辑及验证试炼可完成性的目标。",
@@ -3161,120 +2118,24 @@
         "runs": []
       },
       "review": {
-        "id": "gen-11",
-        "goal": "教学课程可达性",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "把步骤、资源、已领取补给、解锁条件和阶段选择纳入可达性搜索，输出见证路径；执行器与检查器复用真实规则。",
-        "remainingDecision": "课程循环与一次性补给使同一步不同库存不可合并，需要有限状态抽象和真实捕鱼动作的可达性见证；仅检查步骤图通路不能证明实际完成。课程编辑版本隔离本身不计 H3。",
-        "designDecisionAnalysis": "把步骤、资源、已领取补给、解锁条件和阶段选择纳入可达性搜索，输出见证路径；执行器与检查器复用真实规则。 课程循环与一次性补给使同一步不同库存不可合并，需要有限状态抽象和真实捕鱼动作的可达性见证；仅检查步骤图通路不能证明实际完成。课程编辑版本隔离本身不计 H3。",
-        "necessaryFiles": [
-          "src/features/challenges/model/rewards.ts",
-          "src/app/gameReducer.ts",
-          "src/app/storage.ts",
-          "src/features/challenges/lib/courseReachability.ts",
-          "src/features/challenges/ui/CourseEditor.tsx"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/challenges/model/rewards.ts",
-            "reason": "毕业只依据有效版本完成记录发放。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "活动课程版本、分支回退和正式数据隔离。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "课程定义、验证版本与学员检查点保存。"
-          },
-          {
-            "path": "src/features/challenges/lib/courseReachability.ts",
-            "reason": "资源/解锁/操作见证的可达性验证。"
-          },
-          {
-            "path": "src/features/challenges/ui/CourseEditor.tsx",
-            "reason": "提供实际步骤卡、二选一分支、初始库存、失败回边和一次补给的编辑，触发验证并展示可操作见证/冲突；编辑后使旧验证失效并发布课程版本。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "课程验证消费装备、解锁和真实捕鱼规则，试玩执行同一契约，课程版本和毕业记录负责提交边界。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "允许回到前一步重新选分支，已花掉的饵不返还，阶段补给仅领一次，因此只检查步骤连线通向终点不够；库存不同的同一步也不能随便合并。",
-            "reasoning": "课程回边不能还原资源；补给一次性、解锁与捕获改变未来可行动作，因此同一卡位置不是完整状态。",
-            "failureCase": "回到选分支步骤时第一次有2饵，第二次已耗尽且补给已领；两状态合并会虚构通关。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "quote": "return fishCatalog.filter((f) => f.waters.includes(spot));",
-            "line": 5,
-            "meaning": "物种只按整片水域名单过滤，没有有限空间个体。"
-          },
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "quote": "stock: { ...doc.stock, [doc.bait]: doc.stock[doc.bait] - 1 },",
-            "line": 13,
-            "meaning": "每竿单饵扣1，补给直接恢复固定数量。"
-          },
-          {
-            "path": "src/features/fishing/model/session.ts",
-            "quote": "return clock - s.biteAt > 4",
-            "line": 28,
-            "meaning": "纯阶段推进，四秒咬钩窗口，可复用而非新增难度。"
-          },
-          {
-            "path": "src/features/challenges/model/rewards.ts",
-            "quote": "? { ...doc, claimed: [...doc.claimed, id] }",
-            "line": 5,
-            "meaning": "已有集中领取与防重，不应作为新增H3。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。课程循环与一次性补给使同一步不同库存不可合并，需要有限状态抽象和真实捕鱼动作的可达性见证；仅检查步骤图通路不能证明实际完成。课程编辑版本隔离本身不计 H3。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：毕业只依据有效版本完成记录发放。；活动课程版本、分支回退和正式数据隔离。；课程定义、验证版本与学员检查点保存。；资源/解锁/操作见证的可达性验证。；提供实际步骤卡、二选一分支、初始库存、失败回边和一次补给的编辑，触发验证并展示可操作见证/冲突；编辑后使旧验证失效并发布课程版本。。可复用纯函数不强制改写，多文件本身不作为H3依据。把步骤、资源、已领取补给、解锁条件和阶段选择纳入可达性搜索，输出见证路径；执行器与检查器复用真实规则。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "创建含分支的课程、验证示例、发布并用隔离背包完整通关。",
-            "expected": "课程验证消费装备、解锁和真实捕鱼规则，试玩执行同一契约，课程版本和毕业记录负责提交边界。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "循环耗饵、补给只能一次、时窗不足、编辑新版时旧学员继续及毕业去重。；关键反例：试炼需先捕获2尾解锁溪流，再在溪流捕获；初始2饵，一次补给设在“已访问溪流”之后，另一路可提前领取。",
-            "expected": "指出直接路线资源死锁，并给出经早补给分支的可执行示例；无该分支时明确冲突。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       },
       "reusedFiles": [
         {
@@ -3295,7 +2156,7 @@
       "id": "gen-12",
       "difficulty": "困难",
       "goal": "具有支点连锁和污染守恒的水域清障",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题局部清理传播未给出误差契约，按目标状态与扩散即可；补入共同支点失效、泄漏漂移和安全预览的保守界。",
@@ -3461,142 +2322,31 @@
         "runs": []
       },
       "review": {
-        "id": "gen-12",
-        "goal": "清障连锁与污染",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "建立连接支点与受力/可达几何模型，模拟拆除事件，再按可通水区域转移污染；预览保留保守结果范围。",
-        "remainingDecision": "局部单件安全不能合成为整组安全，移除支点同时改变拓扑和接触条件；预览的近似误差需与实际损伤承诺一致，且污染传输保持质量守恒。",
-        "designDecisionAnalysis": "建立连接支点与受力/可达几何模型，模拟拆除事件，再按可通水区域转移污染；预览保留保守结果范围。 局部单件安全不能合成为整组安全，移除支点同时改变拓扑和接触条件；预览的近似误差需与实际损伤承诺一致，且污染传输保持质量守恒。",
-        "necessaryFiles": [
-          "src/features/waters/model/waters.ts",
-          "src/features/waters/lib/habitat.ts",
-          "src/features/tackle/model/loadout.ts",
-          "src/features/fishing/lib/physics.ts",
-          "src/features/fishing/ui/LakeScene.tsx",
-          "src/features/challenges/model/challenges.ts",
-          "src/app/storage.ts",
-          "src/features/waters/lib/restoration.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/waters/model/waters.ts",
-            "reason": "可通水区域与污染参数建立传播边界。"
-          },
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "reason": "局部污染和恢复改变可活动鱼群。"
-          },
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "reason": "打捞工具真实消耗且取消只保留未发生部分。"
-          },
-          {
-            "path": "src/features/fishing/lib/physics.ts",
-            "reason": "实际拉力驱动支点/袋破裂，不能仅按钮移除。"
-          },
-          {
-            "path": "src/features/fishing/ui/LakeScene.tsx",
-            "reason": "清障目标与污染分布呈现真实空间结果。"
-          },
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "reason": "里程碑依据实际修复与材料记录。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "已破损/释放及半拆状态持久化。"
-          },
-          {
-            "path": "src/features/waters/lib/restoration.ts",
-            "reason": "连锁支点与守恒输运/安全界。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "打捞力学产生破损与移除，水域输运改变鱼可活动区域和画面，里程碑消费真实清理结果。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "修复后的透明度、可活动鱼群和里程碑随结果变化；拆到一半可以退出继续，放弃打捞不回滚已发生的破损，也不重复发材料。",
-            "reasoning": "剪断支点与破袋影响整个关联组和水域质量；取消操作不能抹掉已经释放的污染。",
-            "failureCase": "一袋拉破后放弃再打捞，污染不能消失也不能第二次释放相同内容。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/waters/model/waters.ts",
-            "quote": "catchesRequired: 2,",
-            "line": 32,
-            "meaning": "水域只有固定深度、温度、流速文案与累计捕获解锁。"
-          },
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "quote": "return fishCatalog.filter((f) => f.waters.includes(spot));",
-            "line": 5,
-            "meaning": "物种只按整片水域名单过滤，没有有限空间个体。"
-          },
-          {
-            "path": "src/features/fishing/lib/physics.ts",
-            "quote": "const surge = (Math.sin(duration * 2.3) + 1) * 0.5 * fish.strength;",
-            "line": 10,
-            "meaning": "纯确定性对抗，冲刺是固定周期，不含弹性/个体反应。"
-          },
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "quote": "stock: { ...doc.stock, [doc.bait]: doc.stock[doc.bait] - 1 },",
-            "line": 13,
-            "meaning": "每竿单饵扣1，补给直接恢复固定数量。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。局部单件安全不能合成为整组安全，移除支点同时改变拓扑和接触条件；预览的近似误差需与实际损伤承诺一致，且污染传输保持质量守恒。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：可通水区域与污染参数建立传播边界。；局部污染和恢复改变可活动鱼群。；打捞工具真实消耗且取消只保留未发生部分。；实际拉力驱动支点/袋破裂，不能仅按钮移除。；清障目标与污染分布呈现真实空间结果。；里程碑依据实际修复与材料记录。；已破损/释放及半拆状态持久化。；连锁支点与守恒输运/安全界。。可复用纯函数不强制改写，多文件本身不作为H3依据。建立连接支点与受力/可达几何模型，模拟拆除事件，再按可通水区域转移污染；预览保留保守结果范围。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "标记关联废物、比较强拉/拆解预览、处理并观察透明度和里程碑。",
-            "expected": "打捞力学产生破损与移除，水域输运改变鱼可活动区域和画面，里程碑消费真实清理结果。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "共同支点、破袋后取消、细通道输运、拆到一半退出恢复。；关键反例：两重物共享一根水草支点，移走左侧时剩余右侧落下撕破污染袋；污染经窄通道进邻水区。",
-            "expected": "预览揭示连锁损伤或标明未排除，确认后质量收支与受影响鱼群一致。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "feature-01",
       "difficulty": "困难",
       "goal": "有水下拓扑与下沉路径的微栖地",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题粗格/连续描述取舍较空，补出冠层孔洞、实际下沉停留和连通性不可因缩放变化。",
@@ -3752,137 +2502,31 @@
         "runs": []
       },
       "review": {
-        "id": "feature-01",
-        "goal": "可达微栖地",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "用世界空间岸坡/温层/孔洞定义沉降轨迹与层占用区间，再对咬钩暴露按时长积分。",
-        "remainingDecision": "连续孔洞与显示离散化之间必须保拓扑，并处理接触后的停留/重新下放；目标深度不等于可达深度，终点采样不能正确分配跨层暴露。",
-        "designDecisionAnalysis": "用世界空间岸坡/温层/孔洞定义沉降轨迹与层占用区间，再对咬钩暴露按时长积分。 连续孔洞与显示离散化之间必须保拓扑，并处理接触后的停留/重新下放；目标深度不等于可达深度，终点采样不能正确分配跨层暴露。",
-        "necessaryFiles": [
-          "src/features/waters/model/waters.ts",
-          "src/features/waters/lib/habitat.ts",
-          "src/features/fishing/lib/encounter.ts",
-          "src/features/fishing/model/session.ts",
-          "src/features/fishing/ui/LakeScene.tsx",
-          "src/features/collection/model/collection.ts",
-          "src/app/storage.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/waters/model/waters.ts",
-            "reason": "几何、温层与冠层拓扑取代单个深度字符串。"
-          },
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "reason": "鱼活动范围依据连通与温度。"
-          },
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "reason": "按真实路径暴露产生遭遇，不能抛竿时只按水域抽。"
-          },
-          {
-            "path": "src/features/fishing/model/session.ts",
-            "reason": "推进下沉/停留/抬高阶段与计时。"
-          },
-          {
-            "path": "src/features/fishing/ui/LakeScene.tsx",
-            "reason": "选点预览与世界坐标/孔洞保持一致。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "保存真实上钩深度，区分历史未知。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "新深度记录迁移与验证。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "水域几何生成可达水体，装备下沉改变捕鱼暴露，真实遭遇位置进入捕获与图鉴。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "预览应说明可达深度与可能遭遇，等待中的咬钩按饵实际所在层累计，穿越两层时不能把整段时间都计给终点层。",
-            "reasoning": "咬饵暴露取决于路径在各层的时间与障碍，而非用户选的目标深度。",
-            "failureCase": "饵从浅层下沉，冠层挡住后仍按深水名单遇鱼会违反可达性。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/waters/model/waters.ts",
-            "quote": "catchesRequired: 2,",
-            "line": 32,
-            "meaning": "水域只有固定深度、温度、流速文案与累计捕获解锁。"
-          },
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "quote": "return fishCatalog.filter((f) => f.waters.includes(spot));",
-            "line": 5,
-            "meaning": "物种只按整片水域名单过滤，没有有限空间个体。"
-          },
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "quote": "biteAt: delay(wait) + (1 - charge) * 0.8,",
-            "line": 28,
-            "meaning": "抛竿即按种子预选鱼种、重量与等候时刻，没有真实落点/空间资源。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。连续孔洞与显示离散化之间必须保拓扑，并处理接触后的停留/重新下放；目标深度不等于可达深度，终点采样不能正确分配跨层暴露。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：几何、温层与冠层拓扑取代单个深度字符串。；鱼活动范围依据连通与温度。；按真实路径暴露产生遭遇，不能抛竿时只按水域抽。；推进下沉/停留/抬高阶段与计时。；选点预览与世界坐标/孔洞保持一致。；保存真实上钩深度，区分历史未知。；新深度记录迁移与验证。。可复用纯函数不强制改写，多文件本身不作为H3依据。用世界空间岸坡/温层/孔洞定义沉降轨迹与层占用区间，再对咬钩暴露按时长积分。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "选岸位深度，下沉遇草后抬高再下放，捕获核对真实层。",
-            "expected": "水域几何生成可达水体，装备下沉改变捕鱼暴露，真实遭遇位置进入捕获与图鉴。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "细孔缩放、两层跨越、搏鱼中改点、旧捕获无深度。；关键反例：两个预览尺度中，一个冠层孔洞窄于大尺度像素，饵只有穿孔才能到深水，途中先在温跃层上方停留。",
-            "expected": "两尺度给同样可达结论，深水暴露从真正穿孔后计。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "feature-02",
       "difficulty": "困难",
       "goal": "有时空接触历史的诱窝与钩饵组合",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题批次对象加扩散字段即可，缺少合并正确性条件；补出非线性成分混合、持续接触与来源误差。",
@@ -4043,142 +2687,31 @@
         "runs": []
       },
       "review": {
-        "id": "feature-02",
-        "goal": "组合诱窝反应",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "对窝料源项及分量场做传输/衰减，按鱼路径积分接触历史，对反应阈值保留误差界。",
-        "remainingDecision": "同浓度不能合并不同寿命/释速来源，同一位置先后到达的组分也不等于同时反应；必须决定何时可压缩来源而仍可解释咬钩贡献。",
-        "designDecisionAnalysis": "对窝料源项及分量场做传输/衰减，按鱼路径积分接触历史，对反应阈值保留误差界。 同浓度不能合并不同寿命/释速来源，同一位置先后到达的组分也不等于同时反应；必须决定何时可压缩来源而仍可解释咬钩贡献。",
-        "necessaryFiles": [
-          "src/features/tackle/model/loadout.ts",
-          "src/features/tackle/lib/affinity.ts",
-          "src/features/waters/lib/habitat.ts",
-          "src/features/fishing/lib/encounter.ts",
-          "src/features/collection/model/collection.ts",
-          "src/features/challenges/model/challenges.ts",
-          "src/app/storage.ts",
-          "src/features/tackle/lib/scent.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "reason": "组合库存原子消耗并保留旧单饵路径。"
-          },
-          {
-            "path": "src/features/tackle/lib/affinity.ts",
-            "reason": "由单饵常数权重升级接触历史与非线性成分响应。"
-          },
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "reason": "传播使用真实可通水边界及鱼位置。"
-          },
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "reason": "上钩由当时接触效果决定。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "冻结实际成分贡献而非当前配装。"
-          },
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "reason": "区分真实生效单饵/组合。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "持久化残留源及时间语义。"
-          },
-          {
-            "path": "src/features/tackle/lib/scent.ts",
-            "reason": "输运、衰减、合并界与接触历史。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "装备扣真实投料，水域输运产生香味暴露，遭遇消费鱼的接触历史，图鉴/挑战使用当时贡献。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "诱窝在投放点持续释香，气味沿各水域的可通水区域扩散衰减，钩饵影响入口偏好；某些成分同处时增强、另一些会抵消，鱼需持续接触足量香味才改变靠近倾向，瞬间浓度相同不代表效果相同。",
-            "reasoning": "鱼的响应既依赖同处成分又依赖接触时长，源的未来释放曲线不能只按现在浓度合并。",
-            "failureCase": "先后经过A、B与同处A+B不能同样触发增强。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "quote": "stock: { ...doc.stock, [doc.bait]: doc.stock[doc.bait] - 1 },",
-            "line": 13,
-            "meaning": "每竿单饵扣1，补给直接恢复固定数量。"
-          },
-          {
-            "path": "src/features/tackle/lib/affinity.ts",
-            "quote": "(f.baits.includes(bait) ? 5 : 1) *",
-            "line": 9,
-            "meaning": "静态鱼种/饵料权重，不含历史环境效应。"
-          },
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "quote": "biteAt: delay(wait) + (1 - charge) * 0.8,",
-            "line": 28,
-            "meaning": "抛竿即按种子预选鱼种、重量与等候时刻，没有真实落点/空间资源。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。同浓度不能合并不同寿命/释速来源，同一位置先后到达的组分也不等于同时反应；必须决定何时可压缩来源而仍可解释咬钩贡献。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：组合库存原子消耗并保留旧单饵路径。；由单饵常数权重升级接触历史与非线性成分响应。；传播使用真实可通水边界及鱼位置。；上钩由当时接触效果决定。；冻结实际成分贡献而非当前配装。；区分真实生效单饵/组合。；持久化残留源及时间语义。；输运、衰减、合并界与接触历史。。可复用纯函数不强制改写，多文件本身不作为H3依据。对窝料源项及分量场做传输/衰减，按鱼路径积分接触历史，对反应阈值保留误差界。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "投组合、连续多竿、查看气味贡献与组合挑战。",
-            "expected": "装备扣真实投料，水域输运产生香味暴露，遭遇消费鱼的接触历史，图鉴/挑战使用当时贡献。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "隔岸重叠投影、释放曲线不同、临界增强阈值、取消蓄力和换点。；关键反例：两种窝料当前浓度相同，甲下一秒耗尽，乙持续释放；鱼先过A后过B，与同时接触A+B对照。",
-            "expected": "后续吸引与混合效应不同，贡献范围覆盖真实接触。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "feature-03",
       "difficulty": "困难",
       "goal": "有保守预览的真实弹道抛竿",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题已涉及细枝和异步轨迹，补明未确认碰撞区间不得显示保证落水，明确算法必须保守。",
@@ -4339,142 +2872,31 @@
         "runs": []
       },
       "review": {
-        "id": "feature-03",
-        "goal": "弹道与可信碰撞预览",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "统一世界空间轨迹和碰撞几何，预览自适应求出首碰撞区间，实际推进复用该几何判据。",
-        "remainingDecision": "需在简化轨迹下保守包围未采样区间并定位首碰撞，确保细枝/擦边不会得到假绿线；单纯增加采样或迟到结果守卫不能保证几何正确性。",
-        "designDecisionAnalysis": "统一世界空间轨迹和碰撞几何，预览自适应求出首碰撞区间，实际推进复用该几何判据。 需在简化轨迹下保守包围未采样区间并定位首碰撞，确保细枝/擦边不会得到假绿线；单纯增加采样或迟到结果守卫不能保证几何正确性。",
-        "necessaryFiles": [
-          "src/features/tackle/model/baits.ts",
-          "src/features/waters/model/waters.ts",
-          "src/features/fishing/lib/encounter.ts",
-          "src/features/fishing/model/session.ts",
-          "src/features/fishing/ui/LakeScene.tsx",
-          "src/features/collection/model/collection.ts",
-          "src/features/challenges/lib/progress.ts",
-          "src/features/fishing/lib/ballistics.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/tackle/model/baits.ts",
-            "reason": "饵料质量成为弹道实际输入。"
-          },
-          {
-            "path": "src/features/waters/model/waters.ts",
-            "reason": "岸线障碍与风场世界数据。"
-          },
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "reason": "遭遇推迟至实际入水并按落点筛选。"
-          },
-          {
-            "path": "src/features/fishing/model/session.ts",
-            "reason": "新增飞行与失败阶段，不能落竿即等待咬钩。"
-          },
-          {
-            "path": "src/features/fishing/ui/LakeScene.tsx",
-            "reason": "可编辑角度/预览保证和实际轨迹。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "记录失败尝试坐标而不误记鱼获。"
-          },
-          {
-            "path": "src/features/challenges/lib/progress.ts",
-            "reason": "有效尝试排除未入水抛竿。"
-          },
-          {
-            "path": "src/features/fishing/lib/ballistics.ts",
-            "reason": "连续或保守的首碰撞求解。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "装备重量与风产生弹道，水域障碍限制首次碰撞，捕鱼只消费实际落点，失败记入手记而不进捕获挑战。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "预览可分级细化以保持拖动顺滑，但必须标出已确认的第一个碰撞点或尚未排除的碰撞区间；不确定时不能显示保证能落水的绿线。",
-            "reasoning": "视觉预览声明必须有与真实路径相容的碰撞证据；未完成不是无碰撞。",
-            "failureCase": "细枝位于两个采样点之间时点采样全空仍不能承诺落水。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "quote": "biteAt: delay(wait) + (1 - charge) * 0.8,",
-            "line": 28,
-            "meaning": "抛竿即按种子预选鱼种、重量与等候时刻，没有真实落点/空间资源。"
-          },
-          {
-            "path": "src/features/fishing/ui/LakeScene.tsx",
-            "quote": "const x = 460 + session.castPower * 160;",
-            "line": 10,
-            "meaning": "SVG浮标只由力度映射屏幕位置，没有世界轨迹/可编辑水下场景。"
-          },
-          {
-            "path": "src/features/fishing/model/session.ts",
-            "quote": "return clock - s.biteAt > 4",
-            "line": 28,
-            "meaning": "纯阶段推进，四秒咬钩窗口，可复用而非新增难度。"
-          },
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "quote": "stock: { ...doc.stock, [doc.bait]: doc.stock[doc.bait] - 1 },",
-            "line": 13,
-            "meaning": "每竿单饵扣1，补给直接恢复固定数量。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。需在简化轨迹下保守包围未采样区间并定位首碰撞，确保细枝/擦边不会得到假绿线；单纯增加采样或迟到结果守卫不能保证几何正确性。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：饵料质量成为弹道实际输入。；岸线障碍与风场世界数据。；遭遇推迟至实际入水并按落点筛选。；新增飞行与失败阶段，不能落竿即等待咬钩。；可编辑角度/预览保证和实际轨迹。；记录失败尝试坐标而不误记鱼获。；有效尝试排除未入水抛竿。；连续或保守的首碰撞求解。。可复用纯函数不强制改写，多文件本身不作为H3依据。统一世界空间轨迹和碰撞几何，预览自适应求出首碰撞区间，实际推进复用该几何判据。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "调角度与蓄力，确认落点，落水后核对遭遇和手记。",
-            "expected": "装备重量与风产生弹道，水域障碍限制首次碰撞，捕鱼只消费实际落点，失败记入手记而不进捕获挑战。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "细枝夹在点间、桥洞擦边、场景缩放、旧预览乱序和取消蓄力。；关键反例：轨迹两采样点间恰有细枝，下一段还有水面；快速改角度后旧预览晚完成。",
-            "expected": "显示枝碰撞或待定区间，最终先撞枝；旧结果不提交新抛竿。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "feature-04",
       "difficulty": "困难",
       "goal": "有刚性差异与事件转换的竿线动力学",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "基线已有固定步进，原题低帧率可被复用覆盖；补出绷紧、余线耗尽、超限在一步内的耦合转换。",
@@ -4624,131 +3046,31 @@
         "runs": []
       },
       "review": {
-        "id": "feature-04",
-        "goal": "柔性鱼竿与混合物理",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "按弹性、伸长、线杯余量求力并细分紧绷、出线停止、超载等事件，判定同时保留峰值。",
-        "remainingDecision": "刚度跨尺度与单边约束要求选择积分/事件定位方式，步末检查可能漏掉先绷紧后超限；复用现有0.05秒显式近似不能保证事件顺序。",
-        "designDecisionAnalysis": "按弹性、伸长、线杯余量求力并细分紧绷、出线停止、超载等事件，判定同时保留峰值。 刚度跨尺度与单边约束要求选择积分/事件定位方式，步末检查可能漏掉先绷紧后超限；复用现有0.05秒显式近似不能保证事件顺序。",
-        "necessaryFiles": [
-          "src/features/tackle/model/loadout.ts",
-          "src/features/fishing/lib/physics.ts",
-          "src/features/fishing/model/session.ts",
-          "src/features/fishing/ui/LakeScene.tsx",
-          "src/features/collection/model/collection.ts",
-          "src/features/challenges/lib/progress.ts",
-          "src/app/storage.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "reason": "竿型/泄力在实际对抗中可合法改变。"
-          },
-          {
-            "path": "src/features/fishing/lib/physics.ts",
-            "reason": "替换直接张力映射，耦合竿线与鱼运动。"
-          },
-          {
-            "path": "src/features/fishing/model/session.ts",
-            "reason": "推进多事件过程及断线/上岸边界。"
-          },
-          {
-            "path": "src/features/fishing/ui/LakeScene.tsx",
-            "reason": "竿形和线态来源于真实动力学。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "保存装备与危险峰值。"
-          },
-          {
-            "path": "src/features/challenges/lib/progress.ts",
-            "reason": "装备挑战依真实过程。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "新装备/记录迁移，旧鱼获保留未知。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "装备刚度/泄力进入真实动力学，过程产生上岸/断线与峰值，捕获及挑战使用同一证据。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "鱼冲刺先弯竿和出线，软竿缓冲但回收较慢，硬竿回收快却有更高峰值；余线耗尽时由出线切为受力，松弛鱼线不能反过来推鱼，张力持续超限才断线。",
-            "reasoning": "绳约束只传拉力，余线触底切换约束，峰值/持续超限必须来自同一动力过程。",
-            "failureCase": "一步内绷紧后耗尽余线再超限，步末放松不代表中间未过峰。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/fishing/lib/physics.ts",
-            "quote": "const surge = (Math.sin(duration * 2.3) + 1) * 0.5 * fish.strength;",
-            "line": 10,
-            "meaning": "纯确定性对抗，冲刺是固定周期，不含弹性/个体反应。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "quote": "updated = landCatch(doc, next, Date.now());",
-            "line": 78,
-            "meaning": "集中命令入口负责捕获与状态转换，可直接复用生命周期提交。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。刚度跨尺度与单边约束要求选择积分/事件定位方式，步末检查可能漏掉先绷紧后超限；复用现有0.05秒显式近似不能保证事件顺序。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：竿型/泄力在实际对抗中可合法改变。；替换直接张力映射，耦合竿线与鱼运动。；推进多事件过程及断线/上岸边界。；竿形和线态来源于真实动力学。；保存装备与危险峰值。；装备挑战依真实过程。；新装备/记录迁移，旧鱼获保留未知。。可复用纯函数不强制改写，多文件本身不作为H3依据。按弹性、伸长、线杯余量求力并细分紧绷、出线停止、超载等事件，判定同时保留峰值。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "同鱼分别用软硬竿，比较弯曲、耗时、余线和记录峰值。",
-            "expected": "装备刚度/泄力进入真实动力学，过程产生上岸/断线与峰值，捕获及挑战使用同一证据。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "刚度跨度大、临界余线、一tick多个转换、低画面帧率与立即松手。；关键反例：硬竿、余线仅一点，冲刺在一个固定tick内使线绷紧并耗尽，接着松手。",
-            "expected": "保留合法事件顺序与真实峰值，重复同输入结论一致，松弛时无推力。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "feature-05",
       "difficulty": "困难",
       "goal": "多目标约束鱼篓与可解释保留方案",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题容量加锁可由简单枚举或贪心预览解决且目标不明；补入互相冲突的多目标、可行性保证和搜索结果证明状态。",
@@ -4904,137 +3226,31 @@
         "runs": []
       },
       "review": {
-        "id": "feature-05",
-        "goal": "多目标鱼篓组合",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "联合重量/体积/配额和锁定条件搜索可行子集，维护多目标不被支配组合与证明界，提交只接受当前条件。",
-        "remainingDecision": "完整枚举也需要定义目标支配与保守搜索边界；逐尾贪心、单标量评分无法覆盖稀有度/重量/丰富度相互冲突的所有可行取舍。",
-        "designDecisionAnalysis": "联合重量/体积/配额和锁定条件搜索可行子集，维护多目标不被支配组合与证明界，提交只接受当前条件。 完整枚举也需要定义目标支配与保守搜索边界；逐尾贪心、单标量评分无法覆盖稀有度/重量/丰富度相互冲突的所有可行取舍。",
-        "necessaryFiles": [
-          "src/features/collection/model/collection.ts",
-          "src/features/collection/lib/records.ts",
-          "src/features/collection/ui/CollectionPanel.tsx",
-          "src/features/challenges/model/challenges.ts",
-          "src/app/gameReducer.ts",
-          "src/app/storage.ts",
-          "src/features/collection/lib/retention.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "上岸事实与保留事务分开，替换触发放流而不重捕获。"
-          },
-          {
-            "path": "src/features/collection/lib/records.ts",
-            "reason": "重量/体积/鱼种目标和锁定组合核算。"
-          },
-          {
-            "path": "src/features/collection/ui/CollectionPanel.tsx",
-            "reason": "展示组合、界和一次性确认，允许锁定与偏好调整。"
-          },
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "reason": "捕获类与保留类按不同事实衡量。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "待决状态阻止新抛竿并处理版本化确认。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "未完成决定与旧无限鱼袋迁移。"
-          },
-          {
-            "path": "src/features/collection/lib/retention.ts",
-            "reason": "多目标可行组合搜索和证明界。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "捕鱼产生已捕获事实，鱼篓选择决定保留与放流，图鉴/捕获目标和保留目标必须分时结算。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "锁定鱼必须留下，有可行组合时不能因逐尾贪心装入而误报超容；容量和偏好可在搜索期间调整，旧建议不能提交给新条件。",
-            "reasoning": "容量和鱼种配额约束作用于组合，锁定集合优先；上岸事实和保留事务不同。",
-            "failureCase": "优先大鱼可能占满体积，放两尾小珍稀鱼可兼顾目标；不能只给贪心一种组合称最优。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          },
-          {
-            "path": "src/features/collection/lib/records.ts",
-            "quote": "best: Math.max(old?.best ?? 0, catchItem.weight),",
-            "line": 11,
-            "meaning": "图鉴仅计次数/最佳重量/首次时刻。"
-          },
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "quote": "measure: (d) => d.stats.catches,",
-            "line": 19,
-            "meaning": "挑战只按累计统计，不含窗口/过程证据/策略。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "quote": "updated = landCatch(doc, next, Date.now());",
-            "line": 78,
-            "meaning": "集中命令入口负责捕获与状态转换，可直接复用生命周期提交。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。完整枚举也需要定义目标支配与保守搜索边界；逐尾贪心、单标量评分无法覆盖稀有度/重量/丰富度相互冲突的所有可行取舍。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：上岸事实与保留事务分开，替换触发放流而不重捕获。；重量/体积/鱼种目标和锁定组合核算。；展示组合、界和一次性确认，允许锁定与偏好调整。；捕获类与保留类按不同事实衡量。；待决状态阻止新抛竿并处理版本化确认。；未完成决定与旧无限鱼袋迁移。；多目标可行组合搜索和证明界。。可复用纯函数不强制改写，多文件本身不作为H3依据。联合重量/体积/配额和锁定条件搜索可行子集，维护多目标不被支配组合与证明界，提交只接受当前条件。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "设置容量、锁定与三个目标，上岸比较建议并确认替换。",
-            "expected": "捕鱼产生已捕获事实，鱼篓选择决定保留与放流，图鉴/捕获目标和保留目标必须分时结算。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "锁定本身超容、同价值方案、等于容量、搜索中改条件及刷新确认。；关键反例：重量/体积约束下甲单鱼总重高，乙丙组合较轻却更珍稀且鱼种更多，锁定鱼另占一部分容量。",
-            "expected": "给出可行不同取舍并解释最优/未证边界；不把甲唯一化。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "feature-06",
       "difficulty": "困难",
       "goal": "可重划研究窗口且诚实降精度的观察手记",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "保留候选",
         "reason": "原题已包含任意新查询与有限原始记录的真实信息取舍，保留；特别扣除现有图鉴汇总，不能将新图表当难度。",
@@ -5190,134 +3406,31 @@
         "runs": []
       },
       "review": {
-        "id": "feature-06",
-        "goal": "可重分组观察研究",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "将原始暴露片段切分于用户研究窗口，对保留细节区间精算，对压缩区间给可支持的粗范围。",
-        "remainingDecision": "任意后设条件与有限存储信息不可兼得，需明确哪些相关性/顺序在压缩时保留及哪些查询不再可认证；一个全局累计摘要无法重建换饵顺序与任意窗口。",
-        "designDecisionAnalysis": "将原始暴露片段切分于用户研究窗口，对保留细节区间精算，对压缩区间给可支持的粗范围。 任意后设条件与有限存储信息不可兼得，需明确哪些相关性/顺序在压缩时保留及哪些查询不再可认证；一个全局累计摘要无法重建换饵顺序与任意窗口。",
-        "necessaryFiles": [
-          "src/features/collection/lib/records.ts",
-          "src/features/collection/ui/CollectionPanel.tsx",
-          "src/features/tackle/ui/BaitPanel.tsx",
-          "src/app/gameReducer.ts",
-          "src/app/storage.ts",
-          "src/features/collection/lib/research.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/collection/lib/records.ts",
-            "reason": "区分观察、删失样本与已有鱼获事实。"
-          },
-          {
-            "path": "src/features/collection/ui/CollectionPanel.tsx",
-            "reason": "研究窗口、保留精度与可信范围交互。"
-          },
-          {
-            "path": "src/features/tackle/ui/BaitPanel.tsx",
-            "reason": "推荐依当前研究而非仅物种偏好表。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "切饵/捕获顺序形成可靠观察边界。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "片段预算、压缩能力和旧图鉴迁移。"
-          },
-          {
-            "path": "src/features/collection/lib/research.ts",
-            "reason": "任意窗口/序列查询与统计误差。"
-          }
-        ],
-        "excludedFromMinimum": [
-          "fishing/model/session.ts"
-        ],
-        "moduleFlow": "捕鱼过程产生观察而非只捕获事实，图鉴研究过滤数据，装备推荐消费置信信息，不可偷读物种隐藏表。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "玩家可重新划任意起止时间、等待时长和连续换饵序列作为研究条件，同一等待跨研究窗口时按实际暴露分摊，等待不足或错过咬钩不能和完整观察等权。",
-            "reasoning": "样本应按实际暴露和删失情况处理；任意新窗口可能切开过去一次等待。",
-            "failureCase": "某次等待跨窗口一半，直接按一次完整失败/成功计入会改变推断。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/fishing/model/session.ts",
-            "quote": "return clock - s.biteAt > 4",
-            "line": 28,
-            "meaning": "纯阶段推进，四秒咬钩窗口，可复用而非新增难度。"
-          },
-          {
-            "path": "src/features/collection/lib/records.ts",
-            "quote": "best: Math.max(old?.best ?? 0, catchItem.weight),",
-            "line": 11,
-            "meaning": "图鉴仅计次数/最佳重量/首次时刻。"
-          },
-          {
-            "path": "src/features/tackle/lib/affinity.ts",
-            "quote": "(f.baits.includes(bait) ? 5 : 1) *",
-            "line": 9,
-            "meaning": "静态鱼种/饵料权重，不含历史环境效应。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。任意后设条件与有限存储信息不可兼得，需明确哪些相关性/顺序在压缩时保留及哪些查询不再可认证；一个全局累计摘要无法重建换饵顺序与任意窗口。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：区分观察、删失样本与已有鱼获事实。；研究窗口、保留精度与可信范围交互。；推荐依当前研究而非仅物种偏好表。；切饵/捕获顺序形成可靠观察边界。；片段预算、压缩能力和旧图鉴迁移。；任意窗口/序列查询与统计误差。。可复用纯函数不强制改写，多文件本身不作为H3依据。将原始暴露片段切分于用户研究窗口，对保留细节区间精算，对压缩区间给可支持的粗范围。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "完整记录后调整时间/等待/换饵条件，查看样本与推荐。",
-            "expected": "捕鱼过程产生观察而非只捕获事实，图鉴研究过滤数据，装备推荐消费置信信息，不可偷读物种隐藏表。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "跨窗口等待、删失、压缩后的新条件、旧鱼获仅迁移事实。；关键反例：把两次不同换饵序列压成同一小时统计，之后查询“先虫后玉米且等待跨整点”的窗口。",
-            "expected": "保留原序列则准确回答，否则明确缺失信息/范围；不能按完整数据给置信区间。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "feature-07",
       "difficulty": "困难",
       "goal": "有重叠窗口和证据分配的阶段契约",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题阶段FSM加日志可完成，H3不足；新增重叠匹配后缀、多阶段证据竞争及有限历史下仍可解释的活跃见证。",
@@ -5473,134 +3586,31 @@
         "runs": []
       },
       "review": {
-        "id": "feature-07",
-        "goal": "重叠窗口契约",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "用可重叠模式匹配维护部分见证，再对多个可领阶段做共享鱼证据的联合分配，压缩只丢弃已证无用事件。",
-        "remainingDecision": "一个事件兼作结束和开头、多个阶段竞争同一鱼，要求推导状态合并与证据分配的共同边界；计数或先到先得会漏掉完整组合。",
-        "designDecisionAnalysis": "用可重叠模式匹配维护部分见证，再对多个可领阶段做共享鱼证据的联合分配，压缩只丢弃已证无用事件。 一个事件兼作结束和开头、多个阶段竞争同一鱼，要求推导状态合并与证据分配的共同边界；计数或先到先得会漏掉完整组合。",
-        "necessaryFiles": [
-          "src/features/challenges/model/challenges.ts",
-          "src/features/challenges/lib/progress.ts",
-          "src/features/challenges/model/rewards.ts",
-          "src/features/collection/model/collection.ts",
-          "src/app/gameReducer.ts",
-          "src/app/storage.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "reason": "契约前置/互斥/窗口规则取代累计measure。"
-          },
-          {
-            "path": "src/features/challenges/lib/progress.ts",
-            "reason": "活跃匹配、见证与可同时提交组合求解。"
-          },
-          {
-            "path": "src/features/challenges/model/rewards.ts",
-            "reason": "奖励提交同时分配唯一证据并放弃互斥路线。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "放流事件保持身份，不能从当前背包反推历史。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "统一事件顺序和阶段提交。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "保存活跃候选/见证与可安全压缩的历史。"
-          }
-        ],
-        "excludedFromMinimum": [
-          "fishing/model/session.ts"
-        ],
-        "moduleFlow": "捕鱼动作和放流事件进入契约窗口，互斥路线决定奖励提交，保存恢复必须保留活跃证据而非现存袋中鱼。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "一个事件可能是旧窗口的收尾，也可能是新窗口的开头，匹配失败后不能直接丢掉仍可成为下一次开头的部分；同一尾鱼可供多个未提交方案预览，但正式结算只能归一个阶段。",
-            "reasoning": "预览可多重引用，但正式阶段归属只能一次，匹配窗口和证据分配共同决定可领奖组合。",
-            "failureCase": "鱼X既可完成阶段A又可完成阶段B，鱼Y只能完成A；先给A用X会让B无解。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/challenges/model/challenges.ts",
-            "quote": "measure: (d) => d.stats.catches,",
-            "line": 19,
-            "meaning": "挑战只按累计统计，不含窗口/过程证据/策略。"
-          },
-          {
-            "path": "src/features/challenges/model/rewards.ts",
-            "quote": "? { ...doc, claimed: [...doc.claimed, id] }",
-            "line": 5,
-            "meaning": "已有集中领取与防重，不应作为新增H3。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          },
-          {
-            "path": "src/features/fishing/model/session.ts",
-            "quote": "return clock - s.biteAt > 4",
-            "line": 28,
-            "meaning": "纯阶段推进，四秒咬钩窗口，可复用而非新增难度。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。一个事件兼作结束和开头、多个阶段竞争同一鱼，要求推导状态合并与证据分配的共同边界；计数或先到先得会漏掉完整组合。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：契约前置/互斥/窗口规则取代累计measure。；活跃匹配、见证与可同时提交组合求解。；奖励提交同时分配唯一证据并放弃互斥路线。；放流事件保持身份，不能从当前背包反推历史。；统一事件顺序和阶段提交。；保存活跃候选/见证与可安全压缩的历史。。可复用纯函数不强制改写，多文件本身不作为H3依据。用可重叠模式匹配维护部分见证，再对多个可领阶段做共享鱼证据的联合分配，压缩只丢弃已证无用事件。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "开始契约，完成有顺序和任选组的阶段，查看可同时领奖方案。",
-            "expected": "捕鱼动作和放流事件进入契约窗口，互斥路线决定奖励提交，保存恢复必须保留活跃证据而非现存袋中鱼。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "重叠前后缀、两阶段抢证据、互斥提交、压缩后刷新与断线重试。；关键反例：阶段A需要鲫或鲤，B必须鲫；窗口里先鲫X后鲤Y，同时X还是另一序列的新开头。",
-            "expected": "可将Y分A、X分B，并保留仍有效的匹配后缀；提交后相应证据仅归一次。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "feature-08",
       "difficulty": "困难",
       "goal": "有身份关联和依赖恢复的多手记合并",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题提冲突但未明确业务胜负规则；新增放流不可复活、旧身份疑似映射和奖励来源依赖，基线恢复保护已扣除。",
@@ -5674,12 +3684,6 @@
           "meaning": "当前单文档版本1存储，无多手记、来源合并或过程保存。"
         },
         {
-          "path": "src/app/useGame.ts",
-          "quote": "if (recovery.current) return;",
-          "line": 15,
-          "meaning": "父代理本轮已修复无法读取原存档被自动覆盖；恢复模式阻止保存，非候选题新增能力。"
-        },
-        {
           "path": "src/features/collection/model/collection.ts",
           "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
           "line": 8,
@@ -5750,131 +3754,31 @@
         "runs": []
       },
       "review": {
-        "id": "feature-08",
-        "goal": "分支手记合并",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "建立跨来源身份对应与因果依赖图，先产生可撤销的合并预览，再一次性提交经依赖检查的结果。",
-        "remainingDecision": "旧鱼缺身份时对应不是逐行去重，选择会改变放流与奖励依赖；部分损坏恢复与禁止复活/重复奖励共同要求决定依赖闭包和冲突保留范围。",
-        "designDecisionAnalysis": "建立跨来源身份对应与因果依赖图，先产生可撤销的合并预览，再一次性提交经依赖检查的结果。 旧鱼缺身份时对应不是逐行去重，选择会改变放流与奖励依赖；部分损坏恢复与禁止复活/重复奖励共同要求决定依赖闭包和冲突保留范围。",
-        "necessaryFiles": [
-          "src/app/storage.ts",
-          "src/shared/types.ts",
-          "src/features/collection/model/collection.ts",
-          "src/features/collection/lib/records.ts",
-          "src/features/challenges/model/rewards.ts",
-          "src/app/gameReducer.ts",
-          "src/features/collection/lib/importMerge.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/app/storage.ts",
-            "reason": "多文档/来源验证、迁移和提交失败保护，延续已修复的恢复模式。"
-          },
-          {
-            "path": "src/shared/types.ts",
-            "reason": "身份来源、删除历史与奖励证据必须进入跨模块数据契约。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "鱼获/放流按规范身份归并。"
-          },
-          {
-            "path": "src/features/collection/lib/records.ts",
-            "reason": "确认/撤销映射后重算事实统计，不能简单相加。"
-          },
-          {
-            "path": "src/features/challenges/model/rewards.ts",
-            "reason": "依据闭包与来源去重，拒绝孤立新奖励。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "活动手记切换、当前竿处理和预览版本确认。"
-          },
-          {
-            "path": "src/features/collection/lib/importMerge.ts",
-            "reason": "可撤销身份关系及兼容导入闭包。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "存档导入产生来源身份，鱼袋和图鉴按规范身份去重，奖励必须有可恢复捕获依据，装备在仅合并模式保持当前。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "旧文件可能没有稳定身份，相同鱼种、重量和时间只能列为疑似同鱼，由玩家确认对应；这份对应会连带改变捕获次数、放流记录与领奖依据，撤销一处对应后预览须重新解释受影响结果，不能逐行独立合并。",
-            "reasoning": "旧ID不足时不能自动认同源；用户确认映射改变捕获/删除/领奖的身份闭包。",
-            "failureCase": "两独立设备恰好钓同重量同时间鱼不能被自动合并；同鱼分支放流不能因另一分支仍在袋中复活。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/app/storage.ts",
-            "quote": "const key = \"stillwater-jdk024-v1\";",
-            "line": 4,
-            "meaning": "当前单文档版本1存储，无多手记、来源合并或过程保存。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "if (recovery.current) return;",
-            "line": 15,
-            "meaning": "父代理本轮已修复无法读取原存档被自动覆盖；恢复模式阻止保存，非候选题新增能力。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          },
-          {
-            "path": "src/features/challenges/model/rewards.ts",
-            "quote": "? { ...doc, claimed: [...doc.claimed, id] }",
-            "line": 5,
-            "meaning": "已有集中领取与防重，不应作为新增H3。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。旧鱼缺身份时对应不是逐行去重，选择会改变放流与奖励依赖；部分损坏恢复与禁止复活/重复奖励共同要求决定依赖闭包和冲突保留范围。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：多文档/来源验证、迁移和提交失败保护，延续已修复的恢复模式。；身份来源、删除历史与奖励证据必须进入跨模块数据契约。；鱼获/放流按规范身份归并。；确认/撤销映射后重算事实统计，不能简单相加。；依据闭包与来源去重，拒绝孤立新奖励。；活动手记切换、当前竿处理和预览版本确认。；可撤销身份关系及兼容导入闭包。。可复用纯函数不强制改写，多文件本身不作为H3依据。建立跨来源身份对应与因果依赖图，先产生可撤销的合并预览，再一次性提交经依赖检查的结果。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "导出分支、在另一手记预览疑似身份与兼容部分、确认导入。",
-            "expected": "存档导入产生来源身份，鱼袋和图鉴按规范身份去重，奖励必须有可恢复捕获依据，装备在仅合并模式保持当前。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "同值不同鱼、同鱼分支放流、撤销映射、缺失奖励依据、配额不足和预览变更。；关键反例：A文件鱼X已放流、B文件疑似X仍在袋中且参与奖励；确认X对应后再撤销，另有损坏捕获被排除。",
-            "expected": "确认时不复活、奖励仅保有依据部分；撤销后重算来源与统计，损坏依赖不生成新奖励。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "feature-09",
       "difficulty": "困难",
       "goal": "具有相关误差与可追溯校准的鱼体测量",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题测量精度与健康属于用户选项，不能独证H3；补入共同校准误差、独立视角信息和修订传播。",
@@ -6030,137 +3934,31 @@
         "runs": []
       },
       "review": {
-        "id": "feature-09",
-        "goal": "误差可追溯测量",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "从板刻度与鱼姿态估计几何长度，把共同校准误差与独立测量误差分开传递，纪录和认证引用可修订测量。",
-        "remainingDecision": "重复读同图不提供独立信息；姿态重建、校准协方差与离水时间成本决定有效信息边界，简单均值/隐藏真值会违反测量与健康契约。",
-        "designDecisionAnalysis": "从板刻度与鱼姿态估计几何长度，把共同校准误差与独立测量误差分开传递，纪录和认证引用可修订测量。 重复读同图不提供独立信息；姿态重建、校准协方差与离水时间成本决定有效信息边界，简单均值/隐藏真值会违反测量与健康契约。",
-        "necessaryFiles": [
-          "src/features/fishing/lib/encounter.ts",
-          "src/features/collection/ui/FishIllustration.tsx",
-          "src/features/collection/model/collection.ts",
-          "src/features/collection/lib/records.ts",
-          "src/features/challenges/lib/progress.ts",
-          "src/app/storage.ts",
-          "src/features/collection/lib/measurement.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "reason": "生成自洽鱼体个体而非只生成重量，隐藏真值不直接当读数。"
-          },
-          {
-            "path": "src/features/collection/ui/FishIllustration.tsx",
-            "reason": "姿态、体围与相机投影来自同个体。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "未确认测量、健康与确认记录生命周期。"
-          },
-          {
-            "path": "src/features/collection/lib/records.ts",
-            "reason": "相关误差区间比较和校准修订后的纪录。"
-          },
-          {
-            "path": "src/features/challenges/lib/progress.ts",
-            "reason": "认证与估测区分并接受修订失格说明。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "测量来源/校准版本和旧记录未知状态。"
-          },
-          {
-            "path": "src/features/collection/lib/measurement.ts",
-            "reason": "联合几何与相关误差推断。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "几何姿态决定画面，玩家测量产生带来源的不确定记录，图鉴比较与挑战认证消费误差关系，校准修订反向影响这些消费。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "摆正、换视角和重复测量都耗离水时间，影响健康与放流状态；同一张照片的多次读数共享校准误差，不能平均几次就让误差凭空消失，换角度获得的独立信息才可能缩小范围。",
-            "reasoning": "总误差包含共同和独立部分；重复同照片测量不能将共同偏差平均掉。",
-            "failureCase": "标尺比例误大10%，同照片点10次不能缩成0.1%误差而宣布新纪录。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "quote": "biteAt: delay(wait) + (1 - charge) * 0.8,",
-            "line": 28,
-            "meaning": "抛竿即按种子预选鱼种、重量与等候时刻，没有真实落点/空间资源。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          },
-          {
-            "path": "src/features/collection/lib/records.ts",
-            "quote": "best: Math.max(old?.best ?? 0, catchItem.weight),",
-            "line": 11,
-            "meaning": "图鉴仅计次数/最佳重量/首次时刻。"
-          },
-          {
-            "path": "src/features/fishing/lib/physics.ts",
-            "quote": "const surge = (Math.sin(duration * 2.3) + 1) * 0.5 * fish.strength;",
-            "line": 10,
-            "meaning": "纯确定性对抗，冲刺是固定周期，不含弹性/个体反应。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。重复读同图不提供独立信息；姿态重建、校准协方差与离水时间成本决定有效信息边界，简单均值/隐藏真值会违反测量与健康契约。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：生成自洽鱼体个体而非只生成重量，隐藏真值不直接当读数。；姿态、体围与相机投影来自同个体。；未确认测量、健康与确认记录生命周期。；相关误差区间比较和校准修订后的纪录。；认证与估测区分并接受修订失格说明。；测量来源/校准版本和旧记录未知状态。；联合几何与相关误差推断。。可复用纯函数不强制改写，多文件本身不作为H3依据。从板刻度与鱼姿态估计几何长度，把共同校准误差与独立测量误差分开传递，纪录和认证引用可修订测量。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "估测后摆正换角度认证，比较区间和健康代价并放流。",
-            "expected": "几何姿态决定画面，玩家测量产生带来源的不确定记录，图鉴比较与挑战认证消费误差关系，校准修订反向影响这些消费。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "共同校准偏差、重叠纪录区间、校准修订、旧鱼无长度和刷新离水计时。；关键反例：同照片比例偏10%，玩家反复标注10次；换一张校准正确的新角度后再确认。",
-            "expected": "重复旧图不能消除共同误差，新独立观测可收紧；校准修订更新受影响认证。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "feature-10",
       "difficulty": "困难",
       "goal": "有真实随机行为与公平比较的风险推演",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "保留候选",
         "reason": "原题具有潜在状态不可泄露、真实/预测随机隔离和不确定比较的实质推断，保留；固定种子本身不计H3。",
@@ -6316,137 +4114,31 @@
         "runs": []
       },
       "review": {
-        "id": "feature-10",
-        "goal": "观察约束风险推演",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "共享实际新增的动态鱼行为规则，在观察参数范围内使用独立模拟状态和公平的成对样本渐进比较配置。",
-        "remainingDecision": "需要决定未知个体状态的可用知识边界及抽样比较的误差表达，不能用隐藏真值缩窄范围或让不同方案样本量/随机序列造成确定收益假象。",
-        "designDecisionAnalysis": "共享实际新增的动态鱼行为规则，在观察参数范围内使用独立模拟状态和公平的成对样本渐进比较配置。 需要决定未知个体状态的可用知识边界及抽样比较的误差表达，不能用隐藏真值缩窄范围或让不同方案样本量/随机序列造成确定收益假象。",
-        "necessaryFiles": [
-          "src/features/fishing/lib/physics.ts",
-          "src/features/fishing/lib/encounter.ts",
-          "src/features/waters/lib/habitat.ts",
-          "src/features/tackle/ui/RigPanel.tsx",
-          "src/features/collection/lib/records.ts",
-          "src/app/gameReducer.ts",
-          "src/features/fishing/lib/forecast.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/fishing/lib/physics.ts",
-            "reason": "爆发/休息/惊扰真实进入动力学，替换固定sin冲刺。"
-          },
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "reason": "体况与拒饵及环境惊扰决定实际遭遇。"
-          },
-          {
-            "path": "src/features/waters/lib/habitat.ts",
-            "reason": "水域惊扰演化及公开观察边界。"
-          },
-          {
-            "path": "src/features/tackle/ui/RigPanel.tsx",
-            "reason": "方案比较与最终确认输入。"
-          },
-          {
-            "path": "src/features/collection/lib/records.ts",
-            "reason": "只从可观察记录形成参数范围。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "预测任务与真实随机/资源隔离，配置版本提交。"
-          },
-          {
-            "path": "src/features/fishing/lib/forecast.ts",
-            "reason": "公平渐进比较与不确定区间。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "实际捕鱼行为、装备、环境惊扰和已观测统计共同定义预测，预览只是隔离计算，提交配置才影响真实出竿。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "当前只列出鱼饵偏爱的鱼名，鱼的冲刺也是固定周期，想升级为有依据的出竿前风险推演：先让实际鱼的爆发、休息与拒饵随个体体况和逐渐累积的惊扰变化，惊扰由连续投饵与搏鱼影响，并随水域平静而恢复；推演只能根据已观察到的参数范围比较搭配，不能偷读本次潜在个体的隐藏状态。",
-            "reasoning": "预测只能使用公开观察参数分布，实际遭遇随机序列与状态不可被假设推演消费。",
-            "failureCase": "比较100次方案后实际下一鱼不应改变；预测也不能提前透露已抽但未观察的个体。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/fishing/lib/physics.ts",
-            "quote": "const surge = (Math.sin(duration * 2.3) + 1) * 0.5 * fish.strength;",
-            "line": 10,
-            "meaning": "纯确定性对抗，冲刺是固定周期，不含弹性/个体反应。"
-          },
-          {
-            "path": "src/features/fishing/lib/encounter.ts",
-            "quote": "biteAt: delay(wait) + (1 - charge) * 0.8,",
-            "line": 28,
-            "meaning": "抛竿即按种子预选鱼种、重量与等候时刻，没有真实落点/空间资源。"
-          },
-          {
-            "path": "src/shared/random.ts",
-            "quote": "const next = (Math.imul(seed, 1664525) + 1013904223) >>> 0;",
-            "line": 2,
-            "meaning": "纯种子随机可复用并隔离模拟，不把固定种子本身当H3。"
-          },
-          {
-            "path": "src/features/tackle/lib/affinity.ts",
-            "quote": "(f.baits.includes(bait) ? 5 : 1) *",
-            "line": 9,
-            "meaning": "静态鱼种/饵料权重，不含历史环境效应。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。需要决定未知个体状态的可用知识边界及抽样比较的误差表达，不能用隐藏真值缩窄范围或让不同方案样本量/随机序列造成确定收益假象。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：爆发/休息/惊扰真实进入动力学，替换固定sin冲刺。；体况与拒饵及环境惊扰决定实际遭遇。；水域惊扰演化及公开观察边界。；方案比较与最终确认输入。；只从可观察记录形成参数范围。；预测任务与真实随机/资源隔离，配置版本提交。；公平渐进比较与不确定区间。。可复用纯函数不强制改写，多文件本身不作为H3依据。共享实际新增的动态鱼行为规则，在观察参数范围内使用独立模拟状态和公平的成对样本渐进比较配置。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "观察实际行为后比较两套装备，继续采样并确认其中一套出竿。",
-            "expected": "实际捕鱼行为、装备、环境惊扰和已观测统计共同定义预测，预览只是隔离计算，提交配置才影响真实出竿。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "罕见冲刺/少样本、未观察参数、取消乱序、反复预览不动真实随机序列。；关键反例：方案甲初始样本偶遇弱鱼，乙偶遇强鱼，随后切装备保留两比较项。",
-            "expected": "显示差异的不确定范围，增加配对观察后才支持优劣；实际seed与惊扰未改。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "feature-11",
       "difficulty": "困难",
       "goal": "有写入频率限制与公平离线代价的续战",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题频繁/稀疏写入只是偏好，补入每秒至多一个完整现场及两现场间不可逆资源结果的恢复契约。",
@@ -6526,12 +4218,6 @@
           "meaning": "当前单文档版本1存储，无多手记、来源合并或过程保存。"
         },
         {
-          "path": "src/app/useGame.ts",
-          "quote": "if (recovery.current) return;",
-          "line": 15,
-          "meaning": "父代理本轮已修复无法读取原存档被自动覆盖；恢复模式阻止保存，非候选题新增能力。"
-        },
-        {
           "path": "src/features/collection/model/collection.ts",
           "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
           "line": 8,
@@ -6596,131 +4282,31 @@
         "runs": []
       },
       "review": {
-        "id": "feature-11",
-        "goal": "有代价中断续战",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "周期保存可重演现场、增量保存输入及不可逆资源事件，恢复时以同一提交位置重建对抗及账目。",
-        "remainingDecision": "必须推导快照与扣料/发鱼的因果提交边界，失败时不能回退资源却前进模拟；已有只保存doc的入口无法同时满足完整现场写频限制与立即关页的正确恢复。",
-        "designDecisionAnalysis": "周期保存可重演现场、增量保存输入及不可逆资源事件，恢复时以同一提交位置重建对抗及账目。 必须推导快照与扣料/发鱼的因果提交边界，失败时不能回退资源却前进模拟；已有只保存doc的入口无法同时满足完整现场写频限制与立即关页的正确恢复。",
-        "necessaryFiles": [
-          "src/app/useGame.ts",
-          "src/app/storage.ts",
-          "src/features/fishing/model/session.ts",
-          "src/features/tackle/model/loadout.ts",
-          "src/features/collection/model/collection.ts",
-          "src/features/challenges/lib/progress.ts",
-          "src/app/gameReducer.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/app/useGame.ts",
-            "reason": "现场限频、生命周期边界与恢复输入释放。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "现场与关键记录的恢复协议、错误返回和旧手记迁移。"
-          },
-          {
-            "path": "src/features/fishing/model/session.ts",
-            "reason": "离线超额时间对等待/咬钩/搏鱼的真实演化。"
-          },
-          {
-            "path": "src/features/tackle/model/loadout.ts",
-            "reason": "救援资源整体核验与一次性扣减。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "持久上岸身份和辅助证据防重发。"
-          },
-          {
-            "path": "src/features/challenges/lib/progress.ts",
-            "reason": "标准挑战排除辅助本竿。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "同竿离开额度、救援/上岸提交顺序。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "装备消耗、离线对抗变化、捕获入袋和挑战资格共同跨持久化边界，不能分别恢复。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "同一竿累计离开前六十秒暂停，超过部分鱼恢复体力、浸泡饵逐渐失效，反复短退不能刷新额度。",
-            "reasoning": "累计离开额度按同竿身份持久，不能按每次页面生命周期重算；救援资源与辅助资格属于同一次结果。",
-            "failureCase": "每次离开50秒反复返回，第二次已超累计60秒，不能继续全程免费。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "quote": "const key = \"stillwater-jdk024-v1\";",
-            "line": 4,
-            "meaning": "当前单文档版本1存储，无多手记、来源合并或过程保存。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "if (recovery.current) return;",
-            "line": 15,
-            "meaning": "父代理本轮已修复无法读取原存档被自动覆盖；恢复模式阻止保存，非候选题新增能力。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。必须推导快照与扣料/发鱼的因果提交边界，失败时不能回退资源却前进模拟；已有只保存doc的入口无法同时满足完整现场写频限制与立即关页的正确恢复。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：现场限频、生命周期边界与恢复输入释放。；现场与关键记录的恢复协议、错误返回和旧手记迁移。；离线超额时间对等待/咬钩/搏鱼的真实演化。；救援资源整体核验与一次性扣减。；持久上岸身份和辅助证据防重发。；标准挑战排除辅助本竿。；同竿离开额度、救援/上岸提交顺序。。可复用纯函数不强制改写，多文件本身不作为H3依据。周期保存可重演现场、增量保存输入及不可逆资源事件，恢复时以同一提交位置重建对抗及账目。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "离开超过额度，预览救援后确认，继续上岸并核对辅助挑战。",
-            "expected": "装备消耗、离线对抗变化、捕获入袋和挑战资格共同跨持久化边界，不能分别恢复。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "反复短退、救援确认关页、同秒上岸/检查点、写失败和无最后松手。；关键反例：检查点t0后确认救援扣料并上岸，t1尚未保存即关页；再打开且上岸写入曾失败。",
-            "expected": "只在已提交边界恢复，资源和鱼获不复制，界面明确最后可靠状态，输入释放。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     },
     {
       "id": "feature-12",
       "difficulty": "困难",
       "goal": "有动作时限和单次输入差错保护的单键方案生成",
-      "candidateStatus": "p5_pass_pending_p6",
+      "candidateStatus": "pending_independent_review",
       "originalFinding": {
         "verdict": "需调整",
         "reason": "原题输入FSM与失焦清理可解；第二版前缀表+最长延迟与4秒比较仍可解，H3不足。第三版实质加入用户运动能力、固定映射、有限动作数、单次漏点/多点保护和响应预算的方案生成。",
@@ -6876,130 +4462,24 @@
         "runs": []
       },
       "review": {
-        "id": "feature-12",
-        "goal": "带单次误触保护的手势生成",
-        "H1": true,
-        "H2": true,
-        "H3": true,
-        "difficultyGates": {
-          "H1": true,
-          "H2": true,
-          "H3": true
-        },
-        "actualDifficulty": "困难",
-        "verdict": "pass",
-        "p5Verdict": "pass",
-        "featureKinds": [
-          "多模块整合",
-          "关键设计取舍",
-          "复杂技术关注点"
-        ],
-        "simpleSolutionSuffices": false,
-        "simplestApproach": "最长前缀、阶段动作表和响应校验能解决旧版；不能保证一次漏点或多点后的差错输入不会成为另一个不可逆动作。",
-        "remainingDecision": "需对带时长的差错邻域做联合可区分性判断，在固定映射和按压次数内生成可行方案；正常须识别，错误可拒绝但不可误提交，分隔等待与窗口延长有上限。",
-        "designDecisionAnalysis": "最长前缀、阶段动作表和响应校验能解决旧版；不能保证一次漏点或多点后的差错输入不会成为另一个不可逆动作。 需对带时长的差错邻域做联合可区分性判断，在固定映射和按压次数内生成可行方案；正常须识别，错误可拒绝但不可误提交，分隔等待与窗口延长有上限。",
-        "necessaryFiles": [
-          "src/features/fishing/ui/FishingPanel.tsx",
-          "src/features/fishing/model/session.ts",
-          "src/features/collection/model/collection.ts",
-          "src/features/challenges/lib/progress.ts",
-          "src/app/gameReducer.ts",
-          "src/app/storage.ts",
-          "src/features/fishing/lib/gesturePlan.ts"
-        ],
-        "necessaryFileReasons": [
-          {
-            "path": "src/features/fishing/ui/FishingPanel.tsx",
-            "reason": "现有直接指针/键盘动作进入统一手势与扫描语义，去除重复提交。"
-          },
-          {
-            "path": "src/features/fishing/model/session.ts",
-            "reason": "实际辅助窗口必须进入阶段计时而非仅UI等待。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "reason": "捕获保存辅助规则来源。"
-          },
-          {
-            "path": "src/features/challenges/lib/progress.ts",
-            "reason": "兼容目标按实际辅助规则计算。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "reason": "输入所有者、未决手势与不可逆提交/阶段边界。"
-          },
-          {
-            "path": "src/app/storage.ts",
-            "reason": "配置和规则版本持久化。"
-          },
-          {
-            "path": "src/features/fishing/lib/gesturePlan.ts",
-            "reason": "有时序能力与单错混淆约束的方案可行性生成及识别。"
-          }
-        ],
-        "excludedFromMinimum": [],
-        "moduleFlow": "方案生成根据用户能力与真实捕鱼窗口；运行识别/扫描落实扣饵放流等奖励动作，捕获与挑战记录实际延长规则和方案。",
-        "hardConstraintEvidence": [
-          {
-            "quote": "手势中偶发一次漏点或多点时，可提示重试，但不能误认成另一个会扣饵、放流或领奖的动作；无错误的手势必须可靠识别，不能把全部输入都拒绝来防误触。",
-            "reasoning": "正常手势必须完备识别；允许一次输入差错时可拒绝重试但不可落入另一个不可逆动作，不能以全拒绝实现安全。",
-            "failureCase": "手势A短短、B短，A漏一点变B而导致放流；仅做前缀最长匹配无法识别该误认。"
-          }
-        ],
-        "sourceEvidenceChecked": [
-          {
-            "path": "src/features/fishing/ui/FishingPanel.tsx",
-            "quote": "onLostPointerCapture={() => send({ type: \"reel\", held: false })}",
-            "line": 94,
-            "meaning": "已有指针捕获与键盘/失焦释放，不包含手势生成和错误保护。"
-          },
-          {
-            "path": "src/features/fishing/model/session.ts",
-            "quote": "return clock - s.biteAt > 4",
-            "line": 28,
-            "meaning": "纯阶段推进，四秒咬钩窗口，可复用而非新增难度。"
-          },
-          {
-            "path": "src/app/gameReducer.ts",
-            "quote": "updated = landCatch(doc, next, Date.now());",
-            "line": 78,
-            "meaning": "集中命令入口负责捕获与状态转换，可直接复用生命周期提交。"
-          },
-          {
-            "path": "src/features/collection/model/collection.ts",
-            "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
-            "line": 8,
-            "meaning": "上岸即进袋并计图鉴，仅袋内ID防重，无持久来源/提交账本。"
-          },
-          {
-            "path": "src/app/useGame.ts",
-            "quote": "send({ type: \"tick\", dt: 0.05 });",
-            "line": 26,
-            "meaning": "已有固定0.05秒推进、后台停止、失焦松手；纯过程可离线按相同步骤运行。"
-          }
-        ],
-        "categoryVerdict": "pass",
-        "independenceVerdict": "pass",
-        "categoryAnalysis": "完整源码核对类别成立；从同一基线独立实施，不假设别题已提供新求解、空间或记录系统。",
-        "reason": "最终题面与冻结源码支持H1/H2/H3同时成立。需对带时长的差错邻域做联合可区分性判断，在固定映射和按压次数内生成可行方案；正常须识别，错误可拒绝但不可误提交，分隔等待与窗口延长有上限。",
-        "shortcutAnalysis": "已尝试集中命令入口、新界面及单一助手的少文件方案；仍须由不同业务职责生产和消费新语义：现有直接指针/键盘动作进入统一手势与扫描语义，去除重复提交。；实际辅助窗口必须进入阶段计时而非仅UI等待。；捕获保存辅助规则来源。；兼容目标按实际辅助规则计算。；输入所有者、未决手势与不可逆提交/阶段边界。；配置和规则版本持久化。；有时序能力与单错混淆约束的方案可行性生成及识别。。可复用纯函数不强制改写，多文件本身不作为H3依据。最长前缀、阶段动作表和响应校验能解决旧版；不能保证一次漏点或多点后的差错输入不会成为另一个不可逆动作。",
-        "acceptanceReviewed": [
-          {
-            "kind": "normal",
-            "steps": "输入运动能力和熟悉手势，生成方案后无鼠标完成垂钓、放流、领奖。",
-            "expected": "方案生成根据用户能力与真实捕鱼窗口；运行识别/扫描落实扣饵放流等奖励动作，捕获与挑战记录实际延长规则和方案。；用户界面、实际过程与保存后的结果对应同一事实。"
-          },
-          {
-            "kind": "boundary",
-            "steps": "一次漏点/多点、锁定映射造成无解、时长范围边沿、静默耗尽窗口、辅助延长上限与失焦。；关键反例：用户最多按两次，短长按时间范围有重叠边沿，锁定“短短”为放流；候选“短”为确认，一次漏点后会混淆，静默等待又受反应上限限制。",
-            "expected": "拒绝这组冲突映射并找到约束内其他安全方案（若有），否则指出固定映射/长度/时限冲突；正常输入必识别且差错不误放流。"
-          }
-        ],
-        "p6Verdict": "pending",
-        "p6Analysis": "只有必要工作和高效实现路径预审。estimate=null、runs=[]；没有实际调用ID、返回和排除项，不能确认50次有效调用，不以本次审题/产品冒烟代替解题轨迹。",
         "author": "/root/audit024",
-        "reviewer": "/root/independent024",
-        "independent": true
+        "reviewer": null,
+        "independent": false,
+        "verdict": "pending",
+        "difficultyGates": {
+          "H1": null,
+          "H2": null,
+          "H3": null
+        },
+        "actualDifficulty": null,
+        "featureKinds": [],
+        "necessaryFiles": [],
+        "simpleSolutionSuffices": null,
+        "designDecisionAnalysis": "待未参与出题者先提出最简单完整方案再复核。",
+        "shortcutAnalysis": "待独立反证一至四文件方案及五文件以上常规模型。",
+        "p6Verdict": "pending",
+        "p6Analysis": "没有完整解题轨迹，不能确认有效调用达标。",
+        "reason": "作者参与修订，不代填独立通过。"
       }
     }
   ]

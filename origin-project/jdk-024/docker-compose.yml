@@ -1,5 +1,0 @@
-services:
-  stillwater:
-    build: .
-    ports:
-      - "18224:80"

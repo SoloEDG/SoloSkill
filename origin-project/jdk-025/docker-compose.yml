@@ -1,5 +1,0 @@
-services:
-  ruinfield:
-    build: .
-    ports:
-      - "18225:80"

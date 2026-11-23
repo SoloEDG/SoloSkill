@@ -3572,12 +3572,6 @@
         "meaning": "当前单文档版本1存储，无多手记、来源合并或过程保存。"
       },
       {
-        "path": "src/app/useGame.ts",
-        "quote": "if (recovery.current) return;",
-        "line": 15,
-        "meaning": "父代理本轮已修复无法读取原存档被自动覆盖；恢复模式阻止保存，非候选题新增能力。"
-      },
-      {
         "path": "src/features/collection/model/collection.ts",
         "quote": "if (!s.fish || doc.bag.some((c) => c.id === s.id)) return doc;",
         "line": 8,
@@ -4110,12 +4104,6 @@
         "quote": "const key = \"stillwater-jdk024-v1\";",
         "line": 4,
         "meaning": "当前单文档版本1存储，无多手记、来源合并或过程保存。"
-      },
-      {
-        "path": "src/app/useGame.ts",
-        "quote": "if (recovery.current) return;",
-        "line": 15,
-        "meaning": "父代理本轮已修复无法读取原存档被自动覆盖；恢复模式阻止保存，非候选题新增能力。"
       },
       {
         "path": "src/features/collection/model/collection.ts",
