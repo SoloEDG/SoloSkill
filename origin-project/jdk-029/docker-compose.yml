@@ -1,0 +1,5 @@
+services:
+  night-session:
+    build: .
+    ports:
+      - "127.0.0.1:${NIGHT_SESSION_PORT:-8029}:80"
