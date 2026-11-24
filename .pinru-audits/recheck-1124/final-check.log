@@ -1,0 +1,9 @@
+历史题库 432 8044f58e70570423cfdd25de74d23f6af261f7c2b5966f2a249d10812ffffe3f
+jdk-030 24 题；格式、文字近似、题面和源码引用、快照一致 {
+  projectSha256: '7af5cb6612ec088916709daa2c2d0cf2f175ef8120bf61daaae2960d65ce6a6d',
+  promptSha256: '5bb957956c6d5dc89dd30e26fedd9cda6dfec7acec1db3352468897bb0baaa33'
+}
+jdk-031 4 题；格式、文字近似、题面和源码引用、快照一致 {
+  projectSha256: '62e19f9adb2129ae2c15a19f2d6ad12bbe6f99108ea49d0b5e5a605984b15a60',
+  promptSha256: '0b1f7547e70a59e25828f7aacb5d1f3e068246e87ceb35434b9f676b021e2c83'
+}

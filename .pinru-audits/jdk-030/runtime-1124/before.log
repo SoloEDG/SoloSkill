@@ -1,0 +1,14 @@
+title panel count: 0 runtime errors: [
+  "TypeError: Cannot read properties of null (reading 'bestSteps')\n" +
+    '    at http://127.0.0.1:19130/assets/index-Cu755J7h.js:1:78617\n' +
+    '    at Array.map (<anonymous>)\n' +
+    '    at il.fn (http://127.0.0.1:19130/assets/index-Cu755J7h.js:1:78548)\n' +
+    '    at yr (http://127.0.0.1:19130/assets/index-Cu755J7h.js:1:8272)\n' +
+    '    at get value (http://127.0.0.1:19130/assets/index-Cu755J7h.js:1:19427)\n' +
+    '    at G (http://127.0.0.1:19130/assets/index-Cu755J7h.js:1:18848)\n' +
+    '    at Proxy.<anonymous> (http://127.0.0.1:19130/assets/index-Cu755J7h.js:1:82415)\n' +
+    '    at Nn (http://127.0.0.1:19130/assets/index-Cu755J7h.js:1:36912)\n' +
+    '    at hr.v [as fn] (http://127.0.0.1:19130/assets/index-Cu755J7h.js:1:47167)\n' +
+    '    at hr.run (http://127.0.0.1:19130/assets/index-Cu755J7h.js:1:6862)',
+  'Failed to load resource: the server responded with a status of 404 (Not Found)'
+]

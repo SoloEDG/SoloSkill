@@ -1,0 +1,770 @@
+{
+  "schemaVersion": 2,
+  "projectSha256": "62e19f9adb2129ae2c15a19f2d6ad12bbe6f99108ea49d0b5e5a605984b15a60",
+  "promptSha256": "0b1f7547e70a59e25828f7aacb5d1f3e068246e87ceb35434b9f676b021e2c83",
+  "quantityNote": "用户本次明确要求 2 条 0-1、2 条 Feature、不要 Bug 修复。技能默认的 10+10+2 与 check-prompts / check-delivery 的 22 条计数不覆盖本次数量。记录按 4 条填写，不补题，也不把脚本失败写成通过。",
+  "checks": {
+    "typecheck": {
+      "status": "passed",
+      "action": "npm run typecheck",
+      "log": "runtime-1124/typecheck.log"
+    },
+    "build": {
+      "status": "passed",
+      "action": "npm run build",
+      "log": "runtime-1124/build.log"
+    },
+    "structure": {
+      "status": "passed",
+      "action": "node check-cohesion.mjs jdk-031",
+      "log": "runtime-1124/structure.log"
+    },
+    "dockerConfig": {
+      "status": "passed",
+      "action": "docker compose config",
+      "log": "runtime-1124/docker-config.log"
+    },
+    "dockerBuild": {
+      "status": "passed",
+      "action": "docker compose build",
+      "log": "runtime-1124/docker-build.log"
+    },
+    "dockerSmoke": {
+      "status": "passed",
+      "action": "启动本轮镜像并请求首页和深链接；同目录 container.log 与 start.log 记录实际容器和端口。",
+      "log": "runtime-1124/static.log"
+    },
+    "browserSmoke": {
+      "status": "passed",
+      "action": "浏览器操作地点按钮、走时、检索和清单回读；同目录 desktop.png 和 mobile.png 为本次截图。",
+      "log": "runtime-1124/browser.log"
+    }
+  },
+  "projectReview": {
+    "domain": "游戏图形与多媒体",
+    "pureFrontend": "浏览器内用地点和模拟时刻计算地平坐标，清单与视线都从这份文档派生。持久化只有 localStorage 键 jdk031-dome-session，没有业务后端。",
+    "cohesion": "五个功能目录各自有 model、lib、ui，跨目录只经过公开 index。shell 的 useDome 串联地点、时钟、星图、检索和清单。地平换算在 sky，可见性文案在 plan，检索不复制换算。",
+    "capacityLog": "capacity.md",
+    "responsibilities": {
+      "site": "观测位置：城市、纬度、经度和时区。",
+      "clock": "模拟时刻：民用时间、播放、倍率和步进。播放不追墙上的时钟。",
+      "sky": "圆穹：把赤道坐标投成高度方位并画出来，拖动、缩放和定位视线。",
+      "catalog": "天体检索：恒星、日月和行星的名称与赤道位置。",
+      "plan": "观测清单：多份计划、可见与升降，以及整份本地保存。"
+    },
+    "interactions": [
+      {
+        "from": "clock",
+        "to": "plan",
+        "steps": "启动或调整走时，看现有清单高度读数",
+        "expected": "改变观测时刻后，清单位置读数随之更新",
+        "observed": "走时改变清单读数。",
+        "log": "runtime-1124/browser.log"
+      },
+      {
+        "from": "catalog",
+        "to": "sky",
+        "steps": "在名称结果中选择并定位天体",
+        "expected": "星图选择和读数随定位变化",
+        "observed": "检索定位改变星图读数。",
+        "log": "runtime-1124/browser.log"
+      },
+      {
+        "from": "site",
+        "to": "plan",
+        "steps": "三亚按钮按空格后加入星体并刷新",
+        "expected": "保留观测地点和计划，按按钮空格不误播放",
+        "observed": "三亚纬度 18.2528，按钮仍显示播放，加入后刷新仍保留地点、计划。",
+        "log": "runtime-1124/browser.log"
+      }
+    ]
+  },
+  "review": {
+    "author": "author031",
+    "reviewer": "bank",
+    "independent": true,
+    "verdict": "pending",
+    "p5Verdict": "pass",
+    "p6Verdict": "pending",
+    "log": "independent-1124.md"
+  },
+  "tasks": [
+    {
+      "id": "gen-01",
+      "difficulty": "困难",
+      "goal": "由无标注的镜像底片辨认星区和可安全归入计划的恒星",
+      "categoryEvidence": "0-1。查遍 src，星表可按身份取得赤道坐标，点选只在已投影天体旁找最近点；无底片、镜像相机模型、对应关系搜索或证据留存。",
+      "noveltyEvidence": {
+        "archiveLine": 796,
+        "archiveDifference": "旧题先给锚点对齐两幅作品；本题没有对应关系，输出所有最多内点的离散身份及每类姿态见证。",
+        "batchDifference": "gen-02 同样用恒星，但输入点没有星名，结果是身份而非星等变化。"
+      },
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "把候选叠在底片上，在现有星图查看对应方向，检索中逐颗锁定或排除身份后重判",
+          "reason": "单一求解器即使能算出离散解，也收不到底片像素与容差编辑、无法使检索承担逐星约束、无法呈现与当前圆穹对应关系、无法用计划保存原片。把这些操作挤进旁置页面不改变现有星图和检索；直接读取它们的私有 DOM 则不符合模块职责。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "同样好的翻面和点名方案每种给一个能落在各圈里的实际取景，距圈边不足百分之一像素的配对标为边界待定，不拿它确认唯一身份",
+          "reason": "在候选姿态生成中必须保留允许误差造成的相关旋转自由度，并能在两种手性上证明不存在更优匹配；离散配对相同的连续姿态只需一个见证。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "找出能同时解释最多亮点的配对，一颗星不能认领两个点",
+          "reason": "视场已知只消除了尺度未知；每个圈约束同一台相机姿态，且星的占用是互斥的，必须区分姿态连续自由度与有限个身份解。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "找出能同时解释最多亮点的配对，一颗星不能认领两个点",
+          "reasoning": "视场已知只消除了尺度未知；每个圈约束同一台相机姿态，且星的占用是互斥的，必须区分姿态连续自由度与有限个身份解。",
+          "failureCase": "仅按最小平方残差保存第一认法，或合并两个姿态下各自成立的配对，得到没有真实相机能拍出的认星表。"
+        },
+        {
+          "quote": "同样好的翻面和点名方案每种给一个能落在各圈里的实际取景，距圈边不足百分之一像素的配对标为边界待定，不拿它确认唯一身份",
+          "reasoning": "在候选姿态生成中必须保留允许误差造成的相关旋转自由度，并能在两种手性上证明不存在更优匹配；离散配对相同的连续姿态只需一个见证。",
+          "failureCase": "把一张由目录合成的底片镜像，含两条划痕；在两个相似三角星群边缘放一颗误差圈跨候选位置的亮点，改变圈径并锁定星名。"
+        }
+      ],
+      "designDecision": {
+        "tension": "视场已知只消除了尺度未知；每个圈约束同一台相机姿态，且星的占用是互斥的，必须区分姿态连续自由度与有限个身份解。",
+        "baselineReuse": "可用 listBodies 与 equatorial 枚举目录、用 dome 的地点和时刻显示天区；projectAltAz 只投圆穹，不能反投针孔相片。",
+        "simplestApproach": "枚举双/三星锚点、拟合一幅姿态，用二分匹配保留最多内点，再以最佳误差打破平局。匹配对给定姿态是正确的，但只在测点圆心拟合的有限姿态上做匹配，不能排除余下姿态内有更多可行配对。 距圈边 0.01 像素以下只允许标待定，若无法用边界证据排除竞争配对，不确认唯一。",
+        "remainingDecision": "在候选姿态生成中必须保留允许误差造成的相关旋转自由度，并能在两种手性上证明不存在更优匹配；离散配对相同的连续姿态只需一个见证。",
+        "options": [
+          {
+            "approach": "先筛星间角距，再逐级验证可行的点名配对和姿态域",
+            "validWhen": "星表稀疏，锁定点含有效角距",
+            "cost": "成对距离各自合法仍可能不能共享一次旋转；剪枝不能只取局部最邻近"
+          },
+          {
+            "approach": "在正反两种相机姿态空间做有界搜索，以单射匹配上界剪枝并保存见证",
+            "validWhen": "容差非零、允许近似对称或划痕",
+            "cost": "必须保留边界落圈和并列的身份；精细姿态搜索成本更高"
+          }
+        ],
+        "choice": "先筛星间角距，再逐级验证可行的点名配对和姿态域，在其适用条件成立时执行；另一方案如能给出同样的正确性见证也可用。",
+        "correctnessImpact": "每个可同时落圈的最优身份配置出现一次；锁定后保留的解均满足锁定；不共同确定的身份不能写入清单。",
+        "counterexample": {
+          "steps": "把一张由目录合成的底片镜像，含两条划痕；在两个相似三角星群边缘放一颗误差圈跨候选位置的亮点，改变圈径并锁定星名。",
+          "expected": "每个可同时落圈的最优身份配置出现一次；锁定后保留的解均满足锁定；不共同确定的身份不能写入清单。",
+          "wrongResult": "仅按最小平方残差保存第一认法，或合并两个姿态下各自成立的配对，得到没有真实相机能拍出的认星表。",
+          "constraintQuote": "同样好的翻面和点名方案每种给一个能落在各圈里的实际取景，距圈边不足百分之一像素的配对标为边界待定，不拿它确认唯一身份",
+          "whyRoutineFixFails": "枚举双/三星锚点、拟合一幅姿态，用二分匹配保留最多内点，再以最佳误差打破平局。匹配对给定姿态是正确的，但只在测点圆心拟合的有限姿态上做匹配，不能排除余下姿态内有更多可行配对。 距圈边 0.01 像素以下只允许标待定，若无法用边界证据排除竞争配对，不确认唯一。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/sky/lib/hit.ts",
+          "quote": "return best?.id ?? null;"
+        },
+        {
+          "path": "src/features/sky/lib/project.ts",
+          "quote": "const radius = (theta / limit) * radiusPx;"
+        },
+        {
+          "path": "src/features/catalog/ui/SearchPanel.vue",
+          "quote": "pick: [id: string];"
+        },
+        {
+          "path": "src/features/plan/lib/storage.ts",
+          "quote": "plans: dome.plans,"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/sky/lib/plateMatch.ts",
+          "action": "add",
+          "reason": "目录盲辨的共享姿态可行性、配对上界和并列解推导。"
+        },
+        {
+          "path": "src/features/sky/ui/PlateInput.vue",
+          "action": "add",
+          "reason": "底片实像、圈半径与候选叠印交互。"
+        },
+        {
+          "path": "src/features/catalog/ui/SearchPanel.vue",
+          "action": "modify",
+          "reason": "在原检索行锁定或排除某一测点身份。"
+        },
+        {
+          "path": "src/features/sky/ui/DomeView.vue",
+          "action": "modify",
+          "reason": "在真实天球视图对准候选场向，与底片坐标系区分。"
+        },
+        {
+          "path": "src/features/plan/lib/storage.ts",
+          "action": "modify",
+          "reason": "现有名单序列化会剥掉原片测点；关联计划与原测量并可恢复。"
+        },
+        {
+          "path": "src/app/useDome.ts",
+          "action": "modify",
+          "reason": "解集变更后同步星图、检索约束与只纳入一致身份的计划。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "盲板匹配、两种镜像、主点/视场、误差与划痕、离散全解和见证、输入及归档；需在合成已知视野和近对称反例上双向核验。",
+        "efficientPathAnalysis": "可以批量读模块、合并开发和运行检查；实测取决于是否复用现成求解器及数据/浏览器验证路径，无法从功能点或文件数下界推得调用数。",
+        "estimate": null,
+        "runs": []
+      },
+      "minimality": "单一求解器即使能算出离散解，也收不到底片像素与容差编辑、无法使检索承担逐星约束、无法呈现与当前圆穹对应关系、无法用计划保存原片。把这些操作挤进旁置页面不改变现有星图和检索；直接读取它们的私有 DOM 则不符合模块职责。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "从内置星表一块已知星区生成无镜像底片，锁定一个正确名称后保存和重开，名实一致且可由原片复核。",
+          "expected": "见证与选定的输入、星体、时间及计划相符，正常交互保留。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "把一张由目录合成的底片镜像，含两条划痕；在两个相似三角星群边缘放一颗误差圈跨候选位置的亮点，改变圈径并锁定星名。",
+          "expected": "每个可同时落圈的最优身份配置出现一次；锁定后保留的解均满足锁定；不共同确定的身份不能写入清单。"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚无本快照独立完整解题轨迹。",
+        "simpleSolutionSuffices": false,
+        "verdict": "pending",
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "necessaryFiles": [
+          "src/features/sky/lib/plateMatch.ts",
+          "src/features/sky/ui/PlateInput.vue",
+          "src/features/catalog/ui/SearchPanel.vue",
+          "src/features/sky/ui/DomeView.vue",
+          "src/features/plan/lib/storage.ts"
+        ],
+        "reason": "独立复核 P5 通过；P6 尚无实跑，总结论待验收。",
+        "designDecisionAnalysis": "直接让用户给锚点或用前三点求一个姿态均不完整。题面“每种给一个能落在各圈里的实际取景”要求同一个姿态支持全部配对，不能用不同姿态下各自最近的星拼凑。数个对称星群的最大一致集、镜像手性、一对一身份约束与百分之一像素的待定带决定可确认的交集。可先枚举星点对应再验姿态，也可先限定姿态域再验证所有并列最优，必须控制裁剪假阴性并保存实际见证；仅排除两个错姿态不够。",
+        "shortcutAnalysis": "盲匹配及姿态可行性、底片像素采点与叠加、现有检索身份限制、清单成员提交/底片恢复、星图视向与选中候选协调。已有 `sky.frame` 只接收天体 id，`SearchPanel` 只提供查询/选中；复用静态 `stars.ts` 不计改动。一个新面板不能同时提供既有检索的锁定行为和计划级恢复。",
+        "p5Verdict": "pass",
+        "fiveFileVerdict": "pass",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "gen-02",
+      "difficulty": "困难",
+      "goal": "从跨夜不完备差分测光记录确定目标星真实星等差的可行范围",
+      "categoryEvidence": "0-1。目录提供单个内置星等；星图点选和清单添加仅记天体 id。src 无逐曝光测量、共同偏移、不稳定比较星或差分测光求解。",
+      "noveltyEvidence": {
+        "archiveLine": 2488,
+        "archiveDifference": "旧题对比歌声在对齐假设下的评分；本题恢复跨帧零点和不稳比较星，输出可证的星等差区间及端点见证。",
+        "batchDifference": "gen-01 寻找相机姿态和星名；这里星名已知、比较的是仪器星等。"
+      },
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "点任一有限端点，检索能按该解释筛出用过的比较星，圆穹在原时刻逐星标本帧的偏移后星等和饱和箭头",
+          "reason": "已有 sky 选择、clock 时刻、plan 只存 ID 的行和恢复器各自是不同的用户入口。仅在储存或一张表内写线性规划，无法从图建立、逐帧操作、回到端点证据时刻并从计划恢复；只改渲染又没有跨帧约束和测量归档。 单独存档的旁置表可绕过原恢复器，但不能同时实现星图端点读数、原检索证人过滤、现有计划中的多次测量、见证回放与联合求解。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "请给出目标两次真实星等差的全部可行区间，断开的范围别填平，无界和数据矛盾要分得开",
+          "reason": "判定每个整簿共用坏星假设下的可行测量网络、消除统一零点的任意性，并分别投影后再求并集；需要同时恢复可行端点证据、辨别无界与矛盾。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "稳定比较星跨帧保持同一真实星等，饱和时也受此约束，仪器星等只知不大于饱和值",
+          "reason": "每帧共同偏移在全帧共享，比较星是否变光在整簿共享；目标两夜星等差不受整体加常数的规范改变。单侧饱和界不能当定值。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "稳定比较星跨帧保持同一真实星等，饱和时也受此约束，仪器星等只知不大于饱和值",
+          "reasoning": "每帧共同偏移在全帧共享，比较星是否变光在整簿共享；目标两夜星等差不受整体加常数的规范改变。单侧饱和界不能当定值。",
+          "failureCase": "返回 [-1,+1] 或逐夜剔除不同比较星，错误宣称零变化也可能。"
+        },
+        {
+          "quote": "请给出目标两次真实星等差的全部可行区间，断开的范围别填平，无界和数据矛盾要分得开",
+          "reasoning": "判定每个整簿共用坏星假设下的可行测量网络、消除统一零点的任意性，并分别投影后再求并集；需要同时恢复可行端点证据、辨别无界与矛盾。",
+          "failureCase": "两帧目标读数 10、11；比较甲读 10、10，乙读 12、14，误差均零，至多一颗比较星变光。"
+        }
+      ],
+      "designDecision": {
+        "tension": "每帧共同偏移在全帧共享，比较星是否变光在整簿共享；目标两夜星等差不受整体加常数的规范改变。单侧饱和界不能当定值。",
+        "baselineReuse": "可复用目录 id、观测时间和星图点选；星表的固定亮度仅用于画大小，并不是比较星已知真实星等。",
+        "simplestApproach": "逐帧分别拟合平均零点再扣除；或对每一对相邻帧先算不记身份的偏移区间，再沿跨夜路径相加。即使单帧界限正确，两步可能分别排除不同的比较星，拼出完全未被任何全簿解释支持的结果。",
+        "remainingDecision": "判定每个整簿共用坏星假设下的可行测量网络、消除统一零点的任意性，并分别投影后再求并集；需要同时恢复可行端点证据、辨别无界与矛盾。",
+        "options": [
+          {
+            "approach": "按不稳星身份分支，每支求星等差的两个线性极值",
+            "validWhen": "存在饱和或双侧不等式，观测网络可不连通",
+            "cost": "要区别无界与不可行并给端点完整证人，不能取联合凸包"
+          },
+          {
+            "approach": "将零点改号后化成差分约束图，筛除矛盾环，以锚点间可达界建端点解",
+            "validWhen": "当前误差都是单个仪器星等与帧零点的界",
+            "cost": "单向饱和导致只有一边有界；有向路径合成必须共享一颗不稳星"
+          }
+        ],
+        "choice": "按不稳星身份分支，每支求星等差的两个线性极值，在其适用条件成立时执行；另一方案如能给出同样的正确性见证也可用。",
+        "correctnessImpact": "若甲稳定则目标差为 +1，若乙稳定则为 -1。只显示两个单点及各自见证，0 不可能。",
+        "counterexample": {
+          "steps": "两帧目标读数 10、11；比较甲读 10、10，乙读 12、14，误差均零，至多一颗比较星变光。",
+          "expected": "若甲稳定则目标差为 +1，若乙稳定则为 -1。只显示两个单点及各自见证，0 不可能。",
+          "wrongResult": "返回 [-1,+1] 或逐夜剔除不同比较星，错误宣称零变化也可能。",
+          "constraintQuote": "请给出目标两次真实星等差的全部可行区间，断开的范围别填平，无界和数据矛盾要分得开",
+          "whyRoutineFixFails": "逐帧分别拟合平均零点再扣除；或对每一对相邻帧先算不记身份的偏移区间，再沿跨夜路径相加。即使单帧界限正确，两步可能分别排除不同的比较星，拼出完全未被任何全簿解释支持的结果。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/catalog/lib/positions.ts",
+          "quote": "mag: star.mag"
+        },
+        {
+          "path": "src/features/plan/lib/rows.ts",
+          "quote": "return plan.bodyIds.flatMap((id) => {"
+        },
+        {
+          "path": "src/features/plan/lib/storage.ts",
+          "quote": "isKnownBody(id)"
+        },
+        {
+          "path": "src/app/useDome.ts",
+          "quote": "const id = dome.value.selectionId;"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/plan/lib/photometry.ts",
+          "action": "add",
+          "reason": "联合约束、坏星假设、端点和无界/矛盾判定。"
+        },
+        {
+          "path": "src/features/plan/ui/PlanBoard.vue",
+          "action": "modify",
+          "reason": "现有清单保留并编辑多帧测量和端点证据，按星绑定。"
+        },
+        {
+          "path": "src/features/sky/lib/paint.ts",
+          "action": "modify",
+          "reason": "测量端点原帧叠印逐星校正值和饱和箭头，显示当前解释，不是普通选中环。"
+        },
+        {
+          "path": "src/app/useDome.ts",
+          "action": "modify",
+          "reason": "将目标/比较星与实际曝光时刻及回查原帧关联，不更改原读数。"
+        },
+        {
+          "path": "src/features/plan/lib/storage.ts",
+          "action": "modify",
+          "reason": "刷新须保留测量、误差、饱和及删除记录；原恢复器只保留名字和 bodyIds。"
+        },
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "会话中的清单需携带不同曝光下的测量而非去重后的星体列表。"
+        },
+        {
+          "path": "src/features/catalog/ui/SearchPanel.vue",
+          "action": "modify",
+          "reason": "端点解释决定原检索可列的比较星；同一星身份会随证人变动，普通星名筛选无法代替。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "测量数据形状、一侧/双侧误差、联合归因、区间并集、可行端点还原、无界和矛盾分类，点星、改删、归档和恢复。",
+        "efficientPathAnalysis": "可以批量读模块、合并开发和运行检查；实测取决于是否复用现成求解器及数据/浏览器验证路径，无法从功能点或文件数下界推得调用数。",
+        "estimate": null,
+        "runs": []
+      },
+      "minimality": "已有 sky 选择、clock 时刻、plan 只存 ID 的行和恢复器各自是不同的用户入口。仅在储存或一张表内写线性规划，无法从图建立、逐帧操作、回到端点证据时刻并从计划恢复；只改渲染又没有跨帧约束和测量归档。 单独存档的旁置表可绕过原恢复器，但不能同时实现星图端点读数、原检索证人过滤、现有计划中的多次测量、见证回放与联合求解。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "两个端点观测夜之间增加含共同稳定星的过渡帧，复查两夜读数和星图时刻；移除唯一桥接帧后，无法测定的方向变为无界。",
+          "expected": "见证与选定的输入、星体、时间及计划相符，正常交互保留。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "两帧目标读数 10、11；比较甲读 10、10，乙读 12、14，误差均零，至多一颗比较星变光。",
+          "expected": "若甲稳定则目标差为 +1，若乙稳定则为 -1。只显示两个单点及各自见证，0 不可能。"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚无本快照独立完整解题轨迹。",
+        "simpleSolutionSuffices": false,
+        "verdict": "pending",
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "necessaryFiles": [
+          "src/features/plan/lib/photometry.ts",
+          "src/features/plan/ui/PlanBoard.vue",
+          "src/features/sky/lib/paint.ts",
+          "src/features/catalog/ui/SearchPanel.vue",
+          "src/features/plan/lib/storage.ts"
+        ],
+        "reason": "独立复核 P5 通过；P6 尚无实跑，总结论待验收。",
+        "designDecisionAnalysis": "枚举无变星/假设各一颗变星，分别建跨帧的共同偏差约束，求两端投影及可重放的联合赋值，再求区间并集。逐帧定零点会漏掉桥接帧；跨假设取一次极小极大，会填掉真实断带。饱和点“仪器星等只知不大于饱和值”有单边约束，不能当缺测。端点见证和未知偏移的整体平移自由度、不可行与无界须区别；可用通用约束求解，但仍须推导正确的变量归属与见证投影。",
+        "shortcutAnalysis": "测量存取及删帧关系、差分校准、测光录入、检索按某个端点筛比较星、圆穹逐星标校正值/箭头、清单回查。原先四文件的旁置测光表不能改变现有检索与圆穹标注，修订稿已明确两项行为。",
+        "p5Verdict": "pass",
+        "fiveFileVerdict": "pass",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "feature-01",
+      "difficulty": "困难",
+      "goal": "让现有观测名单挑出能保证拍到最多目标且张数最少的双夜镜头构图",
+      "categoryEvidence": "Feature。现有 describePlan 为每个 ID 单独给几何高度、方位和十分钟趋势；扩展同一批成员到多天摄影的保证覆盖汇总并保留现有计划操作。",
+      "noveltyEvidence": {
+        "archiveLine": 958,
+        "archiveDifference": "旧题比较两套构图，没有离散候选、相机旋角、跨帧同一偏差与保证覆盖优化。",
+        "batchDifference": "feature-02 比较两站接触时刻，不选底片、不最大化目标覆盖。"
+      },
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "点回任一底片应切到它的地点和时刻，在圆穹上照实际透视画出旋过的片框",
+          "reason": "只扩展 rows.ts 的逐星标记没有候选选择、共用偏差、星图构图输入和存档；在页面旁增求解器也不能自动更改现有名单、投影及其恢复。即使将场景几何与优化合为一个业务模块，仍有计划编辑、球面取景、时间地点联动、持久化等职责。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "一颗星在向左偏时落进甲片、向右偏时落进乙片，算有保障，即使没有哪一张片在两个方向都拍得到它",
+          "reason": "决定需要保留的跨帧覆盖状态和可剪去的候选；只有同一夜共享偏差，两夜必须允许独立，算法需维护可验证的全局上界与取景见证。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "架台的方位和高度读数每晚可能带上我列出的某组固定加性偏差，画面滚转不变，当晚拍的所有底片都带同一个偏差，两晚的偏差可以不同",
+          "reason": "保证拍到一颗 = 对任意夜间偏差组合，至少存在一张选择的底片实际成像；不是必须有一张对所有偏差都有效。方位同样接近的边缘星在矩形旋转后不一定在片内。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "架台的方位和高度读数每晚可能带上我列出的某组固定加性偏差，画面滚转不变，当晚拍的所有底片都带同一个偏差，两晚的偏差可以不同",
+          "reasoning": "保证拍到一颗 = 对任意夜间偏差组合，至少存在一张选择的底片实际成像；不是必须有一张对所有偏差都有效。方位同样接近的边缘星在矩形旋转后不一定在片内。",
+          "failureCase": "先逐片取交集会错误拒绝同夜保证；把所有晚当作同一偏差又会错误接受分夜排法。"
+        },
+        {
+          "quote": "一颗星在向左偏时落进甲片、向右偏时落进乙片，算有保障，即使没有哪一张片在两个方向都拍得到它",
+          "reasoning": "决定需要保留的跨帧覆盖状态和可剪去的候选；只有同一夜共享偏差，两夜必须允许独立，算法需维护可验证的全局上界与取景见证。",
+          "failureCase": "一颗星在同夜左偏时仅入甲、右偏时仅入乙；两片在不同可拍时刻。再把乙挪到另一夜。"
+        }
+      ],
+      "designDecision": {
+        "tension": "保证拍到一颗 = 对任意夜间偏差组合，至少存在一张选择的底片实际成像；不是必须有一张对所有偏差都有效。方位同样接近的边缘星在矩形旋转后不一定在片内。",
+        "baselineReuse": "复用 bodyHorizontal、plan 的 bodyIds 和 site/clock 预览；星图采用圆形等距投影，不能代替底片针孔矩形。",
+        "simplestApproach": "为每张底片取各偏差下覆盖的交集，再做集合覆盖。反向将所有可能覆盖先合并也不成立。逐张贪心选择增加最多颗数的画面，即使对每一偏差都正确计算也不能证明全局张数最少。",
+        "remainingDecision": "决定需要保留的跨帧覆盖状态和可剪去的候选；只有同一夜共享偏差，两夜必须允许独立，算法需维护可验证的全局上界与取景见证。",
+        "options": [
+          {
+            "approach": "按站/夜计算每个组合覆盖位集，保留预算内不被支配的方案再联合",
+            "validWhen": "候选最多 24/夜且偏差取离散值",
+            "cost": "若以平均覆盖或已保证数量支配，会错误淘汰跨片互补的方案"
+          },
+          {
+            "approach": "用场景覆盖与曝光选择的整数约束做两级优化",
+            "validWhen": "同刻冲突与张数上限使普通集合覆盖不足",
+            "cost": "目标保证须以全部可行偏差情形验证，提前停的可行解不能冒充最优"
+          }
+        ],
+        "choice": "按站/夜计算每个组合覆盖位集，保留预算内不被支配的方案再联合，在其适用条件成立时执行；另一方案如能给出同样的正确性见证也可用。",
+        "correctnessImpact": "同夜都选则两种偏差都有片；分夜后两边偏差可分别取到各自的漏拍值，目标不再有保证，清单给出漏拍组合。",
+        "counterexample": {
+          "steps": "一颗星在同夜左偏时仅入甲、右偏时仅入乙；两片在不同可拍时刻。再把乙挪到另一夜。",
+          "expected": "同夜都选则两种偏差都有片；分夜后两边偏差可分别取到各自的漏拍值，目标不再有保证，清单给出漏拍组合。",
+          "wrongResult": "先逐片取交集会错误拒绝同夜保证；把所有晚当作同一偏差又会错误接受分夜排法。",
+          "constraintQuote": "一颗星在向左偏时落进甲片、向右偏时落进乙片，算有保障，即使没有哪一张片在两个方向都拍得到它",
+          "whyRoutineFixFails": "为每张底片取各偏差下覆盖的交集，再做集合覆盖。反向将所有可能覆盖先合并也不成立。逐张贪心选择增加最多颗数的画面，即使对每一偏差都正确计算也不能证明全局张数最少。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/plan/lib/rows.ts",
+          "quote": "const above = aboveHorizon(now.altDeg);"
+        },
+        {
+          "path": "src/features/sky/lib/project.ts",
+          "quote": "if (theta > limit) return null;"
+        },
+        {
+          "path": "src/features/plan/lib/storage.ts",
+          "quote": "bodyIds }"
+        },
+        {
+          "path": "src/features/sky/ui/DomeView.vue",
+          "quote": "if (id) emit(\"pick\", id);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/plan/lib/photoCoverage.ts",
+          "action": "add",
+          "reason": "对同夜共偏、跨夜独立的可见集合优化，附见证。"
+        },
+        {
+          "path": "src/features/plan/ui/PlanBoard.vue",
+          "action": "modify",
+          "reason": "按现有名单逐星给保障/反例，比较草案；展示最优取景。"
+        },
+        {
+          "path": "src/features/sky/ui/DomeView.vue",
+          "action": "modify",
+          "reason": "现有点击不返回天区空白中心；选取画面并显示实际旋转边界。"
+        },
+        {
+          "path": "src/features/sky/lib/project.ts",
+          "action": "modify",
+          "reason": "从画布坐标反求球面方向，将针孔片框边界投回圆穹，不能直接画屏幕矩形。"
+        },
+        {
+          "path": "src/app/useDome.ts",
+          "action": "modify",
+          "reason": "回放固定取景需同时切换当时地点、时刻和构图，与编辑中的计划分开。"
+        },
+        {
+          "path": "src/features/plan/lib/storage.ts",
+          "action": "modify",
+          "reason": "旧恢复器会剥掉草案，须保留每张片的观测背景和固定名单。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "跨夜相关不确定性几何、透视和地平筛选、有限预算全局求解与验证证人、天空选择中心、计划版本存取和对比。",
+        "efficientPathAnalysis": "可以批量读模块、合并开发和运行检查；实测取决于是否复用现成求解器及数据/浏览器验证路径，无法从功能点或文件数下界推得调用数。",
+        "estimate": null,
+        "runs": []
+      },
+      "minimality": "只扩展 rows.ts 的逐星标记没有候选选择、共用偏差、星图构图输入和存档；在页面旁增求解器也不能自动更改现有名单、投影及其恢复。即使将场景几何与优化合为一个业务模块，仍有计划编辑、球面取景、时间地点联动、持久化等职责。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "含同刻互斥和多星的较小输入，用穷举对照最优保证数与最少片数；点回候选检查真透视边缘和计划版本。",
+          "expected": "见证与选定的输入、星体、时间及计划相符，正常交互保留。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "一颗星在同夜左偏时仅入甲、右偏时仅入乙；两片在不同可拍时刻。再把乙挪到另一夜。",
+          "expected": "同夜都选则两种偏差都有片；分夜后两边偏差可分别取到各自的漏拍值，目标不再有保证，清单给出漏拍组合。"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚无本快照独立完整解题轨迹。",
+        "simpleSolutionSuffices": false,
+        "verdict": "pending",
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "necessaryFiles": [
+          "src/features/plan/lib/photoCoverage.ts",
+          "src/features/plan/ui/PlanBoard.vue",
+          "src/features/sky/ui/DomeView.vue",
+          "src/features/sky/lib/project.ts",
+          "src/app/useDome.ts"
+        ],
+        "reason": "独立复核 P5 通过；P6 尚无实跑，总结论待验收。",
+        "designDecisionAnalysis": "将每个取景和夜偏差对应的透视覆盖预计算，保留夜间共同情景，带时隙互斥与库存约束求精确最大保障覆盖及最少张数。先逐张求所有偏差的交集再做集合覆盖，会错误排除由两张相互补足的星；逐目标挑最佳偏差会误报保障。两个夜晚的最坏偏差独立，但每晚全部图共用偏差，联合求解或分夜求解都需证明如何合并和出具实际失拍见证。旧清单仅按单一时刻的中心高度判可见。",
+        "shortcutAnalysis": "清单逐星保障/反例、画面中心选取、片框透视绘制、跨日期站点/时刻回放、求解器、固定草案序列化。即使用全枚举，仍需上述投影/独立场景推导；单纯 48 个选项或遍历工作量不是 H3。",
+        "p5Verdict": "pass",
+        "fiveFileVerdict": "pass",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "feature-02",
+      "difficulty": "困难",
+      "goal": "扩展现有地点切换，以两站各自的日月视差解释日食接触与局部可见过程",
+      "categoryEvidence": "Feature。基线 site 的 preset/坐标编辑替换单一 dome.site，地平变化不改日月地心方向，原月相图固定半径。新增两站共享一次查询的局地结果并保留当前定位能力。",
+      "noveltyEvidence": {
+        "archiveLine": 2430,
+        "archiveDifference": "旧题求脉冲通过器件后的时间门能量；本题求两站站心视半径、角距接触和共同可见重叠区域。",
+        "batchDifference": "feature-01 主产品是镜头组合，本题主产品为两站接触/可见时刻。"
+      },
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "点一个接触时刻，两站星图同时停在同一瞬间，显示各自的日月真比例放大图和地平切口",
+          "reason": "仅用原 scene/rows 接口没有站心距离和角半径、站对输入、双站显示和站别事件收藏。复用通用求根库也不能填补站心物理模型和可见重叠判定；把全套业务放在地点面板会绕开现有星图与清单。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "精度不足以区分擦边和极短食段就给可疑时间范围，不能编出持续时间",
+          "reason": "选取能识别极小值、双根与未分辨区间的时域包围方案，并判定越过地平的是重叠区而非任一完整日面；数值误差边缘如何向用户给出诚实的时间窗。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "另标每站日面与月面重叠部分真正露出当地几何地平的起止，不能只看太阳中心是否升起",
+          "reason": "几何接触是两边缘的等式，可见起止是日月及地平三区域真实相交。无符号翻转并不证明无接触；几何事件的世界时与每站的民用日期不是同一键。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "另标每站日面与月面重叠部分真正露出当地几何地平的起止，不能只看太阳中心是否升起",
+          "reasoning": "几何接触是两边缘的等式，可见起止是日月及地平三区域真实相交。无符号翻转并不证明无接触；几何事件的世界时与每站的民用日期不是同一键。",
+          "failureCase": "不变号就报两站无食，或给两站同一 UTC 接触列表；还可能误报整个地平下的月面重叠为可见。"
+        },
+        {
+          "quote": "精度不足以区分擦边和极短食段就给可疑时间范围，不能编出持续时间",
+          "reasoning": "选取能识别极小值、双根与未分辨区间的时域包围方案，并判定越过地平的是重叠区而非任一完整日面；数值误差边缘如何向用户给出诚实的时间窗。",
+          "failureCase": "构造两站模型，一站的最近中心距仅比外切半径和略小，短食在一个粗步长的中间；另一站最近值仍高于阈值。接触点附近太阳中心在地平下，而实际重叠边缘在上。"
+        }
+      ],
+      "designDecision": {
+        "tension": "几何接触是两边缘的等式，可见起止是日月及地平三区域真实相交。无符号翻转并不证明无接触；几何事件的世界时与每站的民用日期不是同一键。",
+        "baselineReuse": "moonEquatorial 给出月地距离，但 equatorial 丢掉该量；可复用教学轨道与换算而不能把地心视线直接套给两地。paintDome 的太阳/月亮半径为屏幕图标尺寸。",
+        "simplestApproach": "每分钟比较两个圆心角距与半径和/差，有变号再二分，配合太阳中心上升判可见。加密到每秒仍会错过切点，外切时的符号不跨零；只要太阳中心低于地平就过滤，会删掉地平上已相交的两段圆弧。",
+        "remainingDecision": "选取能识别极小值、双根与未分辨区间的时域包围方案，并判定越过地平的是重叠区而非任一完整日面；数值误差边缘如何向用户给出诚实的时间窗。",
+        "options": [
+          {
+            "approach": "按相对角速度/曲率上界递归排除不可能接触的时段，余段细分",
+            "validWhen": "全天内轨道平滑，可求可靠速度界",
+            "cost": "在平切处必须单独处理最小值并返回不确定带，不可只在端点找根"
+          },
+          {
+            "approach": "分离角距和半径变化的驻点后分单调段求内外接触",
+            "validWhen": "可靠定位全部局部极值且能界定误差时",
+            "cost": "边界近重根会同时影响事件数与可见区间，需给数值包围与真实重叠判据"
+          }
+        ],
+        "choice": "按相对角速度/曲率上界递归排除不可能接触的时段，余段细分，在其适用条件成立时执行；另一方案如能给出同样的正确性见证也可用。",
+        "correctnessImpact": "该站报告分辨得到的短接触或诚实的误差窗；另一站不能共享首站结果；日面中心未升不自动抹去可见重叠。",
+        "counterexample": {
+          "steps": "构造两站模型，一站的最近中心距仅比外切半径和略小，短食在一个粗步长的中间；另一站最近值仍高于阈值。接触点附近太阳中心在地平下，而实际重叠边缘在上。",
+          "expected": "该站报告分辨得到的短接触或诚实的误差窗；另一站不能共享首站结果；日面中心未升不自动抹去可见重叠。",
+          "wrongResult": "不变号就报两站无食，或给两站同一 UTC 接触列表；还可能误报整个地平下的月面重叠为可见。",
+          "constraintQuote": "精度不足以区分擦边和极短食段就给可疑时间范围，不能编出持续时间",
+          "whyRoutineFixFails": "每分钟比较两个圆心角距与半径和/差，有变号再二分，配合太阳中心上升判可见。加密到每秒仍会错过切点，外切时的符号不跨零；只要太阳中心低于地平就过滤，会删掉地平上已相交的两段圆弧。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/catalog/lib/solar.ts",
+          "quote": "distanceEarthRadii: moon.distance"
+        },
+        {
+          "path": "src/features/catalog/lib/positions.ts",
+          "quote": "phase: moon.phase"
+        },
+        {
+          "path": "src/features/site/model/useSite.ts",
+          "quote": "dome.value.site = { ...preset };"
+        },
+        {
+          "path": "src/features/sky/lib/paint.ts",
+          "quote": "const radius = 9;"
+        },
+        {
+          "path": "src/features/plan/lib/storage.ts",
+          "quote": "isKnownBody(id)"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/catalog/lib/eclipse.ts",
+          "action": "add",
+          "reason": "教学轨道的站心视差、日月角半径、内外切和最近接判据。"
+        },
+        {
+          "path": "src/features/site/ui/SitePanel.vue",
+          "action": "modify",
+          "reason": "在原地点选择界面建立主站/副站并展示同一时间段的各自结果。"
+        },
+        {
+          "path": "src/features/sky/ui/DomeView.vue",
+          "action": "modify",
+          "reason": "两站显示各自真比例日月与地平切口，接触处不能复用图标半径。"
+        },
+        {
+          "path": "src/app/useDome.ts",
+          "action": "modify",
+          "reason": "点任一事件停在共同 UTC，跨站保留同一时间且用当地模型。"
+        },
+        {
+          "path": "src/features/plan/ui/PlanBoard.vue",
+          "action": "modify",
+          "reason": "清单从按天体聚合延伸至站别接触事件，不能只显示‘太阳’。"
+        },
+        {
+          "path": "src/features/plan/lib/storage.ts",
+          "action": "modify",
+          "reason": "刷新后识别事件标识、观测站和世界时，原 isKnownBody 会丢弃事件。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "两站时空坐标、视半径、搜索并分类数值接触、求地平上交集、时间边界、真实比例的双图、归档身份。",
+        "efficientPathAnalysis": "可以批量读模块、合并开发和运行检查；实测取决于是否复用现成求解器及数据/浏览器验证路径，无法从功能点或文件数下界推得调用数。",
+        "estimate": null,
+        "runs": []
+      },
+      "minimality": "仅用原 scene/rows 接口没有站心距离和角半径、站对输入、双站显示和站别事件收藏。复用通用求根库也不能填补站心物理模型和可见重叠判定；把全套业务放在地点面板会绕开现有星图与清单。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "用近中央食的教学轨道样例核对外接、内接、最近接和两站差异；暂停到接触瞬间、切主站和重开，收藏仍指原站与UTC。",
+          "expected": "见证与选定的输入、星体、时间及计划相符，正常交互保留。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "构造两站模型，一站的最近中心距仅比外切半径和略小，短食在一个粗步长的中间；另一站最近值仍高于阈值。接触点附近太阳中心在地平下，而实际重叠边缘在上。",
+          "expected": "该站报告分辨得到的短接触或诚实的误差窗；另一站不能共享首站结果；日面中心未升不自动抹去可见重叠。"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚无本快照独立完整解题轨迹。",
+        "simpleSolutionSuffices": false,
+        "verdict": "pending",
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "necessaryFiles": [
+          "src/features/catalog/lib/eclipse.ts",
+          "src/features/site/ui/SitePanel.vue",
+          "src/features/sky/ui/DomeView.vue",
+          "src/app/useDome.ts",
+          "src/features/plan/ui/PlanBoard.vue"
+        ],
+        "reason": "独立复核 P5 通过；P6 尚无实跑，总结论待验收。",
+        "designDecisionAnalysis": "按站心计算日月圆盘而非给现有地平换算加时差。等步长查重合会漏切触和同号端点之间的小食；太阳中心低于地平时，两盘公共部分仍可能露出，或太阳上缘已出但公共部分仍被挡。解需处理接触极值、可信误差及公共透镜和地平的截取。自适应包围/解析局部极值均有精度边界，“精度不足以区分……给可疑时间范围”要求推导可证分类的条件。",
+        "shortcutAnalysis": "现有地点双站、日月距离/角半径（旧 `EqPoint` 仅方向）、事件接触与误差、两站同刻绘制及切口、清单持久事件身份、选择事件改变共同时钟。复用旧 `bodyHorizontal` 绘图无法得到两站不同食相。",
+        "p5Verdict": "pass",
+        "fiveFileVerdict": "pass",
+        "log": "independent-1124.md"
+      }
+    }
+  ]
+}

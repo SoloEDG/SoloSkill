@@ -1,0 +1,11 @@
+ Network jdk031dome_default Creating 
+ Network jdk031dome_default Creating 
+ Network jdk031dome_default Created 
+ Network jdk031dome_default Created 
+ Container jdk031dome-dome-1 Creating 
+ Container jdk031dome-dome-1 Created 
+ Container jdk031dome-dome-1 Starting 
+ Container jdk031dome-dome-1 Started 
+up_exit:0
+NAME                IMAGE             COMMAND                  SERVICE   CREATED                  STATUS                  PORTS
+jdk031dome-dome-1   jdk031dome-dome   "/docker-entrypoint.…"   dome      Less than a second ago   Up Less than a second   127.0.0.1:8031->80/tcp

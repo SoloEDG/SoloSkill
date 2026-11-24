@@ -1,0 +1,21 @@
+--- curl ---
+HTTP 200 size 399
+JS 200 83791
+CSS 200 3313
+SPA fallback 200
+container 127.0.0.1:8030->80/tcp then docker compose -p jdk030 down
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>栈闩工房</title>
+    <script type=
+ Container jdk030-stacklatch-1 Stopping 
+ Container jdk030-stacklatch-1 Stopped 
+ Container jdk030-stacklatch-1 Removing 
+ Container jdk030-stacklatch-1 Removed 
+ Network jdk030_default Removing 
+ Network jdk030_default Removed 
+EXIT:0

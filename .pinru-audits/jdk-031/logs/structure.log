@@ -1,0 +1,7 @@
+command: node check-cohesion.mjs jdk-031
+技术栈: Vue + TypeScript
+业务文件: 40
+功能模块: catalog, clock, plan, site, sky
+
+结构静态预检通过；仍须复核模块职责、运行时交互，并实际构建和启动 Docker。此结果不代表最终交付验收通过。
+exit:0

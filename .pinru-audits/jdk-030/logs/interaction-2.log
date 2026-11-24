@@ -1,0 +1,6 @@
+from: ledger
+to: voyage
+steps: 两只箱子都压上目标格，步数簿把尝试标为通关并冻结继续移动。
+expected: 进度模块按更少步数写入该关最佳记录，目录与最佳记录板同时显示。
+observed: 门闩入门记录为 22 步，刷新后仍在；通关后面板提示重置或另选关卡。
+log: logs/browser-smoke.log

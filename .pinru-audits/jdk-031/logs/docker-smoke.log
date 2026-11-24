@@ -1,0 +1,32 @@
+--- curl ---
+HTTP/1.1 200 OK
+Server: nginx/1.27.5
+Date: Tue, 24 Nov 2026 10:00:08 GMT
+Content-Type: text/html
+Content-Length: 393
+Last-Modified: Tue, 24 Nov 2026 09:59:57 GMT
+Connection: keep-alive
+ETag: "6b05601d-189"
+Accept-Ranges: bytes
+
+index_exit:0
+--- asset ---
+asset:assets/index-B-9ydAeO.js
+asset_http:200
+--- spa ---
+deep_http:200
+--- body ---
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>穹测</title>
+    <script type="module" crossorigin src="/assets/index-B-9ydAeO.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-uieFGrgp.css">
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>
+

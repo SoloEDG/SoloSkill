@@ -1,0 +1,18 @@
+name: jdk030
+services:
+  stacklatch:
+    build:
+      context: /Users/cool/work/self-project/solo/SoloSkill/jdk-030
+      dockerfile: Dockerfile
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        host_ip: 127.0.0.1
+        target: 80
+        published: "8030"
+        protocol: tcp
+networks:
+  default:
+    name: jdk030_default
+EXIT:0

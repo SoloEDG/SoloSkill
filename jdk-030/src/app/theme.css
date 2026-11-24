@@ -1,0 +1,143 @@
+:root {
+  color-scheme: dark;
+  --ink: #1c1610;
+  --paper: #e8d7b8;
+  --brass: #c9a36a;
+  --moss: #7d9b6a;
+  --rust: #b56a32;
+  --line: rgba(232, 215, 184, 0.18);
+  --panel: #241b14;
+  font-family: "Iowan Old Style", Palatino, "Songti SC", "Source Han Serif SC", serif;
+  background: #120e0a;
+  color: var(--paper);
+}
+
+* { box-sizing: border-box; }
+html, body, #app { margin: 0; min-height: 100%; }
+body {
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(201, 163, 106, 0.12), transparent 50%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 13px),
+    #120e0a;
+}
+
+button, input { font: inherit; color: inherit; }
+
+.workshop {
+  min-height: 100vh;
+  padding: 16px 18px 28px;
+  overflow-x: auto;
+}
+.mast {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-end;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+.brand { display: flex; gap: 14px; align-items: center; }
+.mark {
+  width: 52px; height: 52px; display: grid; place-items: center;
+  border: 1px solid var(--brass); color: var(--brass);
+  font-size: 28px; background: #1a140f;
+}
+h1 { margin: 0; font-size: 28px; letter-spacing: 0.18em; font-weight: 500; }
+.brand p, .lede, .hint, .stage-head p { margin: 4px 0 0; opacity: 0.72; font-size: 14px; }
+.notice {
+  margin: 0;
+  max-width: min(420px, 36vw);
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  background: #1a140f;
+  line-height: 1.45;
+}
+.notice[data-tone="success"] { border-color: var(--moss); color: var(--moss); }
+.notice[data-tone="warn"] { border-color: var(--rust); color: #e8b898; }
+
+.bench {
+  display: grid;
+  grid-template-columns: 250px auto 250px;
+  gap: 16px;
+  align-items: start;
+  justify-content: center;
+}
+.side, .rail { min-width: 0; }
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 14px 14px 16px;
+  margin-bottom: 14px;
+}
+.panel h2 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--brass);
+  font-weight: 500;
+}
+.panel h3 { margin: 12px 0 6px; font-size: 12px; letter-spacing: 0.14em; color: #a89070; }
+.panel ul, .panel ol { margin: 0; padding: 0; list-style: none; }
+.panel li { margin: 0 0 8px; font-size: 13px; line-height: 1.45; }
+
+.levels button, .reset {
+  width: 100%;
+  text-align: left;
+  background: #1a140f;
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.levels button.current { border-color: var(--brass); }
+.levels .name { display: block; }
+.levels .best { opacity: 0.65; font-size: 12px; }
+.reset { margin-top: 8px; letter-spacing: 0.12em; }
+.reset:hover, .levels button:hover { border-color: var(--paper); }
+
+.stage-head { margin-bottom: 10px; }
+.stage-head h2 { margin: 0; font-size: 22px; letter-spacing: 0.12em; font-weight: 500; }
+.stage-frame {
+  display: inline-block;
+  padding: 10px;
+  background: #0d0a08;
+  border: 1px solid var(--brass);
+  box-shadow: inset 0 0 0 4px #1c1610;
+}
+canvas { display: block; image-rendering: pixelated; }
+
+.steps {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1;
+  color: var(--brass);
+}
+.steps[data-status="cleared"] { color: var(--moss); }
+.cleared { color: var(--moss); }
+.live { color: var(--moss); }
+.chip {
+  display: inline-block;
+  min-width: 3.5em;
+  padding: 1px 6px;
+  margin-right: 6px;
+  border: 1px solid var(--line);
+}
+.chip.timber { background: #b56a32; color: #1c1610; }
+.chip.iron { background: #8a93a0; color: #1c1610; }
+.chip.glass { background: #7ec8c8; color: #1c1610; }
+.counts { display: flex; flex-wrap: wrap; gap: 8px; }
+.legend .swatch {
+  display: inline-block;
+  width: 12px; height: 12px;
+  margin-right: 8px;
+  vertical-align: middle;
+  border: 1px solid var(--line);
+}
+.records li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; }
+.records small { grid-column: 1 / -1; opacity: 0.55; }
+
+@media (max-width: 1100px) {
+  .bench { grid-template-columns: 1fr; }
+  .mast { flex-direction: column; align-items: flex-start; }
+}

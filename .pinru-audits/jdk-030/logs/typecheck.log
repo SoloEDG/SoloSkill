@@ -1,0 +1,5 @@
+
+> jdk-030-stacklatch@1.0.0 typecheck
+> vue-tsc --noEmit
+
+EXIT:0

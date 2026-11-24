@@ -1,0 +1,6 @@
+command: npm run typecheck
+
+> jdk-031-dome@1.0.0 typecheck
+> vue-tsc --noEmit
+
+exit:0

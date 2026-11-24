@@ -1,0 +1,2 @@
+NAME                  IMAGE               COMMAND                  SERVICE      CREATED         STATUS         PORTS
+jdk030-stacklatch-1   jdk030-stacklatch   "/docker-entrypoint.…"   stacklatch   2 seconds ago   Up 2 seconds   127.0.0.1:8030->80/tcp

@@ -1,0 +1,671 @@
+{
+  "schemaVersion": 2,
+  "projectSha256": "f20cecc2771d70e0838cd54cf4f53d989661cffeab227c791a9bb78f8abc6396",
+  "promptSha256": "3613304d168a3ac39aaa32c7e625bb9e4b2ae231f15f37c78c72855fe986d00b",
+  "quantityNote": "用户本次明确要求 2 条 0-1、2 条 Feature、不要 Bug 修复。技能默认的 10+10+2 与 check-prompts / check-delivery 的 22 条计数不覆盖本次数量。记录按 4 条填写，不补题，也不把脚本失败写成通过。",
+  "checks": {
+    "typecheck": {
+      "status": "passed",
+      "action": "npm run typecheck",
+      "log": "logs/typecheck.log"
+    },
+    "build": {
+      "status": "passed",
+      "action": "npm run build",
+      "log": "logs/build.log"
+    },
+    "structure": {
+      "status": "passed",
+      "action": "node check-cohesion.mjs jdk-031",
+      "log": "logs/structure.log"
+    },
+    "dockerConfig": {
+      "status": "passed",
+      "action": "docker compose -p jdk031dome config",
+      "log": "logs/docker-config.log"
+    },
+    "dockerBuild": {
+      "status": "passed",
+      "action": "docker compose -p jdk031dome build",
+      "log": "logs/docker-build.log"
+    },
+    "dockerSmoke": {
+      "status": "passed",
+      "action": "docker compose -p jdk031dome up -d；curl 首页、哈希脚本与 /night/plan",
+      "log": "logs/docker-smoke.log"
+    },
+    "browserSmoke": {
+      "status": "passed",
+      "action": "开发页三条交互链，以及容器页点上海",
+      "log": "logs/browser-smoke.log"
+    }
+  },
+  "projectReview": {
+    "domain": "游戏图形与多媒体",
+    "pureFrontend": "浏览器内用地点和模拟时刻计算地平坐标，清单与视线都从这份文档派生。持久化只有 localStorage 键 jdk031-dome-session，没有业务后端。",
+    "cohesion": "五个功能目录各自有 model、lib、ui，跨目录只经过公开 index。shell 的 useDome 串联地点、时钟、星图、检索和清单。地平换算在 sky，可见性文案在 plan，检索不复制换算。",
+    "capacityLog": "capacity.md",
+    "responsibilities": {
+      "site": "观测位置：城市、纬度、经度和时区。",
+      "clock": "模拟时刻：民用时间、播放、倍率和步进。播放不追墙上的时钟。",
+      "sky": "圆穹：把赤道坐标投成高度方位并画出来，拖动、缩放和定位视线。",
+      "catalog": "天体检索：恒星、日月和行星的名称与赤道位置。",
+      "plan": "观测清单：多份计划、可见与升降，以及整份本地保存。"
+    },
+    "interactions": [
+      {
+        "from": "site",
+        "to": "plan",
+        "steps": "北京改为三亚，再把时间加一小时。",
+        "expected": "勾陈一高度靠近新纬度，清单里的升降随时间变化。",
+        "observed": "三亚勾陈一 +19.0°。一小时后天狼由 +14.3° 到 +27.1°。",
+        "log": "logs/browser-smoke.log"
+      },
+      {
+        "from": "catalog",
+        "to": "sky",
+        "steps": "检索中点织女。",
+        "expected": "视线转向织女，读数与清单高度方位一致。",
+        "observed": "状态条写视线已转向织女，高度 +5.5°、方位 318°。",
+        "log": "logs/browser-smoke.log"
+      },
+      {
+        "from": "sky",
+        "to": "plan",
+        "steps": "点老人，加入今晚，然后刷新。",
+        "expected": "清单增加老人；刷新后地点、时刻和清单还在，播放停止，视线不保留。",
+        "observed": "老人已加入。刷新后仍是三亚 23:48 且含老人，按钮为播放，读数回到未点选。",
+        "log": "logs/browser-smoke.log"
+      }
+    ]
+  },
+  "review": {
+    "author": "出题会话",
+    "reviewer": "5e4772ea-d6e5-4e57-9bbb-037a67185cb6",
+    "independent": true,
+    "verdict": "fail",
+    "log": "review.md"
+  },
+  "tasks": [
+    {
+      "id": "gen-01",
+      "difficulty": "困难",
+      "goal": "用三次点击同时估计时钟偏差和方位零点，确认前不污染采样和清单。",
+      "categoryEvidence": "检索了 sky、plan、catalog、app。点选只发出天体 id，toHorizontal 只有赤经赤纬、地点和时刻，没有第二套偏差，也没有待定假设。这是基线上不存在的认星能力，不依赖其他题。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "只有只剩一套时，星图、定位和清单趋势才一起改。",
+          "reason": "星图、检索定位和清单现在共用同一次地平换算。确认前必须拆开预览和正式高度，确认后三处又要一起改。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "确认之后也不能回头用画面上的像素重算，不然胜负会翻盘。",
+          "reason": "样本若留在像素上，确认造成的视线变化会改写第三下的方向。预览又必须看得见，否则第三颗对不上。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "若这一下量到的是已被某套假设挪过的方向，另一套会被错杀。",
+          "reason": "第三次点击的坐标系决定哪一套假设存活。先套用其中一套再取样，会把仍然成立的另一套判掉。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "若这一下量到的是已被某套假设挪过的方向，另一套会被错杀。",
+          "reasoning": "第三下必须落在未改正的地平方向上，同时画面仍要显示两套假设各自把星挪到哪里。",
+          "failureCase": "前两颗容差内有两套解。先按第一套挪动画布再点第三颗，第二套的残差被算在错误坐标系里。"
+        },
+        {
+          "quote": "换城市后时钟偏差还在，方位零点留在原来的屋顶。",
+          "reasoning": "两个参数的归属不同，不能收成一个随地点一起走的偏移。",
+          "failureCase": "在北京认星后改到三亚。方位零点若跟着城市走，三亚的星图被北京屋顶的零点拧转。"
+        }
+      ],
+      "designDecision": {
+        "tension": "已定规则：两套假设都含时钟偏差和方位零点；确认前清单和定位不跟着改；两套都能解释时保持不定；时钟偏差随城市，方位零点留在原屋顶。基线只有一次换算和一次点选 id。直接把假设画进正式星图会方便寻找第三颗，但取样和清单会被同一套假设污染。",
+        "options": [
+          {
+            "approach": "得到两颗星后立刻把一套偏差写进正式换算，第三颗在改正后的星图上点。",
+            "validWhen": "两套解不会同时落在容差内，而且第三颗只用来复核已经采纳的那套。",
+            "cost": "另一套被错杀；确认后若用像素重算，胜负会翻盘。"
+          },
+          {
+            "approach": "样本冻结为点击当时的未改正方向，预览单独画出两套假设，正式高度等只剩一套再提交。",
+            "validWhen": "第三颗必须能同时否决两套，而且预览不能进入清单。",
+            "cost": "点选、投影和清单要分开读预览与正式值，不能只改一个换算函数。"
+          }
+        ],
+        "choice": "参考策略是冻结未改正方向并分开预览。其他能保住第三下独立性、城市归属和确认后三处一致的做法也成立。",
+        "correctnessImpact": "星图、检索定位和清单在确认前保持现在的高度方位；只剩一套后三处同时改用该套偏差。",
+        "counterexample": {
+          "constraintQuote": "若这一下量到的是已被某套假设挪过的方向，另一套会被错杀。",
+          "steps": "前两下对两套假设都成立。把第一套写进视线后再点第三颗，并用点击像素在新画面里反投影。",
+          "expected": "第三颗仍按未改正方向检验两套；两套都解释得了就保持不定。",
+          "wrongResult": "第二套被判失败，或确认后重算像素导致胜负翻转。",
+          "whyRoutineFixFails": "只在换算函数末尾加一个偏移，会同时移动星图、定位和清单，第三下不再独立。把样本存成像素也不能避开确认后的重投影。"
+        },
+        "baselineReuse": "toHorizontal、frameOn 和清单的十分钟升降可以在确认后继续使用，但点选目前只返回天体 id，没有未改正方向可存。",
+        "simplestApproach": "两颗星做一次拟合，把唯一偏差写入 toHorizontal，第三颗沿用现有定位。这能改三处显示，但不能保留第二套，也不能让第三下落在未改正方向上。",
+        "remainingDecision": "预览和正式换算的提交边界，以及样本必须冻结成哪一种方向，才能让第三下否决假设而不是改写假设。"
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/sky/lib/horizontal.ts",
+          "quote": "export function toHorizontal(raDeg: number, decDeg: number, site: SiteState, utcMillis: number): Horizontal {"
+        },
+        {
+          "path": "src/features/sky/lib/hit.ts",
+          "quote": "export function pickBody(bodies: PlacedBody[], x: number, y: number): string | null {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/sky/lib/alignment.ts",
+          "action": "add",
+          "reason": "保存两套未提交假设和冻结的未改正方向。省略后第三下只能看到已经套用的那套。"
+        },
+        {
+          "path": "src/features/sky/ui/DomeView.vue",
+          "action": "modify",
+          "reason": "现有点选只抛出天体 id。省略后样本在命中时已被吸附，另一套假设无法再解释同一次点击。"
+        },
+        {
+          "path": "src/features/sky/lib/scene.ts",
+          "action": "modify",
+          "reason": "正式星点保持未改正，同时画出两套预览。省略后要么看不见假设，要么正式星图被挪走。"
+        },
+        {
+          "path": "src/features/plan/lib/rows.ts",
+          "action": "modify",
+          "reason": "确认前清单的高度和升降必须仍用未改正值。省略后清单会跟着预览改。"
+        },
+        {
+          "path": "src/app/useDome.ts",
+          "action": "modify",
+          "reason": "定位、换城市和确认要在同一处决定何时把唯一假设提交给星图和清单。省略后检索定位会提前使用某一套。"
+        },
+        {
+          "path": "src/features/plan/lib/storage.ts",
+          "action": "modify",
+          "reason": "时钟偏差要跨城市留下，方位零点要留在原屋顶。现有整份保存没有这两项，刷新后归属会丢。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "读点选、换算、清单和保存；区分预览与正式高度；用两套同时成立再点第三下的顺序做界面验证。省略冻结方向或城市归属，题面相应句子就不成立。",
+        "efficientPathAnalysis": "可以一次读完换算、点选、场景和清单，再改上述文件，并用一次类型检查加少量点击验证。高效路径有可能少于 50 次调用。",
+        "estimate": "保守看大约 40 到 70 次，不确定。没有解题轨迹，不能当成实测达标。",
+        "runs": []
+      },
+      "minimality": "只改 toHorizontal 会让星图、定位和清单同时吃到未确认的偏差，第三下也不再独立。点选若不改，样本只剩天体 id。清单和保存若不改，确认前的升降和换城市后的归属对不上。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "连点三颗，其中只有一套偏差能同时解释。",
+          "expected": "只剩这一套后，星图、定位和清单趋势一起改；换城市后时钟偏差还在，方位零点不跟着走。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "前两下对两套都成立，第三下也都能解释。",
+          "expected": "保持不定，清单仍是未改正的高度和升降，不收先点中的那套。"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "没有解题轨迹。复核者认为高效实现很可能少于 50 次，因此即使以后实跑，也要先回查工作量，不能把次数凑够当成通过。",
+        "designDecisionAnalysis": "复核者先写了最简单完整方案，并判断该方案已经满足全部题面。题面点名的两种错误做法不是本题条件下值得考虑的策略。详见 review.md。",
+        "simpleSolutionSuffices": true,
+        "verdict": "fail",
+        "actualDifficulty": "未达到困难",
+        "featureKinds": [
+          "多模块整合",
+          "复杂技术关注点"
+        ],
+        "necessaryFiles": [
+          "src/features/sky/lib/scene.ts",
+          "src/features/sky/ui/DomeView.vue"
+        ],
+        "reason": "H1、H2 成立，H3 不成立。冻结未改正方向、单独预览、只剩一套再提交，已经满足题面。scene.ts 与 DomeView.vue 即可。P6 待实跑。",
+        "shortcutAnalysis": "复核者给出的更少文件方案已能满足题面，见 review.md 各题「文件」一节。"
+      }
+    },
+    {
+      "id": "gen-02",
+      "difficulty": "困难",
+      "goal": "让圆顶狭缝按有限转速和线缆缠绕跟踪当前星，并和地平线下区分开。",
+      "categoryEvidence": "检索了 sky、plan、clock、app。没有狭缝、转速、限位或未展开方位。可见性只有高度是否大于 0。不依赖认星题或停留题。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "这和地平线下不是同一件事。",
+          "reason": "星图要画狭缝，清单要改可见文案，播放和点选决定狭缝怎么追。只改其中一处会让画面和清单不一致。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "若始终不换侧，改看另一颗、换地点或拨动时间之后，狭缝会在后半夜顶到限位",
+          "reason": "始终最近和始终不换都会在题面给出的一种运动里失败。分界不能从现有方位角直接读出来。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "线缆允许的转角比一整圈更大，同一方位有时能停在两个位置。",
+          "reason": "方位角折回 0 到 360 之后，连续过正北和改选另一颗看起来都是跳变，但只有一种该空转。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "若始终挑更近的一侧，星只是路过正北也会被狭缝空转挡住。",
+          "reasoning": "连续跟踪要保住当前缠绕，不能每帧按折回后的方位重选最近侧。",
+          "failureCase": "狭缝在高位缠绕，星从 358° 走到 2°。最近侧会让狭缝空转将近一圈。"
+        },
+        {
+          "quote": "换地点不能把狭缝已经转到的角度清掉。",
+          "reasoning": "地点改变的是天体方位，不是这台圆顶已经转到的机械角度。",
+          "failureCase": "换到三亚时把狭缝角度归零，等于跳过线缆，后半夜的顶限位不再出现。"
+        }
+      ],
+      "designDecision": {
+        "tension": "已定规则：有限转速、暂停即停、拖动缩放不带走狭缝、过正北只走小步、同一方位可有两个停点、两侧都顶住时选累计挡住更短的一侧、地平线下与圆顶挡住分开、换地点不清角度。基线没有狭缝。始终最近和始终不换是两种能单独写完的策略，但各自违背一条已观察到的失败。",
+        "options": [
+          {
+            "approach": "每帧把狭缝收到离目标天空方位更近的可停位置。",
+            "validWhen": "目标方位的变化确实是一次新的指向，而且空转可以被接受。",
+            "cost": "星只是路过正北时狭缝空转，这段时间被圆顶挡住。"
+          },
+          {
+            "approach": "选定一侧后一直保持，直到顶到限位。",
+            "validWhen": "同一颗星连续移动，中途没有改选、换地点或拨时。",
+            "cost": "改看另一颗或拨动时间后，后半夜顶到限位，星仍在地平线上却跟丢。"
+          }
+        ],
+        "choice": "参考策略是连续模拟跟踪保持当前缠绕，指向断开后再按落到前的挡住时长选择停点。题面没有写这个分界，实现者要自己定。",
+        "correctnessImpact": "清单在跟丢时写圆顶挡住而不是地平线下；星图上的狭缝不随拖动转动。",
+        "counterexample": {
+          "constraintQuote": "若始终挑更近的一侧，星只是路过正北也会被狭缝空转挡住。",
+          "steps": "狭缝停在较高缠绕，当前星方位由 358° 连续走到 2°。随后改选另一颗，较近的一侧会在落下前顶到限位。",
+          "expected": "过正北时只小步跟随；改选后选能跟到落下、累计挡住更短的一侧。",
+          "wrongResult": "要么过正北时空转一圈，要么后半夜星还在地平线上但狭缝跟丢且清单仍写看得见。",
+          "whyRoutineFixFails": "给最近侧加一个过正北的特殊判断，修不好改选后的限位；永远不换侧又修不好过正北。换地点时清零角度则直接违背不清掉已转角度。"
+        },
+        "baselineReuse": "播放用模拟时刻推进，点选和地点切换已经存在。它们只改变星的方位，没有狭缝角度可沿用。",
+        "simplestApproach": "用折回后的方位每帧走向最近停点，顶到限位就停。这能画狭缝，但过正北会空转，改选后也不会为后半夜另选一侧。",
+        "remainingDecision": "哪种方位变化算连续跟踪、哪种算断开后的重选，以及两侧都会顶住时比较的是哪一段时间。"
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/plan/lib/rows.ts",
+          "quote": "return altDeg > 0;"
+        },
+        {
+          "path": "src/features/sky/lib/project.ts",
+          "quote": "export function dragView(view: ViewState, dx: number, dy: number, radiusPx: number): void {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/sky/lib/slit.ts",
+          "action": "add",
+          "reason": "维护未展开角度、转速和断开后的选侧。省略后星图和清单没有可共用的狭缝状态。"
+        },
+        {
+          "path": "src/features/sky/lib/scene.ts",
+          "action": "modify",
+          "reason": "狭缝要画在地平坐标里。省略后拖动或缩放会把狭缝带走，或根本不出现。"
+        },
+        {
+          "path": "src/features/sky/lib/paint.ts",
+          "action": "modify",
+          "reason": "现有绘制只有星点和地平弧。省略后场景里的狭缝不会出现在圆穹上。"
+        },
+        {
+          "path": "src/features/plan/lib/rows.ts",
+          "action": "modify",
+          "reason": "跟丢时要写圆顶挡住，不能继续只用高度是否大于 0。省略后清单仍把地平线上的跟丢当成看得见。"
+        },
+        {
+          "path": "src/app/useDome.ts",
+          "action": "modify",
+          "reason": "播放、改选、换地点和拨时要带上是否断开跟踪。只看方位差无法区分过正北和拨时。"
+        },
+        {
+          "path": "src/features/plan/lib/storage.ts",
+          "action": "modify",
+          "reason": "已转到的角度要留下。现有保存没有这项，刷新或换地点后的整份写回会把角度清掉。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "读播放、点选、投影和清单文案；实现缠绕跟踪；验证过正北、改选顶限位、换地点不清角度。少掉事件分类或清单文案，对应句子就不成立。",
+        "efficientPathAnalysis": "狭缝规则可以集中在一个新模块，星图和清单各接一次。高效实现加少量脚本验证，有可能少于 50 次调用。",
+        "estimate": "保守看大约 40 到 70 次，不确定。未实跑。",
+        "runs": []
+      },
+      "minimality": "只在绘制里加一条屏幕弧，拖动就会带走狭缝，清单也不会改口。只改清单文案则圆穹上看不见狭缝。不清保存角度时，换地点或刷新会把机械位置归零。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "选中一颗不过正北的星并播放一小段。",
+          "expected": "狭缝按模拟时间小步跟随，暂停就停，拖动圆穹不带动狭缝。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "让星连续走过正北，再改选一颗较近侧会顶限位的星，并更换地点。",
+          "expected": "过正北不空转；改选后用累计挡住更短的一侧；地点更换后原角度还在；跟丢写成圆顶挡住。"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "没有解题轨迹。复核者认为高效实现很可能少于 50 次，因此即使以后实跑，也要先回查工作量，不能把次数凑够当成通过。",
+        "designDecisionAnalysis": "复核者先写了最简单完整方案，并判断该方案已经满足全部题面。题面点名的两种错误做法不是本题条件下值得考虑的策略。详见 review.md。",
+        "simpleSolutionSuffices": true,
+        "verdict": "fail",
+        "actualDifficulty": "未达到困难",
+        "featureKinds": [
+          "多模块整合",
+          "复杂技术关注点"
+        ],
+        "necessaryFiles": [
+          "src/features/sky/lib/scene.ts",
+          "src/features/clock/model/useClock.ts",
+          "src/features/plan/lib/rows.ts"
+        ],
+        "reason": "H1、H2 成立，H3 不成立。连续过正北走小步，断开后再按挡住时长重选，是题面句子的直接写法。三个文件够。P6 待实跑。",
+        "shortcutAnalysis": "复核者给出的更少文件方案已能满足题面，见 review.md 各题「文件」一节。"
+      }
+    },
+    {
+      "id": "feature-01",
+      "difficulty": "困难",
+      "goal": "为当前清单安排最晚还能开始的一段连续停留，并把顺序标在圆穹上。",
+      "categoryEvidence": "清单现在只用当前高度和十分钟后的高度差标地平线上或下、升起或落下。没有停留、换侧和顺序。星图不绘制计划顺序。不依赖狭缝或双窗口。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "排好的顺序要标在圆穹上，拖动或缩放之后仍对着原来的天体，不能粘在画面上。",
+          "reason": "顺序来自清单和时刻，绘制必须回到地平坐标。粘在像素上的标记会在拖动后指错星。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "只记住到达某一颗的最早时刻也会把还能排下的走法漏掉。",
+          "reason": "换侧取决于到达时镜筒在哪一侧，较晚到达可能才走得通。只留最早时刻会剪掉这条走法。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "目标多到清单快满时，不能把所有顺序都试一遍，播放和拖动圆穹仍要能用。",
+          "reason": "清单上限允许二十多个目标。把顺序全部展开会卡住播放和拖动，而题面要求这两件事仍能用。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "看得见的时段会中间断开，更晚再开始有时反而排得下，因此越早越容易并不成立",
+          "reasoning": "起点越晚并不总是更难，可行起点不能当成一段连续区间来折半。",
+          "failureCase": "较早的整段被一颗星的空档打断，更晚的一段却能看完。折半会落在空档里并报告排不开。"
+        },
+        {
+          "quote": "经过子午圈必须换侧，不能按方位角差抄近路。",
+          "reasoning": "转动耗时取决于到达时的侧向，不能收成与侧向无关的方位差。",
+          "failureCase": "先去西边高目标再翻回来，会错过东边短窗口；留在东侧则能看完。"
+        }
+      ],
+      "designDecision": {
+        "tension": "已定规则：最晚连续停留、目标在自己的可见时段看完、转动另花时间、过子午圈换侧、时段可断开、播放倍率不是耗时、排不开要指出哪一颗、顺序投影在圆穹上。基线能算任意时刻的高度，但没有停留搜索。越早越容易和只记最早到达都会漏掉更晚的可行走法。",
+        "options": [
+          {
+            "approach": "按落下先后贪心，并用方位角差估计转动时间。",
+            "validWhen": "可见时段不断开，而且不过子午圈或换侧不额外耗时。",
+            "cost": "会先去西边再赶不回东边，也会把抄近路当成可行。"
+          },
+          {
+            "approach": "对起点折半，每一侧只保留到达某颗的最早时刻。",
+            "validWhen": "越晚开始越不可行，而且较晚到达不会打开新的侧向。",
+            "cost": "落在两段可行之间的空档，或剪掉较晚但侧向正确的走法。"
+          }
+        ],
+        "choice": "参考策略是按已看目标和镜筒侧向保留可行时间段，而不是单个最早时刻，并在清单快满时避免展开全部顺序。",
+        "correctnessImpact": "清单给出最晚起点或卡住的那一颗；圆穹上的顺序在拖动后仍对着这些天体。播放倍率不改变停留耗时。",
+        "counterexample": {
+          "constraintQuote": "只记住到达某一颗的最早时刻也会把还能排下的走法漏掉。",
+          "steps": "东边一颗只有短窗口，西边一颗较高。先去西边必须换侧，回来时东边已经落下。留在东侧并较晚开始则都能看完。",
+          "expected": "给出留在东侧的最晚可行起点，圆穹按这个顺序标记。",
+          "wrongResult": "报告排不开，或给出一个开始后会错过东边的时刻。",
+          "whyRoutineFixFails": "在贪心外面再套折半，仍然只探测一个起点的一种顺序，补不上侧向和较晚到达。把二十多个目标的顺序全试一遍则会卡住播放和拖动。"
+        },
+        "baselineReuse": "bodyHorizontal 和十分钟升降能判断某一刻是否看得见，播放倍率已经存在但不能当成停留耗时。",
+        "simplestApproach": "从现在起按清单原顺序检查每颗是否还在地平线上，转动时间用方位差。这只覆盖一种顺序和一种侧向，找不到更晚的可行起点。",
+        "remainingDecision": "搜索状态要记住哪些目标已看、镜筒在哪一侧，以及同一状态下的多段可行时间，而不是一个最早时刻。"
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/plan/lib/rows.ts",
+          "quote": "const delta = (later?.altDeg ?? now.altDeg) - now.altDeg;"
+        },
+        {
+          "path": "src/features/sky/lib/scene.ts",
+          "quote": "export function buildScene(dome: DomeDocument, width: number, height: number): Scene {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/plan/lib/stay.ts",
+          "action": "add",
+          "reason": "计算最晚起点、顺序、换侧和卡住的目标。省略后清单只能继续显示此刻升降。"
+        },
+        {
+          "path": "src/features/plan/model/usePlan.ts",
+          "action": "modify",
+          "reason": "地点、时刻或成员变化时重算停留，并且不读取播放倍率。省略后停留不随星空更新，或被倍率缩短。"
+        },
+        {
+          "path": "src/features/plan/ui/PlanBoard.vue",
+          "action": "modify",
+          "reason": "展示最晚起点或卡住的那一颗。省略后结果只存在计算里，界面仍是旧清单。"
+        },
+        {
+          "path": "src/features/sky/lib/scene.ts",
+          "action": "modify",
+          "reason": "把顺序投回地平坐标。省略后标记会粘在拖动前的像素上。"
+        },
+        {
+          "path": "src/features/sky/lib/paint.ts",
+          "action": "modify",
+          "reason": "圆穹上要画出顺序。省略后场景数据不会出现在画面里。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "读清单升降、投影和播放倍率；实现可断开时段与换侧；验证贪心反例、空档起点，以及清单变满时拖动仍可用。",
+        "efficientPathAnalysis": "搜索可以写在一个模块里，清单和圆穹各接一次。边界要用具体星序验证，不能只靠类型检查。高效路径仍可能少于 50 次。",
+        "estimate": "保守看大约 45 到 80 次，不确定。未实跑。",
+        "runs": []
+      },
+      "minimality": "只在 rows.ts 里按原顺序看高度，得不到换侧和最晚起点，圆穹上也没有顺序。把搜索和绘制塞进同一个文件会让拖动重新投影和停留搜索耦在一起，但绘制循环与搜索状态仍然都要改，不能少掉圆穹或清单界面。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "用默认今晚计划安排停留。",
+          "expected": "给出一个最晚起点和顺序；圆穹标记在拖动后仍对着这些天体；播放倍率不改变耗时。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "构造东边短窗口加西边高目标，并把目标加到清单快满。",
+          "expected": "不采用会错过东边的贪心顺序；空档起点不报告成可行；目标很多时播放和拖动仍能用；排不开时指出卡在哪一颗。"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "没有解题轨迹。复核者认为高效实现很可能少于 50 次，因此即使以后实跑，也要先回查工作量，不能把次数凑够当成通过。",
+        "designDecisionAnalysis": "复核者先写了最简单完整方案，并判断该方案已经满足全部题面。题面点名的两种错误做法不是本题条件下值得考虑的策略。详见 review.md。",
+        "simpleSolutionSuffices": true,
+        "verdict": "fail",
+        "actualDifficulty": "未达到困难",
+        "featureKinds": [
+          "多模块整合",
+          "复杂技术关注点"
+        ],
+        "necessaryFiles": [
+          "src/features/sky/lib/scene.ts",
+          "src/features/plan/lib/rows.ts"
+        ],
+        "reason": "H1、H2 成立，H3 不成立。按侧向和时间区间取最晚起点即可满足题面。两个文件够。P6 待实跑。",
+        "shortcutAnalysis": "复核者给出的更少文件方案已能满足题面，见 review.md 各题「文件」一节。"
+      }
+    },
+    {
+      "id": "feature-02",
+      "difficulty": "困难",
+      "goal": "两个窗口共用一次观测，走时不再盖掉另一边的清单，回拨也不会被下一笔走时冲掉。",
+      "categoryEvidence": "保存整份地点、时刻、倍率和清单，不写播放状态。播放中每两秒整份重写。没有 storage 监听，没有分字段合并。刷新后播放为停。不依赖认星、狭缝或停留。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "正在走时的窗口不能盖掉另一边刚删掉或刚加入的星，也不能拿一段过期的走时把时刻拉回过去。",
+          "reason": "清单编辑和时钟走时现在走同一次整份写入。两边窗口要分成不同的提交，视线却不能进共享记录。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "若只认哪一次写入更新，走时的下一笔又会把这次回拨冲掉。",
+          "reason": "按写入先后取整份或取时刻，都会让更新的走时覆盖用户刚拨回的时间。只忽略走时又会让另一边无法跟随。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "后台窗口就算许久没有写出新时刻，也不等于已经关掉",
+          "reason": "后台计时会被节流。用安静时长接手会把仍在播放的窗口当成已离开，两个时刻就会互相追赶。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "我亲手把时间往回拨必须生效，不能因为读数变小就被拒绝。",
+          "reasoning": "共享时刻不能用数值大小决定胜负，否则回拨永远输给更晚的模拟时刻。",
+          "failureCase": "一边播放到 23:40，另一边把时间拨回 22:00。只接受更大的时刻时，星图仍停在 23:40。"
+        },
+        {
+          "quote": "两个窗口都在播放时，不能互相追赶把时刻越推越快。",
+          "reasoning": "只能有一边把走时写进共享记录，另一边的播放不能再加一段。",
+          "failureCase": "两边都按自己的帧间隔推进并整份写回，共享时刻的速度接近两边倍率之和。"
+        }
+      ],
+      "designDecision": {
+        "tension": "已定规则：走时不盖清单增量，过期走时不能拉回时刻，手拨回拨必须生效，下一笔走时不能冲掉回拨，双开播放不能加速，安静不等于关掉，离开才放手，视线不共享，单窗口结果与现在相同。基线是整份覆盖。后写整份和只取较晚时刻各自违背一条。",
+        "options": [
+          {
+            "approach": "谁后写入整份记录就听谁的。",
+            "validWhen": "只有一个窗口会写，或后写的那份确实包含另一边刚做的清单修改。",
+            "cost": "播放中的下一次整份写回盖掉另一边刚删掉或刚加入的星，也会把回拨冲掉。"
+          },
+          {
+            "approach": "时刻取数值较晚者，清单取后写的那一份。",
+            "validWhen": "没有人把时间往回拨，且清单不会在两边同时增删。",
+            "cost": "回拨因为读数变小被拒绝；两边同时加星时后写的一份丢掉先加的那颗。"
+          }
+        ],
+        "choice": "参考策略是把用户改时和走时分成不同提交，走时只有接手的窗口能推进，清单按增删合并。安静不接手，离开才放手。",
+        "correctnessImpact": "另一边的加星和删星都留下；回拨生效且不会被下一笔走时冲掉；单窗口刷新后播放仍是停的。",
+        "counterexample": {
+          "constraintQuote": "若只认哪一次写入更新，走时的下一笔又会把这次回拨冲掉。",
+          "steps": "甲正在播放。乙删掉一颗并加入另一颗，再把时刻往回拨。甲的下一笔走时整份写回。",
+          "expected": "乙的删星和加星都在，时刻停在回拨后的值，随后只由仍负责走时的一边向前走。",
+          "wrongResult": "清单回到甲的旧名单，或时刻被甲下一笔走时推回拨之前。",
+          "whyRoutineFixFails": "给整份保存加写入时间，下一笔走时仍然更新，回拨会被冲掉。安静三秒就接手则会把后台仍在播放的窗口当成关掉，两边开始互相追赶。"
+        },
+        "baselineReuse": "单窗口的保存内容、刷新后播放为停、以及每两秒写回都可以沿用。缺的是两个写入者同时存在时的提交规则。",
+        "simplestApproach": "继续整份写入，并用写入时间决定胜负。单窗口表现不变，但播放的下一笔会盖掉另一边的清单和回拨。",
+        "remainingDecision": "走时写入要携带哪一次用户改时才有效，清单增删如何合并，以及离开和后台安静如何区分。"
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/plan/lib/storage.ts",
+          "quote": "clock: { utcMillis: dome.clock.utcMillis, rate: dome.clock.rate },"
+        },
+        {
+          "path": "src/app/useDome.ts",
+          "quote": "if (playing) playingTimer = window.setInterval(write, 2000);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/plan/lib/storage.ts",
+          "action": "modify",
+          "reason": "整份覆盖不能区分走时、回拨和清单。省略后下一笔播放仍会写回整份。"
+        },
+        {
+          "path": "src/features/plan/lib/membership.ts",
+          "action": "modify",
+          "reason": "两边同时加星或删星要合并出同一份名单。省略后后写的名单丢掉另一边的增删。"
+        },
+        {
+          "path": "src/features/plan/model/usePlan.ts",
+          "action": "modify",
+          "reason": "加星、删星和改名要作为清单自己的提交，不能等整份保存顺便带上。省略后播放写回仍夹带旧名单。"
+        },
+        {
+          "path": "src/features/clock/model/useClock.ts",
+          "action": "modify",
+          "reason": "帧推进和亲手拨时要能区分。省略后回拨只是另一个时刻赋值，下一帧会从旧基准继续加。"
+        },
+        {
+          "path": "src/app/useDome.ts",
+          "action": "modify",
+          "reason": "离开时放手、后台安静不接手、视线不写入共享记录，都要在现有的保存和 pagehide 上分开。省略后两个播放窗口会互相追赶。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "读整份保存、两秒写回和清单增删；实现双窗口提交；验证回拨不被下一笔冲掉、后台不接手、单窗口刷新仍停播。",
+        "efficientPathAnalysis": "协议可以集中在保存模块，时钟和清单各改提交入口。双窗口验证不好批量，但仍可能由一个熟练实现在 50 次以内完成。",
+        "estimate": "保守看大约 45 到 80 次，不确定。未实跑。",
+        "runs": []
+      },
+      "minimality": "只改 saveSession 的字段比较，无法阻止时钟循环用旧基准写出下一笔，也无法合并两边名单。不改 useClock 时，回拨和帧推进仍是同一种赋值。不改 useDome 时，离开和后台安静共用现在的 pagehide 与定时器。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "只开一个窗口，修改清单并刷新。",
+          "expected": "地点、时刻和清单还在，播放是停的，与现在相同。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "两个窗口同时开着，甲播放，乙删星、加星并回拨，甲继续走时；再把甲放到后台一段时间。",
+          "expected": "乙的增删都留下，回拨不被下一笔冲掉，后台安静不导致两边加速，关掉窗口后另一边才接手。"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "没有解题轨迹。复核者认为高效实现很可能少于 50 次，因此即使以后实跑，也要先回查工作量，不能把次数凑够当成通过。",
+        "designDecisionAnalysis": "复核者先写了最简单完整方案，并判断该方案已经满足全部题面。题面点名的两种错误做法不是本题条件下值得考虑的策略。详见 review.md。",
+        "simpleSolutionSuffices": true,
+        "verdict": "fail",
+        "actualDifficulty": "未达到困难",
+        "featureKinds": [
+          "多模块整合",
+          "复杂技术关注点"
+        ],
+        "necessaryFiles": [
+          "src/features/plan/lib/storage.ts",
+          "src/features/clock/model/useClock.ts",
+          "src/app/useDome.ts"
+        ],
+        "reason": "H1、H2 成立，H3 不成立。走时与清单分字段、回拨不比数值大小、离开才放手，是题面的直接组合。三个文件够。P6 待实跑。",
+        "shortcutAnalysis": "复核者给出的更少文件方案已能满足题面，见 review.md 各题「文件」一节。"
+      }
+    }
+  ]
+}

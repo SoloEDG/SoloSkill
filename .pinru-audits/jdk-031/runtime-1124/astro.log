@@ -1,0 +1,9 @@
+ok polaris alt: 40.64
+ok polaris az: 359.97
+ok evening sun down: -64.24
+ok noon sun up: 29.64
+ok moon moves: 35.60 -> 50.11
+ok moon phase: 0.9608998040957553
+ok jupiter: {"raDeg":148.6447679424519,"decDeg":13.535709493225701,"mag":-2.3,"phase":null}
+ok frame low: {"centerAlt":28,"centerAz":123,"fovDeg":90}
+ok frame high: {"centerAlt":60,"centerAz":200,"fovDeg":90}

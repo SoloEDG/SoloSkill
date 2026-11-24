@@ -1,0 +1,86 @@
+ Image pinrurecheck031-dome Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 564B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 292B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/node:22-alpine
+#3 ...
+
+#4 [internal] load metadata for docker.io/library/nginx:1.27-alpine
+#4 DONE 0.4s
+
+#3 [internal] load metadata for docker.io/library/node:22-alpine
+#3 DONE 0.9s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 72B done
+#5 DONE 0.0s
+
+#6 [stage-1 1/3] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+#6 resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10 0.0s done
+#6 DONE 0.0s
+
+#7 [build 1/6] FROM docker.io/library/node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a
+#7 resolve docker.io/library/node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a 0.0s done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 11.44kB done
+#8 DONE 0.0s
+
+#9 [build 2/6] WORKDIR /app
+#9 CACHED
+
+#10 [build 3/6] COPY package*.json ./
+#10 CACHED
+
+#11 [build 4/6] RUN npm ci
+#11 CACHED
+
+#12 [build 5/6] COPY . .
+#12 DONE 0.1s
+
+#13 [build 6/6] RUN npm run typecheck && npm run build
+#13 0.366 
+#13 0.366 > jdk-031-dome@1.0.0 typecheck
+#13 0.366 > vue-tsc --noEmit
+#13 0.366 
+#13 1.513 
+#13 1.513 > jdk-031-dome@1.0.0 build
+#13 1.513 > vite build
+#13 1.513 
+#13 1.747 vite v7.3.8 building client environment for production...
+#13 1.786 transforming...
+#13 2.248 ✓ 54 modules transformed.
+#13 2.296 rendering chunks...
+#13 2.299 computing gzip size...
+#13 2.301 dist/index.html                   0.39 kB │ gzip:  0.28 kB
+#13 2.301 dist/assets/index-uieFGrgp.css    2.80 kB │ gzip:  1.18 kB
+#13 2.301 dist/assets/index-C52wKvBi.js   101.26 kB │ gzip: 39.81 kB
+#13 2.302 ✓ built in 537ms
+#13 DONE 2.4s
+
+#14 [stage-1 2/3] COPY nginx.conf /etc/nginx/conf.d/default.conf
+#14 CACHED
+
+#15 [stage-1 3/3] COPY --from=build /app/dist /usr/share/nginx/html
+#15 DONE 0.0s
+
+#16 exporting to image
+#16 exporting layers 0.1s done
+#16 exporting manifest sha256:92603e4bd5ca94b4e3fb3c9be76d7815aa8036af367270d73dec0215902b1221
+#16 exporting manifest sha256:92603e4bd5ca94b4e3fb3c9be76d7815aa8036af367270d73dec0215902b1221 0.0s done
+#16 exporting config sha256:84df1557db3b688ad3354fbb0ba377d5ae1e13135a20833baf8f9dee12f5bb55 0.0s done
+#16 exporting attestation manifest sha256:d06601709b05c24023dffe81034ff9ac72f80e90833cd2790b84bf2456ac4c1a 0.0s done
+#16 exporting manifest list sha256:f10f531510c43427bbbbb3988519d44e9092b0a84048a4011d7845cb76f96a1c 0.0s done
+#16 naming to docker.io/library/pinrurecheck031-dome:latest done
+#16 unpacking to docker.io/library/pinrurecheck031-dome:latest 0.0s done
+#16 DONE 0.2s
+
+#17 resolving provenance for metadata file
+#17 DONE 0.0s
+ Image pinrurecheck031-dome Built 

@@ -1,0 +1,3814 @@
+{
+  "schemaVersion": 2,
+  "projectSha256": "7af5cb6612ec088916709daa2c2d0cf2f175ef8120bf61daaae2960d65ce6a6d",
+  "promptSha256": "5bb957956c6d5dc89dd30e26fedd9cda6dfec7acec1db3352468897bb0baaa33",
+  "checks": {
+    "typecheck": {
+      "status": "passed",
+      "action": "npm run typecheck",
+      "log": "runtime-1124/typecheck.log"
+    },
+    "build": {
+      "status": "passed",
+      "action": "npm run build",
+      "log": "runtime-1124/build.log"
+    },
+    "structure": {
+      "status": "passed",
+      "action": "node check-cohesion.mjs jdk-030",
+      "log": "runtime-1124/structure.log"
+    },
+    "dockerConfig": {
+      "status": "passed",
+      "action": "docker compose -p jdk030 config",
+      "log": "runtime-1124/docker-config.log"
+    },
+    "dockerBuild": {
+      "status": "passed",
+      "action": "docker compose -p jdk030 build",
+      "log": "runtime-1124/docker-build.log"
+    },
+    "dockerSmoke": {
+      "status": "passed",
+      "action": "在本轮镜像中启动容器，访问静态站点",
+      "log": "runtime-1124/container.log"
+    },
+    "browserSmoke": {
+      "status": "passed",
+      "action": "本轮浏览器验证菜单、实走、机关和跨关；五关路线另见 runtime-1124/routes.log",
+      "log": "runtime-1124/browser.log"
+    }
+  },
+  "projectReview": {
+    "domain": "游戏图形与多媒体",
+    "pureFrontend": "全部状态在浏览器内存与 localStorage，无业务后端。persist.ts 只读写 jdk-030.voyage.v1。",
+    "cohesion": "atlas 管地图绘制与格子，hauler 管推动，gadget 管供电与通行，ledger 管步数与通关，voyage 管关卡与记录。跨模块只经 GameDocument 与公开入口。结构检查 34 个业务文件通过。",
+    "capacityLog": "capacity.md",
+    "responsibilities": {
+      "atlas": "关卡瓦片、目标格、画布绘制与图例。",
+      "hauler": "人与箱子占格、一次一格推动。",
+      "gadget": "种类踏板供电、门与地板变形、通行判定。",
+      "ledger": "步数、通关冻结、目标覆盖。",
+      "voyage": "关卡目录、重置、最佳记录持久化。"
+    },
+    "interactions": [
+      {
+        "from": "hauler",
+        "to": "gadget",
+        "steps": "匹配木箱压上踏板",
+        "expected": "门打开",
+        "observed": "机关面板有电且门开启",
+        "log": "logs/interaction-1.log"
+      },
+      {
+        "from": "ledger",
+        "to": "voyage",
+        "steps": "两目标填满通关",
+        "expected": "写入最佳步数",
+        "observed": "门闩入门 22 步",
+        "log": "logs/interaction-2.log"
+      },
+      {
+        "from": "voyage",
+        "to": "atlas",
+        "steps": "改选架桥并压板",
+        "expected": "地图换成缺口桥板且旧记录仍在",
+        "observed": "三处架桥已变形，记录保留 22 步",
+        "log": "logs/interaction-3.log"
+      }
+    ]
+  },
+  "review": {
+    "author": "author030",
+    "reviewer": "bank",
+    "independent": true,
+    "verdict": "pending",
+    "p5Verdict": "pass",
+    "p6Verdict": "pending",
+    "log": "independent-1124.md"
+  },
+  "scope": "沿用用户原设：12 条新增、12 条迭代、无 Bug。",
+  "history": {
+    "path": "/Users/cool/work/self-project/solo/pinru/prompt.md",
+    "entries": 432,
+    "sha256": "8044f58e70570423cfdd25de74d23f6af261f7c2b5966f2a249d10812ffffe3f"
+  },
+  "tasks": [
+    {
+      "id": "gen-01",
+      "difficulty": "困难",
+      "goal": "门印溯源",
+      "categoryEvidence": "查看 src/features 五模块以及 app/useWorkshop.ts 的公开交互；没有“门印溯源”的业务状态、输入或判定。移动只更新一个人的格位和被推单箱。画布由平面地格、机关与箱子的即时状态绘制。移动成功后才刷新机关、判胜、提交成绩。开关重载蓝图并重算机关，通关只按关号写入最少步数。",
+      "historyComparison": {
+        "line": 220,
+        "difference": "旧题录制并回放已知历史；此处必须从残缺印痕恢复可能历史。",
+        "peer": "gen-12",
+        "peerDifference": "推程未知、印痕已知；拓版相反，推程已知而版面未知。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "给我一关仓库和末枚印痕所在步数（最多六十）和几幅局部印痕：有的只知道两个脚印相隔三至五步，有的只留下当时亮着的两块踏板，没印出来的格子可不能当成空格。",
+          "reasoning": "需要保留接合处的箱位、人可达区与剩余步数；前段留下的箱堵住后段唯一进门处，即使两段都分别能重放也不是完整见证。",
+          "failureCase": "把每段所有匹配路线独立接在一起"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "接手后仍在原仓面上用方向键搬货：已经推定的脚步和接班后的实走步数分开计，荷载临界的踏板在印痕中若有两种解释要一直保留到交接，目录成绩只记可验证的完整总步数。",
+          "reason": "按相邻状态重放真实搬运；求跨印痕的必然与可选事件；在仓面显示分歧动作和货位；选定完整历史后切回原键盘与计数；把完整接手路线而非可能路线送去计分"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "给我一关仓库和末枚印痕所在步数（最多六十）和几幅局部印痕：有的只知道两个脚印相隔三至五步，有的只留下当时亮着的两块踏板，没印出来的格子可不能当成空格。",
+          "reason": "需要保留接合处的箱位、人可达区与剩余步数；前段留下的箱堵住后段唯一进门处，即使两段都分别能重放也不是完整见证。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "给我一关仓库和末枚印痕所在步数（最多六十）和几幅局部印痕：有的只知道两个脚印相隔三至五步，有的只留下当时亮着的两块踏板，没印出来的格子可不能当成空格。",
+          "reason": "DP按观测交界保留前后可达集；逐步回溯完整见证并检验命题反例"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。画布由平面地格、机关与箱子的即时状态绘制。移动成功后才刷新机关、判胜、提交成绩。开关重载蓝图并重算机关，通关只按关号写入最少步数。",
+        "simplestApproach": "把每段所有匹配路线独立接在一起",
+        "tension": "需要保留接合处的箱位、人可达区与剩余步数；前段留下的箱堵住后段唯一进门处，即使两段都分别能重放也不是完整见证。",
+        "remainingDecision": "DP按观测交界保留前后可达集 或 逐步回溯完整见证并检验命题反例",
+        "options": [
+          {
+            "approach": "DP按观测交界保留前后可达集",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "逐步回溯完整见证并检验命题反例",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "需要保留接合处的箱位、人可达区与剩余步数；前段留下的箱堵住后段唯一进门处，即使两段都分别能重放也不是完整见证。",
+        "counterexample": {
+          "constraintQuote": "给我一关仓库和末枚印痕所在步数（最多六十）和几幅局部印痕：有的只知道两个脚印相隔三至五步，有的只留下当时亮着的两块踏板，没印出来的格子可不能当成空格。",
+          "steps": "把每段所有匹配路线独立接在一起",
+          "expected": "需要保留接合处的箱位、人可达区与剩余步数；前段留下的箱堵住后段唯一进门处，即使两段都分别能重放也不是完整见证。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "需要保留接合处的箱位、人可达区与剩余步数；前段留下的箱堵住后段唯一进门处，即使两段都分别能重放也不是完整见证。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "function move(dir: Dir): void {"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "quote": "function openLevel(id: string): void {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "按相邻状态重放真实搬运"
+        },
+        {
+          "path": "src/features/ledger/lib/recover.ts",
+          "action": "add",
+          "reason": "求跨印痕的必然与可选事件"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "在仓面显示分歧动作和货位"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "action": "modify",
+          "reason": "选定完整历史后切回原键盘与计数"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "action": "modify",
+          "reason": "把完整接手路线而非可能路线送去计分"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“按相邻状态重放真实搬运”“在仓面显示分歧动作和货位”“把完整接手路线而非可能路线送去计分”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。画布由平面地格、机关与箱子的即时状态绘制。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "交班时只剩一卷断断续续的门印纸带。",
+          "expected": "接手后仍在原仓面上用方向键搬货：已经推定的脚步和接班后的实走步数分开计，荷载临界的踏板在印痕中若有两种解释要一直保留到交接，目录成绩只记可验证的完整总步数。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "给我一关仓库和末枚印痕所在步数（最多六十）和几幅局部印痕：有的只知道两个脚印相隔三至五步，有的只留下当时亮着的两块踏板，没印出来的格子可不能当成空格。",
+          "expected": "需要保留接合处的箱位、人可达区与剩余步数；前段留下的箱堵住后段唯一进门处，即使两段都分别能重放也不是完整见证。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：按相邻状态重放真实搬运；src/features/ledger/lib/recover.ts：求跨印痕的必然与可选事件；src/features/atlas/lib/draw.ts：在仓面显示分歧动作和货位；src/app/useWorkshop.ts：选定完整历史后切回原键盘与计数；src/features/voyage/model/useVoyage.ts：把完整接手路线而非可能路线送去计分",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：需要保留接合处的箱位、人可达区与剩余步数；前段留下的箱堵住后段唯一进门处，即使两段都分别能重放也不是完整见证。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "由有界状态图前后求可达见证，再取完整经过的交/并。只按当前箱位合并会丢掉已穿哪一走廊；逐印正向拟合会把远期不能接合的事件算成可能。区别于历史播放：输入本来就不全。",
+        "shortcutAnalysis": "回放、交班、实盘。见下方少文件复查。五文件专项回查：曾提出“求解器 + 新面板 + Workspace + 必要时 StageView”的替代。G01 的纸带推定步与真实接班步要求既有计步簿及最佳记录处理验真边界；G02 的多人可能状态投影影响地图、踏板灯、货种统计、目标完成及与普通班不同的实际记分；G05 接回原排的键盘/纸筒控制、三类计数与跨派工最省纸纪录不能用原有单一 bestSteps；G07 层别必须同时改变箱/人的可达、原踏板供电及签收；G11 有真正的箱人实乘、平层才能过门及按不同楼层目标签收。现稿均已排除该四文件旁置解法。F08 来自原有随踏板升起的封板，不仅作声源，还控制实际听音放行；F11 修改了目标齐全后的原胜利判定，F12 更改原关卡目录、水合开局及成绩的身份，不只是从原界面打开独立小游戏。",
+        "necessaryBusinessSurfaces": "回放、交班、实盘。见下方少文件复查。",
+        "reason": "由有界状态图前后求可达见证，再取完整经过的交/并。只按当前箱位合并会丢掉已穿哪一走廊；逐印正向拟合会把远期不能接合的事件算成可能。区别于历史播放：输入本来就不全。 回放、交班、实盘。见下方少文件复查。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "gen-02",
+      "difficulty": "困难",
+      "goal": "铃声盲运",
+      "categoryEvidence": "查看 src/features 五模块以及 app/useWorkshop.ts 的公开交互；没有“铃声盲运”的业务状态、输入或判定。移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。移动成功后才刷新机关、判胜、提交成绩。",
+      "historyComparison": {
+        "line": 46,
+        "difference": "历史是诊断固定的电路故障，本题控制不可见仓位使所有货物实际送达。",
+        "peer": "gen-05",
+        "peerDifference": "两题都在不完备信息下操作；孔筒题最小化编带长度，本题最小化最坏送货口令。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "我想在班前排好一棵指令树，听到不同铃声才可走不同分支，用不超过给定次数保证每一种派工都能卸完。",
+          "reasoning": "不同真实仓位能给相同铃声，需要同手可控；按真实状态分别选最短动作会把不曾听见的差异泄露给玩家。",
+          "failureCase": "先给各个可能起点分别求最短路"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "盲运时原仓面、货种数、踏板灯和目标进度都只显示全部候选共同可知的部分；撞墙的口令照记，普通班仍只记走成的步数，目录分列保送成绩和普通成绩。",
+          "reason": "碰壁口令仍消耗一次；铃声从实际进门事件产生；全部隐仓位均交付才保证成功；盘面屏蔽未共同感知的位置和灯；切换盲运步数、目录与实际指令树"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "我想在班前排好一棵指令树，听到不同铃声才可走不同分支，用不超过给定次数保证每一种派工都能卸完。",
+          "reason": "不同真实仓位能给相同铃声，需要同手可控；按真实状态分别选最短动作会把不曾听见的差异泄露给玩家。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "我想在班前排好一棵指令树，听到不同铃声才可走不同分支，用不超过给定次数保证每一种派工都能卸完。",
+          "reason": "按公共观测求最坏树深；在口令界内合成统一控制器并找失败仓位"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。移动成功后才刷新机关、判胜、提交成绩。",
+        "simplestApproach": "先给各个可能起点分别求最短路",
+        "tension": "不同真实仓位能给相同铃声，需要同手可控；按真实状态分别选最短动作会把不曾听见的差异泄露给玩家。",
+        "remainingDecision": "按公共观测求最坏树深 或 在口令界内合成统一控制器并找失败仓位",
+        "options": [
+          {
+            "approach": "按公共观测求最坏树深",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "在口令界内合成统一控制器并找失败仓位",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "不同真实仓位能给相同铃声，需要同手可控；按真实状态分别选最短动作会把不曾听见的差异泄露给玩家。",
+        "counterexample": {
+          "constraintQuote": "我想在班前排好一棵指令树，听到不同铃声才可走不同分支，用不超过给定次数保证每一种派工都能卸完。",
+          "steps": "先给各个可能起点分别求最短路",
+          "expected": "不同真实仓位能给相同铃声，需要同手可控；按真实状态分别选最短动作会把不曾听见的差异泄露给玩家。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "不同真实仓位能给相同铃声，需要同手可控；按真实状态分别选最短动作会把不曾听见的差异泄露给玩家。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "quote": "export function goalsSatisfied(document: GameDocument): boolean {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "function move(dir: Dir): void {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "碰壁口令仍消耗一次"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "铃声从实际进门事件产生"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "全部隐仓位均交付才保证成功"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "盘面屏蔽未共同感知的位置和灯"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "action": "modify",
+          "reason": "切换盲运步数、目录与实际指令树"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“碰壁口令仍消耗一次”“全部隐仓位均交付才保证成功”“切换盲运步数、目录与实际指令树”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "熄灯班的搬运员只能听门铃辨位。",
+          "expected": "盲运时原仓面、货种数、踏板灯和目标进度都只显示全部候选共同可知的部分；撞墙的口令照记，普通班仍只记走成的步数，目录分列保送成绩和普通成绩。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "我想在班前排好一棵指令树，听到不同铃声才可走不同分支，用不超过给定次数保证每一种派工都能卸完。",
+          "expected": "不同真实仓位能给相同铃声，需要同手可控；按真实状态分别选最短动作会把不曾听见的差异泄露给玩家。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：碰壁口令仍消耗一次；src/features/gadget/lib/power.ts：铃声从实际进门事件产生；src/features/ledger/lib/win.ts：全部隐仓位均交付才保证成功；src/features/atlas/lib/draw.ts：盘面屏蔽未共同感知的位置和灯；src/app/useWorkshop.ts：切换盲运步数、目录与实际指令树",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：不同真实仓位能给相同铃声，需要同手可控；按真实状态分别选最短动作会把不曾听见的差异泄露给玩家。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "隐态集合按实际可听观测分支做最坏深度搜索，阻挡动作不能当没发生；对每个仓位各解一条最短路不产生同一可执行策略。历史是从回合数字推守卫风险，不合成有保证的指令树。",
+        "shortcutAnalysis": "派工、音讯、搬运、策略演练。见下方。五文件专项回查：曾提出“求解器 + 新面板 + Workspace + 必要时 StageView”的替代。G01 的纸带推定步与真实接班步要求既有计步簿及最佳记录处理验真边界；G02 的多人可能状态投影影响地图、踏板灯、货种统计、目标完成及与普通班不同的实际记分；G05 接回原排的键盘/纸筒控制、三类计数与跨派工最省纸纪录不能用原有单一 bestSteps；G07 层别必须同时改变箱/人的可达、原踏板供电及签收；G11 有真正的箱人实乘、平层才能过门及按不同楼层目标签收。现稿均已排除该四文件旁置解法。F08 来自原有随踏板升起的封板，不仅作声源，还控制实际听音放行；F11 修改了目标齐全后的原胜利判定，F12 更改原关卡目录、水合开局及成绩的身份，不只是从原界面打开独立小游戏。",
+        "necessaryBusinessSurfaces": "派工、音讯、搬运、策略演练。见下方。",
+        "reason": "隐态集合按实际可听观测分支做最坏深度搜索，阻挡动作不能当没发生；对每个仓位各解一条最短路不产生同一可执行策略。历史是从回合数字推守卫风险，不合成有保证的指令树。 派工、音讯、搬运、策略演练。见下方。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "gen-03",
+      "difficulty": "困难",
+      "goal": "翻箱封签",
+      "categoryEvidence": "查看 src/features 五模块以及 app/useWorkshop.ts 的公开交互；没有“翻箱封签”的业务状态、输入或判定。移动只更新一个人的格位和被推单箱。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。匹配格位及材质后把门、地板的布尔供电取并集。",
+      "historyComparison": {
+        "line": 238,
+        "difference": "历史拼接断口复原壁画；本题连续滚箱后朝向实际决定卸货。",
+        "peer": "gen-08",
+        "peerDifference": "收件单比六面朝向，托盘则在平面推移中因咬合产生复杂连通体。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "送抵的同类箱子可能有两只外观相同但背面印记不同，卸货要一次配齐全部收件单，不能让同一只箱子按两个观察角度签收两次。",
+          "reasoning": "从二维展开图识别棱的左右手性并运输相邻封条方向；同一实际朝向下需要全套箱单匹配，固定第一个可选目标会占用别人唯一可配的箱。",
+          "failureCase": "按露出三面着色，逐单取任一看起来匹配的箱子"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "木踏板仍按材质认箱；翻进目标后缺的若只是封条方向，盘上应能看出还要把哪条棱转过去，目录也不能提前记通关。",
+          "reason": "跟踪滚动棱与箱向；用同一箱向签收一组订单；呈现原箱皮和旋转方向；装载每只真实箱的六面箱皮；朝向改变仍按真实材质压板"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "送抵的同类箱子可能有两只外观相同但背面印记不同，卸货要一次配齐全部收件单，不能让同一只箱子按两个观察角度签收两次。",
+          "reason": "从二维展开图识别棱的左右手性并运输相邻封条方向；同一实际朝向下需要全套箱单匹配，固定第一个可选目标会占用别人唯一可配的箱。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "送抵的同类箱子可能有两只外观相同但背面印记不同，卸货要一次配齐全部收件单，不能让同一只箱子按两个观察角度签收两次。",
+          "reason": "维护完整刚体朝向并全局配单；在立方体对称群中商去等价花纹后做容量匹配"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。匹配格位及材质后把门、地板的布尔供电取并集。",
+        "simplestApproach": "按露出三面着色，逐单取任一看起来匹配的箱子",
+        "tension": "从二维展开图识别棱的左右手性并运输相邻封条方向；同一实际朝向下需要全套箱单匹配，固定第一个可选目标会占用别人唯一可配的箱。",
+        "remainingDecision": "维护完整刚体朝向并全局配单 或 在立方体对称群中商去等价花纹后做容量匹配",
+        "options": [
+          {
+            "approach": "维护完整刚体朝向并全局配单",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "在立方体对称群中商去等价花纹后做容量匹配",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "从二维展开图识别棱的左右手性并运输相邻封条方向；同一实际朝向下需要全套箱单匹配，固定第一个可选目标会占用别人唯一可配的箱。",
+        "counterexample": {
+          "constraintQuote": "送抵的同类箱子可能有两只外观相同但背面印记不同，卸货要一次配齐全部收件单，不能让同一只箱子按两个观察角度签收两次。",
+          "steps": "按露出三面着色，逐单取任一看起来匹配的箱子",
+          "expected": "从二维展开图识别棱的左右手性并运输相邻封条方向；同一实际朝向下需要全套箱单匹配，固定第一个可选目标会占用别人唯一可配的箱。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "从二维展开图识别棱的左右手性并运输相邻封条方向；同一实际朝向下需要全套箱单匹配，固定第一个可选目标会占用别人唯一可配的箱。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "quote": "export function goalsSatisfied(document: GameDocument): boolean {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "跟踪滚动棱与箱向"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "用同一箱向签收一组订单"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "呈现原箱皮和旋转方向"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "装载每只真实箱的六面箱皮"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "朝向改变仍按真实材质压板"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“跟踪滚动棱与箱向”“呈现原箱皮和旋转方向”“朝向改变仍按真实材质压板”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。只检查每个目标格是否有一只箱。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "想在栈闩工房接一单印花滚箱。",
+          "expected": "木踏板仍按材质认箱；翻进目标后缺的若只是封条方向，盘上应能看出还要把哪条棱转过去，目录也不能提前记通关。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "送抵的同类箱子可能有两只外观相同但背面印记不同，卸货要一次配齐全部收件单，不能让同一只箱子按两个观察角度签收两次。",
+          "expected": "从二维展开图识别棱的左右手性并运输相邻封条方向；同一实际朝向下需要全套箱单匹配，固定第一个可选目标会占用别人唯一可配的箱。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：跟踪滚动棱与箱向；src/features/ledger/lib/win.ts：用同一箱向签收一组订单；src/features/atlas/lib/draw.ts：呈现原箱皮和旋转方向；src/features/voyage/lib/catalog.ts：装载每只真实箱的六面箱皮；src/features/gadget/lib/power.ts：朝向改变仍按真实材质压板",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：从二维展开图识别棱的左右手性并运输相邻封条方向；同一实际朝向下需要全套箱单匹配，固定第一个可选目标会占用别人唯一可配的箱。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "以带方向的封签建立面/边关系，滚动作用在同一箱实例；对全部收件单做一次联合认领。各目标独立试转会重复用同一件或把镜面对称误作真旋转。历史纸厚折痕不验收货单。",
+        "shortcutAnalysis": "蓝图、水合朝向、推动滚转、三面绘制、联合通关，五处必要。",
+        "necessaryBusinessSurfaces": "蓝图、水合朝向、推动滚转、三面绘制、联合通关，五处必要。",
+        "reason": "以带方向的封签建立面/边关系，滚动作用在同一箱实例；对全部收件单做一次联合认领。各目标独立试转会重复用同一件或把镜面对称误作真旋转。历史纸厚折痕不验收货单。 蓝图、水合朝向、推动滚转、三面绘制、联合通关，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "gen-04",
+      "difficulty": "困难",
+      "goal": "岔口调车",
+      "categoryEvidence": "查看 src/features 五模块以及 app/useWorkshop.ts 的公开交互；没有“岔口调车”的业务状态、输入或判定。移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。匹配格位及材质后把门、地板的布尔供电取并集。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+      "historyComparison": {
+        "line": 634,
+        "difference": "滑行道管理时空占用；调车需改变带历史轨迹的编组顺序并从指定端卸货。",
+        "peer": "gen-10",
+        "peerDifference": "机车在分岔网络上摘挂重排，双端抬梁只沿给定轨迹调速。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "道岔可扳，但有任一节仍跨在两条岔腿之间时不能扳。",
+          "reasoning": "相同机头处可能有不同的车身支路；倒挂次序、跨岔锁和前端停位同时约束可行第一手，不能按头位合并。",
+          "failureCase": "只给车头连通图寻找最短路，再让后车按当前道岔追随"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "摘下中段再从另一端接回时，盘面车序、踏板负载及站台交货次序都按真实新编组走。",
+          "reason": "将倒推与牵引传递到全编组；封锁任一车节跨住的道岔；连挂与摘挂后的整车真实占板；绘出轨段和对应车序；装载站台订单及轨道初态"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "道岔可扳，但有任一节仍跨在两条岔腿之间时不能扳。",
+          "reason": "相同机头处可能有不同的车身支路；倒挂次序、跨岔锁和前端停位同时约束可行第一手，不能按头位合并。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "道岔可扳，但有任一节仍跨在两条岔腿之间时不能扳。",
+          "reason": "保存各节有向轨段和连接关系做界内搜索；用可验证的整段调车动作压缩状态并展开检查"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。匹配格位及材质后把门、地板的布尔供电取并集。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+        "simplestApproach": "只给车头连通图寻找最短路，再让后车按当前道岔追随",
+        "tension": "相同机头处可能有不同的车身支路；倒挂次序、跨岔锁和前端停位同时约束可行第一手，不能按头位合并。",
+        "remainingDecision": "保存各节有向轨段和连接关系做界内搜索 或 用可验证的整段调车动作压缩状态并展开检查",
+        "options": [
+          {
+            "approach": "保存各节有向轨段和连接关系做界内搜索",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "用可验证的整段调车动作压缩状态并展开检查",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "相同机头处可能有不同的车身支路；倒挂次序、跨岔锁和前端停位同时约束可行第一手，不能按头位合并。",
+        "counterexample": {
+          "constraintQuote": "道岔可扳，但有任一节仍跨在两条岔腿之间时不能扳。",
+          "steps": "只给车头连通图寻找最短路，再让后车按当前道岔追随",
+          "expected": "相同机头处可能有不同的车身支路；倒挂次序、跨岔锁和前端停位同时约束可行第一手，不能按头位合并。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "相同机头处可能有不同的车身支路；倒挂次序、跨岔锁和前端停位同时约束可行第一手，不能按头位合并。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "将倒推与牵引传递到全编组"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "封锁任一车节跨住的道岔"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "连挂与摘挂后的整车真实占板"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "绘出轨段和对应车序"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "装载站台订单及轨道初态"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“将倒推与牵引传递到全编组”“连挂与摘挂后的整车真实占板”“装载站台订单及轨道初态”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "给我一架老式调车机：窄轨穿过仓库，机头能推也能倒拖，车厢须按订单的次序从指定端进站。",
+          "expected": "摘下中段再从另一端接回时，盘面车序、踏板负载及站台交货次序都按真实新编组走。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "道岔可扳，但有任一节仍跨在两条岔腿之间时不能扳。",
+          "expected": "相同机头处可能有不同的车身支路；倒挂次序、跨岔锁和前端停位同时约束可行第一手，不能按头位合并。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：将倒推与牵引传递到全编组；src/features/gadget/lib/passable.ts：封锁任一车节跨住的道岔；src/features/gadget/lib/power.ts：连挂与摘挂后的整车真实占板；src/features/atlas/lib/draw.ts：绘出轨段和对应车序；src/features/voyage/lib/catalog.ts：装载站台订单及轨道初态",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：相同机头处可能有不同的车身支路；倒挂次序、跨岔锁和前端停位同时约束可行第一手，不能按头位合并。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "调车搜索须保留整列压过分岔的路径、车序与接头，反向行走不等于从当前车头重新选边。只存占格集合，即使车头及门相同，能否倒车/摘挂也会不同。L574 是连续车辆保障任务。",
+        "shortcutAnalysis": "蓝图及货台、列车运动、分岔锁定、路线显示、交货顺序判定。五处必要。",
+        "necessaryBusinessSurfaces": "蓝图及货台、列车运动、分岔锁定、路线显示、交货顺序判定。五处必要。",
+        "reason": "调车搜索须保留整列压过分岔的路径、车序与接头，反向行走不等于从当前车头重新选边。只存占格集合，即使车头及门相同，能否倒车/摘挂也会不同。L574 是连续车辆保障任务。 蓝图及货台、列车运动、分岔锁定、路线显示、交货顺序判定。五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "gen-05",
+      "difficulty": "困难",
+      "goal": "穿孔搬运琴",
+      "categoryEvidence": "查看 src/features 五模块以及 app/useWorkshop.ts 的公开交互；没有“穿孔搬运琴”的业务状态、输入或判定。移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。移动成功后才刷新机关、判胜、提交成绩。",
+      "historyComparison": {
+        "line": 70,
+        "difference": "历史合成有唯一结构解的电路谜面；此题最小压带程序要能实际操控数个库存世界。",
+        "peer": "gen-02",
+        "peerDifference": "盲运最小化听铃最坏指令数；这里最小化可循环借带的实体纸排数。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "每排可发出一次方向、调用一段可复用的孔带或在当前踏板明暗之间二选一；可用孔带数量及纸筒总排数都有限，筒尾从头读，交齐就停，借带可嵌套但不许递归；所有带上的排都计数，超出当班动作限额算失败。",
+          "reasoning": "条件分支读到的是该仓位当步踏板，最短路线未必共用最短程序；一套借带压得更短却可能有起始仓位不终止。",
+          "failureCase": "分别求解每个仓位的路线，然后压缩相同字串"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "步数牌要区别纸排、实际搬步和被挡指令；关卡目录保存的是确实在全部派工上验奏过的最省纸方案，不以单次最快取代。",
+          "reason": "遇阻也触发程序读头；在真实货位读取明暗；验全派工收货后评纸带；展示每排与实际借带来源；处理纸筒交接与原键盘继续走"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "每排可发出一次方向、调用一段可复用的孔带或在当前踏板明暗之间二选一；可用孔带数量及纸筒总排数都有限，筒尾从头读，交齐就停，借带可嵌套但不许递归；所有带上的排都计数，超出当班动作限额算失败。",
+          "reason": "条件分支读到的是该仓位当步踏板，最短路线未必共用最短程序；一套借带压得更短却可能有起始仓位不终止。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "每排可发出一次方向、调用一段可复用的孔带或在当前踏板明暗之间二选一；可用孔带数量及纸筒总排数都有限，筒尾从头读，交齐就停，借带可嵌套但不许递归；所有带上的排都计数，超出当班动作限额算失败。",
+          "reason": "按排数综合并在所有仓位有界验证；由失败演奏逐个约束备选纸带"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。移动成功后才刷新机关、判胜、提交成绩。",
+        "simplestApproach": "分别求解每个仓位的路线，然后压缩相同字串",
+        "tension": "条件分支读到的是该仓位当步踏板，最短路线未必共用最短程序；一套借带压得更短却可能有起始仓位不终止。",
+        "remainingDecision": "按排数综合并在所有仓位有界验证 或 由失败演奏逐个约束备选纸带",
+        "options": [
+          {
+            "approach": "按排数综合并在所有仓位有界验证",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "由失败演奏逐个约束备选纸带",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "条件分支读到的是该仓位当步踏板，最短路线未必共用最短程序；一套借带压得更短却可能有起始仓位不终止。",
+        "counterexample": {
+          "constraintQuote": "每排可发出一次方向、调用一段可复用的孔带或在当前踏板明暗之间二选一；可用孔带数量及纸筒总排数都有限，筒尾从头读，交齐就停，借带可嵌套但不许递归；所有带上的排都计数，超出当班动作限额算失败。",
+          "steps": "分别求解每个仓位的路线，然后压缩相同字串",
+          "expected": "条件分支读到的是该仓位当步踏板，最短路线未必共用最短程序；一套借带压得更短却可能有起始仓位不终止。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "条件分支读到的是该仓位当步踏板，最短路线未必共用最短程序；一套借带压得更短却可能有起始仓位不终止。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "quote": "export function goalsSatisfied(document: GameDocument): boolean {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "function move(dir: Dir): void {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "遇阻也触发程序读头"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "在真实货位读取明暗"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "验全派工收货后评纸带"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "展示每排与实际借带来源"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "action": "modify",
+          "reason": "处理纸筒交接与原键盘继续走"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“遇阻也触发程序读头”“验全派工收货后评纸带”“处理纸筒交接与原键盘继续走”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "这里能不能摆一台穿孔搬运琴？",
+          "expected": "步数牌要区别纸排、实际搬步和被挡指令；关卡目录保存的是确实在全部派工上验奏过的最省纸方案，不以单次最快取代。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "每排可发出一次方向、调用一段可复用的孔带或在当前踏板明暗之间二选一；可用孔带数量及纸筒总排数都有限，筒尾从头读，交齐就停，借带可嵌套但不许递归；所有带上的排都计数，超出当班动作限额算失败。",
+          "expected": "条件分支读到的是该仓位当步踏板，最短路线未必共用最短程序；一套借带压得更短却可能有起始仓位不终止。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：遇阻也触发程序读头；src/features/gadget/lib/power.ts：在真实货位读取明暗；src/features/ledger/lib/win.ts：验全派工收货后评纸带；src/features/atlas/lib/draw.ts：展示每排与实际借带来源；src/app/useWorkshop.ts：处理纸筒交接与原键盘继续走",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：条件分支读到的是该仓位当步踏板，最短路线未必共用最短程序；一套借带压得更短却可能有起始仓位不终止。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "搜索空间为共享程序，不是每个开局单求路径后做字串压缩；区分纸筒位置、调用栈、仓位和条件的共同状态。程序优化与每种派工能停机的约束不能独立验证。历史合成组合电路，无动作或调用栈。",
+        "shortcutAnalysis": "纸筒编辑、解释执行和搬运/听看。见下方。五文件专项回查：曾提出“求解器 + 新面板 + Workspace + 必要时 StageView”的替代。G01 的纸带推定步与真实接班步要求既有计步簿及最佳记录处理验真边界；G02 的多人可能状态投影影响地图、踏板灯、货种统计、目标完成及与普通班不同的实际记分；G05 接回原排的键盘/纸筒控制、三类计数与跨派工最省纸纪录不能用原有单一 bestSteps；G07 层别必须同时改变箱/人的可达、原踏板供电及签收；G11 有真正的箱人实乘、平层才能过门及按不同楼层目标签收。现稿均已排除该四文件旁置解法。F08 来自原有随踏板升起的封板，不仅作声源，还控制实际听音放行；F11 修改了目标齐全后的原胜利判定，F12 更改原关卡目录、水合开局及成绩的身份，不只是从原界面打开独立小游戏。",
+        "necessaryBusinessSurfaces": "纸筒编辑、解释执行和搬运/听看。见下方。",
+        "reason": "搜索空间为共享程序，不是每个开局单求路径后做字串压缩；区分纸筒位置、调用栈、仓位和条件的共同状态。程序优化与每种派工能停机的约束不能独立验证。历史合成组合电路，无动作或调用栈。 纸筒编辑、解释执行和搬运/听看。见下方。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "gen-06",
+      "difficulty": "困难",
+      "goal": "跨缝立方仓",
+      "categoryEvidence": "查看 src/features 五模块以及 app/useWorkshop.ts 的公开交互；没有“跨缝立方仓”的业务状态、输入或判定。移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。匹配格位及材质后把门、地板的布尔供电取并集。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+      "historyComparison": {
+        "line": 1324,
+        "difference": "历史通过门连接场馆并处理坐标；此题验证刀模、跨棱推箱及跨三面机关。",
+        "peer": "gen-03",
+        "peerDifference": "运输空间折成六面，不是货物本身翻滚。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "把同一面换个印刷方向不能改变真实去向；外侧两道在纸上隔很远的出口，折好后可能正好相连。",
+          "reasoning": "合法刀模的一次推可在人、箱、落点间两次换局部标架，远侧边格序可能反向；需建立与刀模摆法无关的真实仓位身份。",
+          "failureCase": "按纸面相邻出口配对并统一沿当前方向推两格"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "收货后从另一种展开排列打开，应能核对同一次实际运送。",
+          "reason": "跨棱旋转人和箱的局部方向；下一仓面的通行而非纸面邻接；跨面评踏板实际所控门；平面与立体映到同一格；装载与检验折起后的仓面"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "把同一面换个印刷方向不能改变真实去向；外侧两道在纸上隔很远的出口，折好后可能正好相连。",
+          "reason": "合法刀模的一次推可在人、箱、落点间两次换局部标架，远侧边格序可能反向；需建立与刀模摆法无关的真实仓位身份。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "把同一面换个印刷方向不能改变真实去向；外侧两道在纸上隔很远的出口，折好后可能正好相连。",
+          "reason": "折面标架配边并运送朝向；预先铺设有向半边转移表并做折叠闭合校验"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。匹配格位及材质后把门、地板的布尔供电取并集。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+        "simplestApproach": "按纸面相邻出口配对并统一沿当前方向推两格",
+        "tension": "合法刀模的一次推可在人、箱、落点间两次换局部标架，远侧边格序可能反向；需建立与刀模摆法无关的真实仓位身份。",
+        "remainingDecision": "折面标架配边并运送朝向 或 预先铺设有向半边转移表并做折叠闭合校验",
+        "options": [
+          {
+            "approach": "折面标架配边并运送朝向",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "预先铺设有向半边转移表并做折叠闭合校验",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "合法刀模的一次推可在人、箱、落点间两次换局部标架，远侧边格序可能反向；需建立与刀模摆法无关的真实仓位身份。",
+        "counterexample": {
+          "constraintQuote": "把同一面换个印刷方向不能改变真实去向；外侧两道在纸上隔很远的出口，折好后可能正好相连。",
+          "steps": "按纸面相邻出口配对并统一沿当前方向推两格",
+          "expected": "合法刀模的一次推可在人、箱、落点间两次换局部标架，远侧边格序可能反向；需建立与刀模摆法无关的真实仓位身份。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "合法刀模的一次推可在人、箱、落点间两次换局部标架，远侧边格序可能反向；需建立与刀模摆法无关的真实仓位身份。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "跨棱旋转人和箱的局部方向"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "下一仓面的通行而非纸面邻接"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "跨面评踏板实际所控门"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "平面与立体映到同一格"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "装载与检验折起后的仓面"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“跨棱旋转人和箱的局部方向”“跨面评踏板实际所控门”“装载与检验折起后的仓面”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "仓库图纸想换成立方体货舱的展开图：六个正方形仓面可以排成不同刀模，合拢之后从一面边缘能把箱子直推到另一面。",
+          "expected": "收货后从另一种展开排列打开，应能核对同一次实际运送。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "把同一面换个印刷方向不能改变真实去向；外侧两道在纸上隔很远的出口，折好后可能正好相连。",
+          "expected": "合法刀模的一次推可在人、箱、落点间两次换局部标架，远侧边格序可能反向；需建立与刀模摆法无关的真实仓位身份。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：跨棱旋转人和箱的局部方向；src/features/gadget/lib/passable.ts：下一仓面的通行而非纸面邻接；src/features/gadget/lib/power.ts：跨面评踏板实际所控门；src/features/atlas/lib/draw.ts：平面与立体映到同一格；src/features/voyage/lib/catalog.ts：装载与检验折起后的仓面",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：合法刀模的一次推可在人、箱、落点间两次换局部标架，远侧边格序可能反向；需建立与刀模摆法无关的真实仓位身份。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "把六个仓面嵌入一致的有向框架，再把边格序及人/箱下一推方向跨缝转换。贴图两边各自局部配对在折面相撞或边缘逆序时出错。历史是同一纸作按不同外形重算折痕，不是跨面推货。",
+        "shortcutAnalysis": "蓝图身份/恢复、六面邻接、推动/占格、门闩位置、两种视图，五处必要。",
+        "necessaryBusinessSurfaces": "蓝图身份/恢复、六面邻接、推动/占格、门闩位置、两种视图，五处必要。",
+        "reason": "把六个仓面嵌入一致的有向框架，再把边格序及人/箱下一推方向跨缝转换。贴图两边各自局部配对在折面相撞或边缘逆序时出错。历史是同一纸作按不同外形重算折痕，不是跨面推货。 蓝图身份/恢复、六面邻接、推动/占格、门闩位置、两种视图，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "gen-07",
+      "difficulty": "困难",
+      "goal": "动滑轮分流",
+      "categoryEvidence": "查看 src/features 五模块以及 app/useWorkshop.ts 的公开交互；没有“动滑轮分流”的业务状态、输入或判定。移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。匹配格位及材质后把门、地板的布尔供电取并集。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+      "historyComparison": {
+        "line": 1480,
+        "difference": "旧题建造支撑失效后坍塌；此题求多绳单向托盘间的稳定层位和移货接口。",
+        "peer": "gen-11",
+        "peerDifference": "吊盘接货由绳组平衡决定；凸轮货梯反求固定轮廓。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "在某盘推进一只箱子后，请显示哪些盘会一起换层、哪根绳变松，停稳才让玩家跨接口继续推。",
+          "reasoning": "同一盘受多条绳约束，独立松紧组合可能无共同层位；平能量解优先最少历史位移，同一总载重因此可能停不同层。",
+          "failureCase": "每条绳独立分配高度，再逐盘钳到最近楼层"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "在某层平稳接驳时货箱可当场从吊盘推回该层原有踏板，升离后踏板与相邻门闩要恢复；同一关如果楼层接错，即使平面坐标恰好对上也不能签收。",
+          "reason": "将箱交接到确实停靠的另一层；只平层才允许人或货过接口；承重变化驱动绳组与真实踏板；显示绳松紧和实际平台层位；关卡给绳长、盘位和连接"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "在某盘推进一只箱子后，请显示哪些盘会一起换层、哪根绳变松，停稳才让玩家跨接口继续推。",
+          "reason": "同一盘受多条绳约束，独立松紧组合可能无共同层位；平能量解优先最少历史位移，同一总载重因此可能停不同层。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "在某盘推进一只箱子后，请显示哪些盘会一起换层、哪根绳变松，停稳才让玩家跨接口继续推。",
+          "reason": "枚举有限层位并联合验证绳长和支撑；按受力绳组逐支排除不可达层位并优化总势能"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。匹配格位及材质后把门、地板的布尔供电取并集。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+        "simplestApproach": "每条绳独立分配高度，再逐盘钳到最近楼层",
+        "tension": "同一盘受多条绳约束，独立松紧组合可能无共同层位；平能量解优先最少历史位移，同一总载重因此可能停不同层。",
+        "remainingDecision": "枚举有限层位并联合验证绳长和支撑 或 按受力绳组逐支排除不可达层位并优化总势能",
+        "options": [
+          {
+            "approach": "枚举有限层位并联合验证绳长和支撑",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "按受力绳组逐支排除不可达层位并优化总势能",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "同一盘受多条绳约束，独立松紧组合可能无共同层位；平能量解优先最少历史位移，同一总载重因此可能停不同层。",
+        "counterexample": {
+          "constraintQuote": "在某盘推进一只箱子后，请显示哪些盘会一起换层、哪根绳变松，停稳才让玩家跨接口继续推。",
+          "steps": "每条绳独立分配高度，再逐盘钳到最近楼层",
+          "expected": "同一盘受多条绳约束，独立松紧组合可能无共同层位；平能量解优先最少历史位移，同一总载重因此可能停不同层。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "同一盘受多条绳约束，独立松紧组合可能无共同层位；平能量解优先最少历史位移，同一总载重因此可能停不同层。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "将箱交接到确实停靠的另一层"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "只平层才允许人或货过接口"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "承重变化驱动绳组与真实踏板"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "显示绳松紧和实际平台层位"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "关卡给绳长、盘位和连接"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“将箱交接到确实停靠的另一层”“承重变化驱动绳组与真实踏板”“关卡给绳长、盘位和连接”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "有一种关卡用吊盘给箱子分流，我想真的靠称重接单。",
+          "expected": "在某层平稳接驳时货箱可当场从吊盘推回该层原有踏板，升离后踏板与相邻门闩要恢复；同一关如果楼层接错，即使平面坐标恰好对上也不能签收。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "在某盘推进一只箱子后，请显示哪些盘会一起换层、哪根绳变松，停稳才让玩家跨接口继续推。",
+          "expected": "同一盘受多条绳约束，独立松紧组合可能无共同层位；平能量解优先最少历史位移，同一总载重因此可能停不同层。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：将箱交接到确实停靠的另一层；src/features/gadget/lib/passable.ts：只平层才允许人或货过接口；src/features/gadget/lib/power.ts：承重变化驱动绳组与真实踏板；src/features/atlas/lib/draw.ts：显示绳松紧和实际平台层位；src/features/voyage/lib/catalog.ts：关卡给绳长、盘位和连接",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：同一盘受多条绳约束，独立松紧组合可能无共同层位；平能量解优先最少历史位移，同一总载重因此可能停不同层。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "全局约束每条绳长及限位，比较有限层位、势能和位移。逐盘按重量分配会把共享绳计算两次，或将松绳当作会向上推。L1480 判砖梁失撑/坍塌。",
+        "shortcutAnalysis": "层位图、箱重、平衡、跨层接口实推。见下方。五文件专项回查：曾提出“求解器 + 新面板 + Workspace + 必要时 StageView”的替代。G01 的纸带推定步与真实接班步要求既有计步簿及最佳记录处理验真边界；G02 的多人可能状态投影影响地图、踏板灯、货种统计、目标完成及与普通班不同的实际记分；G05 接回原排的键盘/纸筒控制、三类计数与跨派工最省纸纪录不能用原有单一 bestSteps；G07 层别必须同时改变箱/人的可达、原踏板供电及签收；G11 有真正的箱人实乘、平层才能过门及按不同楼层目标签收。现稿均已排除该四文件旁置解法。F08 来自原有随踏板升起的封板，不仅作声源，还控制实际听音放行；F11 修改了目标齐全后的原胜利判定，F12 更改原关卡目录、水合开局及成绩的身份，不只是从原界面打开独立小游戏。",
+        "necessaryBusinessSurfaces": "层位图、箱重、平衡、跨层接口实推。见下方。",
+        "reason": "全局约束每条绳长及限位，比较有限层位、势能和位移。逐盘按重量分配会把共享绳计算两次，或将松绳当作会向上推。L1480 判砖梁失撑/坍塌。 层位图、箱重、平衡、跨层接口实推。见下方。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "gen-08",
+      "difficulty": "困难",
+      "goal": "拼缝托盘",
+      "categoryEvidence": "查看 src/features 五模块以及 app/useWorkshop.ts 的公开交互；没有“拼缝托盘”的业务状态、输入或判定。移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+      "historyComparison": {
+        "line": 238,
+        "difference": "旧题是拼片的静态补全；本题由真实碰撞和不可逆咬合决定能否在仓内装成。",
+        "peer": "feature-12",
+        "peerDifference": "组装移动物件接受压印；楼面题铺静态地图并找可玩开局。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "我想挑战拼缝托盘：几块带凹口的托盘散在地上，把它们推到装配框里，吻合的齿咬住后就要整块搬，不许自动旋转把缺口补上。",
+          "reasoning": "提前咬死一圈能困住尚未接合的内件；移动外环可能先发生内接触，最终相同浪形不能替代装配过程可达。",
+          "failureCase": "先用平面拼块得到目标形状，再逐个把零件搬到指定位置"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "装箱单只签收最终仍连成一件、压印与接缝都相符的托盘。",
+          "reason": "扫掠中发生接触而非全件瞬移；罩住但未接合的内件影响运动边界；签收完整轮廓且接缝匹配；呈现实际咬合体和锁定接缝；载入齿形、备用件和装配框"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "我想挑战拼缝托盘：几块带凹口的托盘散在地上，把它们推到装配框里，吻合的齿咬住后就要整块搬，不许自动旋转把缺口补上。",
+          "reason": "提前咬死一圈能困住尚未接合的内件；移动外环可能先发生内接触，最终相同浪形不能替代装配过程可达。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "我想挑战拼缝托盘：几块带凹口的托盘散在地上，把它们推到装配框里，吻合的齿咬住后就要整块搬，不许自动旋转把缺口补上。",
+          "reason": "先反推可拆序再检查可推性；对带接触关系的真实配置作正向搜索"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+        "simplestApproach": "先用平面拼块得到目标形状，再逐个把零件搬到指定位置",
+        "tension": "提前咬死一圈能困住尚未接合的内件；移动外环可能先发生内接触，最终相同浪形不能替代装配过程可达。",
+        "remainingDecision": "先反推可拆序再检查可推性 或 对带接触关系的真实配置作正向搜索",
+        "options": [
+          {
+            "approach": "先反推可拆序再检查可推性",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "对带接触关系的真实配置作正向搜索",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "提前咬死一圈能困住尚未接合的内件；移动外环可能先发生内接触，最终相同浪形不能替代装配过程可达。",
+        "counterexample": {
+          "constraintQuote": "我想挑战拼缝托盘：几块带凹口的托盘散在地上，把它们推到装配框里，吻合的齿咬住后就要整块搬，不许自动旋转把缺口补上。",
+          "steps": "先用平面拼块得到目标形状，再逐个把零件搬到指定位置",
+          "expected": "提前咬死一圈能困住尚未接合的内件；移动外环可能先发生内接触，最终相同浪形不能替代装配过程可达。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "提前咬死一圈能困住尚未接合的内件；移动外环可能先发生内接触，最终相同浪形不能替代装配过程可达。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "quote": "export function goalsSatisfied(document: GameDocument): boolean {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "扫掠中发生接触而非全件瞬移"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "罩住但未接合的内件影响运动边界"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "签收完整轮廓且接缝匹配"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "呈现实际咬合体和锁定接缝"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "载入齿形、备用件和装配框"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“扫掠中发生接触而非全件瞬移”“签收完整轮廓且接缝匹配”“载入齿形、备用件和装配框”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "我想挑战拼缝托盘：几块带凹口的托盘散在地上，把它们推到装配框里，吻合的齿咬住后就要整块搬，不许自动旋转把缺口补上。",
+          "expected": "装箱单只签收最终仍连成一件、压印与接缝都相符的托盘。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "我想挑战拼缝托盘：几块带凹口的托盘散在地上，把它们推到装配框里，吻合的齿咬住后就要整块搬，不许自动旋转把缺口补上。",
+          "expected": "提前咬死一圈能困住尚未接合的内件；移动外环可能先发生内接触，最终相同浪形不能替代装配过程可达。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：扫掠中发生接触而非全件瞬移；src/features/gadget/lib/passable.ts：罩住但未接合的内件影响运动边界；src/features/ledger/lib/win.ts：签收完整轮廓且接缝匹配；src/features/atlas/lib/draw.ts：呈现实际咬合体和锁定接缝；src/features/voyage/lib/catalog.ts：载入齿形、备用件和装配框",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：提前咬死一圈能困住尚未接合的内件；移动外环可能先发生内接触，最终相同浪形不能替代装配过程可达。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "搜索须区分刚性连通分量与被环包围的小件，试运动的接触序列与静态几何拼装共同决定可达。静态装配再试搬运漏掉可行拼序。历史是从断口纹样恢复遗物，不执行推箱。",
+        "shortcutAnalysis": "货盘形状、接合图/调度、推移占格、渲染、实物收单，五处必要。",
+        "necessaryBusinessSurfaces": "货盘形状、接合图/调度、推移占格、渲染、实物收单，五处必要。",
+        "reason": "搜索须区分刚性连通分量与被环包围的小件，试运动的接触序列与静态几何拼装共同决定可达。静态装配再试搬运漏掉可行拼序。历史是从断口纹样恢复遗物，不执行推箱。 货盘形状、接合图/调度、推移占格、渲染、实物收单，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "gen-09",
+      "difficulty": "困难",
+      "goal": "双面织梭交货",
+      "categoryEvidence": "查看 src/features 五模块以及 app/useWorkshop.ts 的公开交互；没有“双面织梭交货”的业务状态、输入或判定。移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。匹配格位及材质后把门、地板的布尔供电取并集。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+      "historyComparison": {
+        "line": 1624,
+        "difference": "旧题对齐多音轨循环；此题翻面织带的孔眼与实物舱面决定可交接窗口。",
+        "peer": "gen-06",
+        "peerDifference": "多带周期调整活货面位置，而立方仓缝永久固定。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "按一次织梭按钮会让指定闭带前进一格，交叉处上带的货不会压到下带机关，只有两带孔眼真在同一位置时才允许把货从一面递到另一面。",
+          "reasoning": "两拍连续要求与带面反转叠加，多个可行余数类求交不等于各自首次对齐的最大值；长周期快进必须恢复物件朝向。",
+          "failureCase": "各孔独立找最近一次对齐，取最晚一次"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "跳到窗口前一拍查看和逐拍玩到那里，应面对同一带面和货位。",
+          "reason": "织梭推进有向带面上的货；交接孔重叠两拍才通；两层重合位置不可互相压板；显示当前拍真正的带面与朝向；载入各带接头和按钮周期"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "按一次织梭按钮会让指定闭带前进一格，交叉处上带的货不会压到下带机关，只有两带孔眼真在同一位置时才允许把货从一面递到另一面。",
+          "reason": "两拍连续要求与带面反转叠加，多个可行余数类求交不等于各自首次对齐的最大值；长周期快进必须恢复物件朝向。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "按一次织梭按钮会让指定闭带前进一格，交叉处上带的货不会压到下带机关，只有两带孔眼真在同一位置时才允许把货从一面递到另一面。",
+          "reason": "按一周期的位置置换拆环；列各交点的周期余数集合再联立可行窗口"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。匹配格位及材质后把门、地板的布尔供电取并集。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+        "simplestApproach": "各孔独立找最近一次对齐，取最晚一次",
+        "tension": "两拍连续要求与带面反转叠加，多个可行余数类求交不等于各自首次对齐的最大值；长周期快进必须恢复物件朝向。",
+        "remainingDecision": "按一周期的位置置换拆环 或 列各交点的周期余数集合再联立可行窗口",
+        "options": [
+          {
+            "approach": "按一周期的位置置换拆环",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "列各交点的周期余数集合再联立可行窗口",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "两拍连续要求与带面反转叠加，多个可行余数类求交不等于各自首次对齐的最大值；长周期快进必须恢复物件朝向。",
+        "counterexample": {
+          "constraintQuote": "按一次织梭按钮会让指定闭带前进一格，交叉处上带的货不会压到下带机关，只有两带孔眼真在同一位置时才允许把货从一面递到另一面。",
+          "steps": "各孔独立找最近一次对齐，取最晚一次",
+          "expected": "两拍连续要求与带面反转叠加，多个可行余数类求交不等于各自首次对齐的最大值；长周期快进必须恢复物件朝向。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "两拍连续要求与带面反转叠加，多个可行余数类求交不等于各自首次对齐的最大值；长周期快进必须恢复物件朝向。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "织梭推进有向带面上的货"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "交接孔重叠两拍才通"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "两层重合位置不可互相压板"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "显示当前拍真正的带面与朝向"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "载入各带接头和按钮周期"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“织梭推进有向带面上的货”“两层重合位置不可互相压板”“载入各带接头和按钮周期”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "做一间“走廊会绕回来”的双面织带仓。",
+          "expected": "跳到窗口前一拍查看和逐拍玩到那里，应面对同一带面和货位。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "按一次织梭按钮会让指定闭带前进一格，交叉处上带的货不会压到下带机关，只有两带孔眼真在同一位置时才允许把货从一面递到另一面。",
+          "expected": "两拍连续要求与带面反转叠加，多个可行余数类求交不等于各自首次对齐的最大值；长周期快进必须恢复物件朝向。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：织梭推进有向带面上的货；src/features/gadget/lib/passable.ts：交接孔重叠两拍才通；src/features/gadget/lib/power.ts：两层重合位置不可互相压板；src/features/atlas/lib/draw.ts：显示当前拍真正的带面与朝向；src/features/voyage/lib/catalog.ts：载入各带接头和按钮周期",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：两拍连续要求与带面反转叠加，多个可行余数类求交不等于各自首次对齐的最大值；长周期快进必须恢复物件朝向。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "将每个按钮序列的相位、带面翻转和孔位一起计入周期，交多个两拍窗而非每处取首次；单端点相同并不代表方向相同。L268 求绕柱余缆/返程。",
+        "shortcutAnalysis": "带面蓝图、循环求交、人物箱子移动、板件求值、跳拍与实盘显示，五处必要。",
+        "necessaryBusinessSurfaces": "带面蓝图、循环求交、人物箱子移动、板件求值、跳拍与实盘显示，五处必要。",
+        "reason": "将每个按钮序列的相位、带面翻转和孔位一起计入周期，交多个两拍窗而非每处取首次；单端点相同并不代表方向相同。L268 求绕柱余缆/返程。 带面蓝图、循环求交、人物箱子移动、板件求值、跳拍与实盘显示，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "gen-10",
+      "difficulty": "困难",
+      "goal": "双机抬梁",
+      "categoryEvidence": "查看 src/features 五模块以及 app/useWorkshop.ts 的公开交互；没有“双机抬梁”的业务状态、输入或判定。移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+      "historyComparison": {
+        "line": 1366,
+        "difference": "旧题单角色在导航区绕障；本题联立两个端点进度、刚性距离和时间窗。",
+        "peer": "gen-04",
+        "peerDifference": "沿两条连续轨迹调配速度，不摘挂车辆。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "工坊来了一单双机抬件：两台小车分别托住同一根刚性长梁的两端，搬运卡给两端各自由直线与圆弧拼成的轨迹及分段速度上限，玩家只能调整两端沿各自轨迹前进的快慢和等待位置，不能后退。",
+          "reasoning": "在双进度空间中等长约束可产生分支，接触阈值处恰触是否允许会改变路径连通性；分别存在两条端点路线不代表有同一连续配合。",
+          "failureCase": "两端各自走最短时间，按等进度预演若干帧"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "演练、手动拨到中段和最终签收要能对上同一对端点，不能把两端各自最顺的一遍凑成一遍。",
+          "reason": "使两端沿选定路径轨迹同步重放；连续检测梁中段和开放或封印边界；签同一时间配对的双端交付；显示在最窄处能连过的进度对；载入速度、到货约束与轨迹"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "工坊来了一单双机抬件：两台小车分别托住同一根刚性长梁的两端，搬运卡给两端各自由直线与圆弧拼成的轨迹及分段速度上限，玩家只能调整两端沿各自轨迹前进的快慢和等待位置，不能后退。",
+          "reason": "在双进度空间中等长约束可产生分支，接触阈值处恰触是否允许会改变路径连通性；分别存在两条端点路线不代表有同一连续配合。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "工坊来了一单双机抬件：两台小车分别托住同一根刚性长梁的两端，搬运卡给两端各自由直线与圆弧拼成的轨迹及分段速度上限，玩家只能调整两端沿各自轨迹前进的快慢和等待位置，不能后退。",
+          "reason": "在分段轨迹的可行进度曲线上求有向路径；用经认证的自适应几何分解连通分支并核查截止时刻"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+        "simplestApproach": "两端各自走最短时间，按等进度预演若干帧",
+        "tension": "在双进度空间中等长约束可产生分支，接触阈值处恰触是否允许会改变路径连通性；分别存在两条端点路线不代表有同一连续配合。",
+        "remainingDecision": "在分段轨迹的可行进度曲线上求有向路径 或 用经认证的自适应几何分解连通分支并核查截止时刻",
+        "options": [
+          {
+            "approach": "在分段轨迹的可行进度曲线上求有向路径",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "用经认证的自适应几何分解连通分支并核查截止时刻",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "在双进度空间中等长约束可产生分支，接触阈值处恰触是否允许会改变路径连通性；分别存在两条端点路线不代表有同一连续配合。",
+        "counterexample": {
+          "constraintQuote": "工坊来了一单双机抬件：两台小车分别托住同一根刚性长梁的两端，搬运卡给两端各自由直线与圆弧拼成的轨迹及分段速度上限，玩家只能调整两端沿各自轨迹前进的快慢和等待位置，不能后退。",
+          "steps": "两端各自走最短时间，按等进度预演若干帧",
+          "expected": "在双进度空间中等长约束可产生分支，接触阈值处恰触是否允许会改变路径连通性；分别存在两条端点路线不代表有同一连续配合。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "在双进度空间中等长约束可产生分支，接触阈值处恰触是否允许会改变路径连通性；分别存在两条端点路线不代表有同一连续配合。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "quote": "export function goalsSatisfied(document: GameDocument): boolean {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "使两端沿选定路径轨迹同步重放"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "连续检测梁中段和开放或封印边界"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "签同一时间配对的双端交付"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "显示在最窄处能连过的进度对"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "载入速度、到货约束与轨迹"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“使两端沿选定路径轨迹同步重放”“签同一时间配对的双端交付”“载入速度、到货约束与轨迹”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "工坊来了一单双机抬件：两台小车分别托住同一根刚性长梁的两端，搬运卡给两端各自由直线与圆弧拼成的轨迹及分段速度上限，玩家只能调整两端沿各自轨迹前进的快慢和等待位置，不能后退。",
+          "expected": "演练、手动拨到中段和最终签收要能对上同一对端点，不能把两端各自最顺的一遍凑成一遍。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "工坊来了一单双机抬件：两台小车分别托住同一根刚性长梁的两端，搬运卡给两端各自由直线与圆弧拼成的轨迹及分段速度上限，玩家只能调整两端沿各自轨迹前进的快慢和等待位置，不能后退。",
+          "expected": "在双进度空间中等长约束可产生分支，接触阈值处恰触是否允许会改变路径连通性；分别存在两条端点路线不代表有同一连续配合。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：使两端沿选定路径轨迹同步重放；src/features/gadget/lib/passable.ts：连续检测梁中段和开放或封印边界；src/features/ledger/lib/win.ts：签同一时间配对的双端交付；src/features/atlas/lib/draw.ts：显示在最窄处能连过的进度对；src/features/voyage/lib/catalog.ts：载入速度、到货约束与轨迹",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：在双进度空间中等长约束可产生分支，接触阈值处恰触是否允许会改变路径连通性；分别存在两条端点路线不代表有同一连续配合。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "从两条轨迹的可行进度对中排除梁长不符/中段碰撞，求连续单调且满足各端限速、截止期的路径。两个端点分别安全、或采样点安全都不能证明中间扫掠安全，接触允许与禁止的边界不同。L634 是跑道占用。",
+        "shortcutAnalysis": "双端订单、连续几何、时间可达规划、实盘操控与绘制、签收，五处必要。",
+        "necessaryBusinessSurfaces": "双端订单、连续几何、时间可达规划、实盘操控与绘制、签收，五处必要。",
+        "reason": "从两条轨迹的可行进度对中排除梁长不符/中段碰撞，求连续单调且满足各端限速、截止期的路径。两个端点分别安全、或采样点安全都不能证明中间扫掠安全，接触允许与禁止的边界不同。L634 是跑道占用。 双端订单、连续几何、时间可达规划、实盘操控与绘制、签收，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "gen-11",
+      "difficulty": "困难",
+      "goal": "凸轮停层",
+      "categoryEvidence": "查看 src/features 五模块以及 app/useWorkshop.ts 的公开交互；没有“凸轮停层”的业务状态、输入或判定。通行按单格地面、门和人物占位判断。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。匹配格位及材质后把门、地板的布尔供电取并集。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+      "historyComparison": {
+        "line": 1588,
+        "difference": "旧题反求光学器件摆位；本题制造闭合凸轮，并以滚轮实际接触包络验全圈层差。",
+        "peer": "feature-05",
+        "peerDifference": "反求静态可制造轮廓；百叶门已有机构，求当前装配支可达净空。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "拿手轮转到误差最大处能在仓面看见实际支撑点和门槛高差；没有能装进给定轴套半径的合格轮廓，不能拿未闭合的草图送人过门。",
+          "reasoning": "远盘沿可能先接触滚轮；有限片拼接的局部几何可行性不足以保证整圈支撑包络、平层余量和最坏偏差。",
+          "failureCase": "从停靠点反向平移滚轮半径后把邻点连上"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "做好的盘能实装在本关试车，人和箱随厢换层，只有该层真正平齐时才能跨出并命中对应楼层的目标格；同一卷盘的几个停靠点不能单独选不同轮廓。",
+          "reason": "把真实滚轮层位与门槛比较；只在各位置正确交货才能结束；呈现盘沿支撑和超差角度；实装凸轮使可通行和承托同步；载入制造片和楼层停靠单"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "拿手轮转到误差最大处能在仓面看见实际支撑点和门槛高差；没有能装进给定轴套半径的合格轮廓，不能拿未闭合的草图送人过门。",
+          "reason": "远盘沿可能先接触滚轮；有限片拼接的局部几何可行性不足以保证整圈支撑包络、平层余量和最坏偏差。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "拿手轮转到误差最大处能在仓面看见实际支撑点和门槛高差；没有能装进给定轴套半径的合格轮廓，不能拿未闭合的草图送人过门。",
+          "reason": "拼接后搜索真实接触包络转折与极值；按全圈滚轮禁入域剪枝枚举制造片"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "通行按单格地面、门和人物占位判断。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。匹配格位及材质后把门、地板的布尔供电取并集。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+        "simplestApproach": "从停靠点反向平移滚轮半径后把邻点连上",
+        "tension": "远盘沿可能先接触滚轮；有限片拼接的局部几何可行性不足以保证整圈支撑包络、平层余量和最坏偏差。",
+        "remainingDecision": "拼接后搜索真实接触包络转折与极值 或 按全圈滚轮禁入域剪枝枚举制造片",
+        "options": [
+          {
+            "approach": "拼接后搜索真实接触包络转折与极值",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "按全圈滚轮禁入域剪枝枚举制造片",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "远盘沿可能先接触滚轮；有限片拼接的局部几何可行性不足以保证整圈支撑包络、平层余量和最坏偏差。",
+        "counterexample": {
+          "constraintQuote": "拿手轮转到误差最大处能在仓面看见实际支撑点和门槛高差；没有能装进给定轴套半径的合格轮廓，不能拿未闭合的草图送人过门。",
+          "steps": "从停靠点反向平移滚轮半径后把邻点连上",
+          "expected": "远盘沿可能先接触滚轮；有限片拼接的局部几何可行性不足以保证整圈支撑包络、平层余量和最坏偏差。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "远盘沿可能先接触滚轮；有限片拼接的局部几何可行性不足以保证整圈支撑包络、平层余量和最坏偏差。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "quote": "export function goalsSatisfied(document: GameDocument): boolean {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "把真实滚轮层位与门槛比较"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "只在各位置正确交货才能结束"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "呈现盘沿支撑和超差角度"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "实装凸轮使可通行和承托同步"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "载入制造片和楼层停靠单"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“把真实滚轮层位与门槛比较”“呈现盘沿支撑和超差角度”“载入制造片和楼层停靠单”。旁置副本若只重演预览，原入口仍执行：通行按单格地面、门和人物占位判断。只检查每个目标格是否有一只箱。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "货梯班想装一只随手摇主轴升降的凸轮盘。",
+          "expected": "做好的盘能实装在本关试车，人和箱随厢换层，只有该层真正平齐时才能跨出并命中对应楼层的目标格；同一卷盘的几个停靠点不能单独选不同轮廓。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "拿手轮转到误差最大处能在仓面看见实际支撑点和门槛高差；没有能装进给定轴套半径的合格轮廓，不能拿未闭合的草图送人过门。",
+          "expected": "远盘沿可能先接触滚轮；有限片拼接的局部几何可行性不足以保证整圈支撑包络、平层余量和最坏偏差。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/gadget/lib/passable.ts：把真实滚轮层位与门槛比较；src/features/ledger/lib/win.ts：只在各位置正确交货才能结束；src/features/atlas/lib/draw.ts：呈现盘沿支撑和超差角度；src/features/gadget/lib/power.ts：实装凸轮使可通行和承托同步；src/features/voyage/lib/catalog.ts：载入制造片和楼层停靠单",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：远盘沿可能先接触滚轮；有限片拼接的局部几何可行性不足以保证整圈支撑包络、平层余量和最坏偏差。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "从有限盘沿片段拼成可制造闭环，用真实滚轮的全局支撑包络而非每点局部偏移评估各门的平层误差。局部最准确的升程可能因远处盘沿托起滚轮而失准。L1588 是光学器件反向摆放。",
+        "shortcutAnalysis": "轮廓装配、滚轮求支撑、货梯门槛与通行、手轮/仓面显示。见下方。五文件专项回查：曾提出“求解器 + 新面板 + Workspace + 必要时 StageView”的替代。G01 的纸带推定步与真实接班步要求既有计步簿及最佳记录处理验真边界；G02 的多人可能状态投影影响地图、踏板灯、货种统计、目标完成及与普通班不同的实际记分；G05 接回原排的键盘/纸筒控制、三类计数与跨派工最省纸纪录不能用原有单一 bestSteps；G07 层别必须同时改变箱/人的可达、原踏板供电及签收；G11 有真正的箱人实乘、平层才能过门及按不同楼层目标签收。现稿均已排除该四文件旁置解法。F08 来自原有随踏板升起的封板，不仅作声源，还控制实际听音放行；F11 修改了目标齐全后的原胜利判定，F12 更改原关卡目录、水合开局及成绩的身份，不只是从原界面打开独立小游戏。",
+        "necessaryBusinessSurfaces": "轮廓装配、滚轮求支撑、货梯门槛与通行、手轮/仓面显示。见下方。",
+        "reason": "从有限盘沿片段拼成可制造闭环，用真实滚轮的全局支撑包络而非每点局部偏移评估各门的平层误差。局部最准确的升程可能因远处盘沿托起滚轮而失准。L1588 是光学器件反向摆放。 轮廓装配、滚轮求支撑、货梯门槛与通行、手轮/仓面显示。见下方。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "gen-12",
+      "difficulty": "困难",
+      "goal": "底版反推",
+      "categoryEvidence": "查看 src/features 五模块以及 app/useWorkshop.ts 的公开交互；没有“底版反推”的业务状态、输入或判定。移动只更新一个人的格位和被推单箱。画布由平面地格、机关与箱子的即时状态绘制。只检查每个目标格是否有一只箱。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。移动成功后才刷新机关、判胜、提交成绩。",
+      "historyComparison": {
+        "line": 706,
+        "difference": "历史由位图描摹可编辑轮廓；这里是有限候选箱底经过多次覆印后追查底版。",
+        "peer": "gen-01",
+        "peerDifference": "根据给定实推去还原底版，而非反演未知动作。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "请根据交货纸最后能看到的颜色和压痕，反推每只箱底哪些位置必定有纹、哪些可有可无，并让我挑一处未定位置看两种仍能完成整次实推的底版。",
+          "reasoning": "后层镂空会显露早期印迹，转面把远处印记关联到同一候选版；逐点可行不代表共用一组底版可行。",
+          "failureCase": "对最终纸张每个纹点分别寻找一个能解释该色的箱底"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "拓印台上的改版要同时影响下一步推印、当前可行底版和交货预览，互相矛盾的印样不得照样盖章。",
+          "reason": "指定推程决定印墨箱与接触先后；盘面重放实际覆印与候选纹点；完整底版组满足交货样而非逐点签收；载入候选底版与局部印样；维持改一纹点后全局可行组和试印一致"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "请根据交货纸最后能看到的颜色和压痕，反推每只箱底哪些位置必定有纹、哪些可有可无，并让我挑一处未定位置看两种仍能完成整次实推的底版。",
+          "reason": "后层镂空会显露早期印迹，转面把远处印记关联到同一候选版；逐点可行不代表共用一组底版可行。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "请根据交货纸最后能看到的颜色和压痕，反推每只箱底哪些位置必定有纹、哪些可有可无，并让我挑一处未定位置看两种仍能完成整次实推的底版。",
+          "reason": "按推程建立可见墨层约束再求必然项；正向模拟候选底版组并找相反见证"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。画布由平面地格、机关与箱子的即时状态绘制。只检查每个目标格是否有一只箱。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。移动成功后才刷新机关、判胜、提交成绩。",
+        "simplestApproach": "对最终纸张每个纹点分别寻找一个能解释该色的箱底",
+        "tension": "后层镂空会显露早期印迹，转面把远处印记关联到同一候选版；逐点可行不代表共用一组底版可行。",
+        "remainingDecision": "按推程建立可见墨层约束再求必然项 或 正向模拟候选底版组并找相反见证",
+        "options": [
+          {
+            "approach": "按推程建立可见墨层约束再求必然项",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "正向模拟候选底版组并找相反见证",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "后层镂空会显露早期印迹，转面把远处印记关联到同一候选版；逐点可行不代表共用一组底版可行。",
+        "counterexample": {
+          "constraintQuote": "请根据交货纸最后能看到的颜色和压痕，反推每只箱底哪些位置必定有纹、哪些可有可无，并让我挑一处未定位置看两种仍能完成整次实推的底版。",
+          "steps": "对最终纸张每个纹点分别寻找一个能解释该色的箱底",
+          "expected": "后层镂空会显露早期印迹，转面把远处印记关联到同一候选版；逐点可行不代表共用一组底版可行。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "后层镂空会显露早期印迹，转面把远处印记关联到同一候选版；逐点可行不代表共用一组底版可行。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "quote": "export function goalsSatisfied(document: GameDocument): boolean {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "function move(dir: Dir): void {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "指定推程决定印墨箱与接触先后"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "盘面重放实际覆印与候选纹点"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "完整底版组满足交货样而非逐点签收"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "载入候选底版与局部印样"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "action": "modify",
+          "reason": "维持改一纹点后全局可行组和试印一致"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“指定推程决定印墨箱与接触先后”“完整底版组满足交货样而非逐点签收”“维持改一纹点后全局可行组和试印一致”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。画布由平面地格、机关与箱子的即时状态绘制。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "想把搬运脚印做成一张真正可以拓印的版。",
+          "expected": "拓印台上的改版要同时影响下一步推印、当前可行底版和交货预览，互相矛盾的印样不得照样盖章。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "请根据交货纸最后能看到的颜色和压痕，反推每只箱底哪些位置必定有纹、哪些可有可无，并让我挑一处未定位置看两种仍能完成整次实推的底版。",
+          "expected": "后层镂空会显露早期印迹，转面把远处印记关联到同一候选版；逐点可行不代表共用一组底版可行。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：指定推程决定印墨箱与接触先后；src/features/atlas/lib/draw.ts：盘面重放实际覆印与候选纹点；src/features/ledger/lib/win.ts：完整底版组满足交货样而非逐点签收；src/features/voyage/lib/catalog.ts：载入候选底版与局部印样；src/app/useWorkshop.ts：维持改一纹点后全局可行组和试印一致",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：后层镂空会显露早期印迹，转面把远处印记关联到同一候选版；逐点可行不代表共用一组底版可行。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "按给定推程、滚动和遮盖记录可观的最终纹点，再在整套候选印底上求确证/可能及两个完整见证；逐角求可行会把同一底纹当多个独立变量。历史是图转字符轮廓。",
+        "shortcutAnalysis": "版材/印纸、推移朝向、着墨合成、反演、试印与签收，五处必要。",
+        "necessaryBusinessSurfaces": "版材/印纸、推移朝向、着墨合成、反演、试印与签收，五处必要。",
+        "reason": "按给定推程、滚动和遮盖记录可观的最终纹点，再在整套候选印底上求确证/可能及两个完整见证；逐角求可行会把同一底纹当多个独立变量。历史是图转字符轮廓。 版材/印纸、推移朝向、着墨合成、反演、试印与签收，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "feature-01",
+      "difficulty": "困难",
+      "goal": "借齿撑门",
+      "categoryEvidence": "由现有行为扩展：木踏板认出木箱就亮，但我手上的这一关是借货装门：每块板可以把箱上有限的齿条借给相连的门，一根齿条一次只能跨一段距离去撑一扇门，长门又可能要两根从相反方向同时撑住。 匹配格位及材质后把门、地板的布尔供电取并集。通行按单格地面、门和人物占位判断。移动只更新一个人的格位和被推单箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+      "historyComparison": {
+        "line": 52,
+        "difference": "历史针对静态引脚布线；本题使用正在压板的箱齿条独占供给动态门组。",
+        "peer": "feature-02",
+        "peerDifference": "借齿冲突是同时可供哪组门；桥板需连续换搭。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "相同颜色的门各自都借得到，不表示这组借得到；短齿条换位置还可能替两扇原本互抢的门腾出长齿条。",
+          "reasoning": "两端同时撑长门的配对占用共同齿条，局部可供门的并集并非可共开集；需给出不可约冲突子集且分配与移动同拍撤销。",
+          "failureCase": "逐门独立分配最近齿条"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "搬掉一个货箱后，所借齿条的收回要和通行同时生效，不能先穿过去再报告借不齐。",
+          "reason": "计算整组门的排他借齿；只准通过已实际共同撑开的门；移货时释放或重分配箱齿；标记冲突核与可行分配；加载双端门和长度库存"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "相同颜色的门各自都借得到，不表示这组借得到；短齿条换位置还可能替两扇原本互抢的门腾出长齿条。",
+          "reason": "两端同时撑长门的配对占用共同齿条，局部可供门的并集并非可共开集；需给出不可约冲突子集且分配与移动同拍撤销。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "相同颜色的门各自都借得到，不表示这组借得到；短齿条换位置还可能替两扇原本互抢的门腾出长齿条。",
+          "reason": "把多端撑门作为不可拆匹配单元做联合分配；由可行性查询提取最小冲突核并回放借用"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "匹配格位及材质后把门、地板的布尔供电取并集。通行按单格地面、门和人物占位判断。移动只更新一个人的格位和被推单箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+        "simplestApproach": "逐门独立分配最近齿条",
+        "tension": "两端同时撑长门的配对占用共同齿条，局部可供门的并集并非可共开集；需给出不可约冲突子集且分配与移动同拍撤销。",
+        "remainingDecision": "把多端撑门作为不可拆匹配单元做联合分配 或 由可行性查询提取最小冲突核并回放借用",
+        "options": [
+          {
+            "approach": "把多端撑门作为不可拆匹配单元做联合分配",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "由可行性查询提取最小冲突核并回放借用",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "两端同时撑长门的配对占用共同齿条，局部可供门的并集并非可共开集；需给出不可约冲突子集且分配与移动同拍撤销。",
+        "counterexample": {
+          "constraintQuote": "相同颜色的门各自都借得到，不表示这组借得到；短齿条换位置还可能替两扇原本互抢的门腾出长齿条。",
+          "steps": "逐门独立分配最近齿条",
+          "expected": "两端同时撑长门的配对占用共同齿条，局部可供门的并集并非可共开集；需给出不可约冲突子集且分配与移动同拍撤销。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "两端同时撑长门的配对占用共同齿条，局部可供门的并集并非可共开集；需给出不可约冲突子集且分配与移动同拍撤销。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "计算整组门的排他借齿"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "只准通过已实际共同撑开的门"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "移货时释放或重分配箱齿"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "标记冲突核与可行分配"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "加载双端门和长度库存"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“计算整组门的排他借齿”“移货时释放或重分配箱齿”“加载双端门和长度库存”。旁置副本若只重演预览，原入口仍执行：匹配格位及材质后把门、地板的布尔供电取并集。通行按单格地面、门和人物占位判断。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "木踏板认出木箱就亮，但我手上的这一关是借货装门：每块板可以把箱上有限的齿条借给相连的门，一根齿条一次只能跨一段距离去撑一扇门，长门又可能要两根从相反方向同时撑住。",
+          "expected": "搬掉一个货箱后，所借齿条的收回要和通行同时生效，不能先穿过去再报告借不齐。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "相同颜色的门各自都借得到，不表示这组借得到；短齿条换位置还可能替两扇原本互抢的门腾出长齿条。",
+          "expected": "两端同时撑长门的配对占用共同齿条，局部可供门的并集并非可共开集；需给出不可约冲突子集且分配与移动同拍撤销。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/gadget/lib/power.ts：计算整组门的排他借齿；src/features/gadget/lib/passable.ts：只准通过已实际共同撑开的门；src/features/hauler/lib/push.ts：移货时释放或重分配箱齿；src/features/atlas/lib/draw.ts：标记冲突核与可行分配；src/features/voyage/lib/catalog.ts：加载双端门和长度库存",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：两端同时撑长门的配对占用共同齿条，局部可供门的并集并非可共开集；需给出不可约冲突子集且分配与移动同拍撤销。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "对选定门集建立共同齿条分配，同时容纳两边配对及距离，再用删约束试最小冲突。逐扇可开不保证同开；贪取最长条会阻断另一门。L52 是虚拟实验板接线。",
+        "shortcutAnalysis": "关卡库存、踏板/门状态、分配求证、通行提交、面板调借，五处必要。",
+        "necessaryBusinessSurfaces": "关卡库存、踏板/门状态、分配求证、通行提交、面板调借，五处必要。",
+        "reason": "对选定门集建立共同齿条分配，同时容纳两边配对及距离，再用删约束试最小冲突。逐扇可开不保证同开；贪取最长条会阻断另一门。L52 是虚拟实验板接线。 关卡库存、踏板/门状态、分配求证、通行提交、面板调借，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "feature-02",
+      "difficulty": "困难",
+      "goal": "载货重搭桥板",
+      "categoryEvidence": "由现有行为扩展：架桥关现在是一片踏板直接铺出几格桥。 匹配格位及材质后把门、地板的布尔供电取并集。通行按单格地面、门和人物占位判断。移动只更新一个人的格位和被推单箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+      "historyComparison": {
+        "line": 592,
+        "difference": "旧题分期机场施工与改道；此题有限转角零件在载货支撑连续不失效下换搭。",
+        "peer": "feature-01",
+        "peerDifference": "换搭路径每一步需支撑，而非一次供给可行性。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "由踏板驱动的桥头可以一起伸，桥板在水面上不能交叉，两岸至少要留出指定的成对货运通路。",
+          "reasoning": "起终两张桥图均连通，交叉争用最后一块转角，唯一路径须先拆掉载物板；静态布线与动态安全不可分。",
+          "failureCase": "找一个符合库存的最终桥图再将旧板一口气替换"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "两张成品图都有路，未必能在载货时互换，请演示合法的中间搭法，若必须先把某只箱子运下桥，就明确停在旧搭法。",
+          "reason": "按每次换搭计算真实桥头；支撑中的货格不得瞬间落空；搬下箱后才能探索原本禁止的拆板步；演示桥的可行中间搭法；载入不同桥件和岸端宽度"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "由踏板驱动的桥头可以一起伸，桥板在水面上不能交叉，两岸至少要留出指定的成对货运通路。",
+          "reason": "起终两张桥图均连通，交叉争用最后一块转角，唯一路径须先拆掉载物板；静态布线与动态安全不可分。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "由踏板驱动的桥头可以一起伸，桥板在水面上不能交叉，两岸至少要留出指定的成对货运通路。",
+          "reason": "在桥图的单步替换图里搜索；先找目标搭法再由中间换搭不可达反例排除"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "匹配格位及材质后把门、地板的布尔供电取并集。通行按单格地面、门和人物占位判断。移动只更新一个人的格位和被推单箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+        "simplestApproach": "找一个符合库存的最终桥图再将旧板一口气替换",
+        "tension": "起终两张桥图均连通，交叉争用最后一块转角，唯一路径须先拆掉载物板；静态布线与动态安全不可分。",
+        "remainingDecision": "在桥图的单步替换图里搜索 或 先找目标搭法再由中间换搭不可达反例排除",
+        "options": [
+          {
+            "approach": "在桥图的单步替换图里搜索",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "先找目标搭法再由中间换搭不可达反例排除",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "起终两张桥图均连通，交叉争用最后一块转角，唯一路径须先拆掉载物板；静态布线与动态安全不可分。",
+        "counterexample": {
+          "constraintQuote": "由踏板驱动的桥头可以一起伸，桥板在水面上不能交叉，两岸至少要留出指定的成对货运通路。",
+          "steps": "找一个符合库存的最终桥图再将旧板一口气替换",
+          "expected": "起终两张桥图均连通，交叉争用最后一块转角，唯一路径须先拆掉载物板；静态布线与动态安全不可分。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "起终两张桥图均连通，交叉争用最后一块转角，唯一路径须先拆掉载物板；静态布线与动态安全不可分。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "按每次换搭计算真实桥头"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "支撑中的货格不得瞬间落空"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "搬下箱后才能探索原本禁止的拆板步"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "演示桥的可行中间搭法"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "载入不同桥件和岸端宽度"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“按每次换搭计算真实桥头”“搬下箱后才能探索原本禁止的拆板步”“载入不同桥件和岸端宽度”。旁置副本若只重演预览，原入口仍执行：匹配格位及材质后把门、地板的布尔供电取并集。通行按单格地面、门和人物占位判断。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "架桥关现在是一片踏板直接铺出几格桥。",
+          "expected": "两张成品图都有路，未必能在载货时互换，请演示合法的中间搭法，若必须先把某只箱子运下桥，就明确停在旧搭法。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "由踏板驱动的桥头可以一起伸，桥板在水面上不能交叉，两岸至少要留出指定的成对货运通路。",
+          "expected": "起终两张桥图均连通，交叉争用最后一块转角，唯一路径须先拆掉载物板；静态布线与动态安全不可分。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/gadget/lib/power.ts：按每次换搭计算真实桥头；src/features/gadget/lib/passable.ts：支撑中的货格不得瞬间落空；src/features/hauler/lib/push.ts：搬下箱后才能探索原本禁止的拆板步；src/features/atlas/lib/draw.ts：演示桥的可行中间搭法；src/features/voyage/lib/catalog.ts：载入不同桥件和岸端宽度",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：起终两张桥图均连通，交叉争用最后一块转角，唯一路径须先拆掉载物板；静态布线与动态安全不可分。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "先保中间态承重再搜合法重构和可重用板，终态连通也可能必须在断板时让货物悬空。L592 的施工封闭是机场运营。",
+        "shortcutAnalysis": "桥板与旧关迁移、可承载通行、装配演算、实盘过渡、界面提示，五处必要。",
+        "necessaryBusinessSurfaces": "桥板与旧关迁移、可承载通行、装配演算、实盘过渡、界面提示，五处必要。",
+        "reason": "先保中间态承重再搜合法重构和可重用板，终态连通也可能必须在断板时让货物悬空。L592 的施工封闭是机场运营。 桥板与旧关迁移、可承载通行、装配演算、实盘过渡、界面提示，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "feature-03",
+      "difficulty": "困难",
+      "goal": "工法等价账",
+      "categoryEvidence": "由现有行为扩展：每关的最好成绩只记步数，结果我分不清两种搬法究竟差在哪。 移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。计数后用目标占格决胜。相同关卡只维持一个最少步数。成绩板按关名和最少步数展示。",
+      "historyComparison": {
+        "line": 220,
+        "difference": "旧题回放一次行动；本题比较两条推序在真实可交换重排下是否同一工法。",
+        "peer": "gen-01",
+        "peerDifference": "记下的两条路线都完整，不补失落步骤。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "想把同一关的成绩改成能比较搬运工法的账：只看真正改变货位的推次；相邻两推允许重走不推箱的脚步，交换后两推都合法，每推引起的门和目标变化仍归原来那一推、最终箱位及人能空走到的区域相同，就算同一工法，绕路走到箱后不另算一种；同材质箱从不同入口进同一扇门时，仍须保住是哪个货位被腾空。",
+          "reasoning": "两推是否能交换取决于当前货位、门变动与可空走区；一次交换可开启另一次，纯几何重叠或按材质编号排序都会误分。",
+          "failureCase": "按箱起终格排序后同签名就合并"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "识别后按工法保留最少实走步数，可在账页点两次推看为什么不能交换，老纪录没有推迹就只列数值，不能猜归哪一类。",
+          "reason": "捕获按货位标记的真实推次；测交换前后各推的门变化；把实走步数归到正确工法；新旧工法和旧记录的数值兼容；展示不可交换的见证"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "想把同一关的成绩改成能比较搬运工法的账：只看真正改变货位的推次；相邻两推允许重走不推箱的脚步，交换后两推都合法，每推引起的门和目标变化仍归原来那一推、最终箱位及人能空走到的区域相同，就算同一工法，绕路走到箱后不另算一种；同材质箱从不同入口进同一扇门时，仍须保住是哪个货位被腾空。",
+          "reason": "两推是否能交换取决于当前货位、门变动与可空走区；一次交换可开启另一次，纯几何重叠或按材质编号排序都会误分。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "想把同一关的成绩改成能比较搬运工法的账：只看真正改变货位的推次；相邻两推允许重走不推箱的脚步，交换后两推都合法，每推引起的门和目标变化仍归原来那一推、最终箱位及人能空走到的区域相同，就算同一工法，绕路走到箱后不另算一种；同材质箱从不同入口进同一扇门时，仍须保住是哪个货位被腾空。",
+          "reason": "在可交换推序间搜索连通分量；在满足交换条件时规范化，遇上下文依赖保留替代路径"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。计数后用目标占格决胜。相同关卡只维持一个最少步数。成绩板按关名和最少步数展示。",
+        "simplestApproach": "按箱起终格排序后同签名就合并",
+        "tension": "两推是否能交换取决于当前货位、门变动与可空走区；一次交换可开启另一次，纯几何重叠或按材质编号排序都会误分。",
+        "remainingDecision": "在可交换推序间搜索连通分量 或 在满足交换条件时规范化，遇上下文依赖保留替代路径",
+        "options": [
+          {
+            "approach": "在可交换推序间搜索连通分量",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "在满足交换条件时规范化，遇上下文依赖保留替代路径",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "两推是否能交换取决于当前货位、门变动与可空走区；一次交换可开启另一次，纯几何重叠或按材质编号排序都会误分。",
+        "counterexample": {
+          "constraintQuote": "想把同一关的成绩改成能比较搬运工法的账：只看真正改变货位的推次；相邻两推允许重走不推箱的脚步，交换后两推都合法，每推引起的门和目标变化仍归原来那一推、最终箱位及人能空走到的区域相同，就算同一工法，绕路走到箱后不另算一种；同材质箱从不同入口进同一扇门时，仍须保住是哪个货位被腾空。",
+          "steps": "按箱起终格排序后同签名就合并",
+          "expected": "两推是否能交换取决于当前货位、门变动与可空走区；一次交换可开启另一次，纯几何重叠或按材质编号排序都会误分。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "两推是否能交换取决于当前货位、门变动与可空走区；一次交换可开启另一次，纯几何重叠或按材质编号排序都会误分。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/ledger/model/useLedger.ts",
+          "quote": "function afterMove(result: MoveResult): { counted: boolean; cleared: boolean } {"
+        },
+        {
+          "path": "src/features/voyage/lib/persist.ts",
+          "quote": "export function betterRecord("
+        },
+        {
+          "path": "src/features/voyage/ui/RecordBoard.vue",
+          "quote": "completed: { id: string; title: string; bestSteps: number; clearedAt: number }[];"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "捕获按货位标记的真实推次"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "测交换前后各推的门变化"
+        },
+        {
+          "path": "src/features/ledger/model/useLedger.ts",
+          "action": "modify",
+          "reason": "把实走步数归到正确工法"
+        },
+        {
+          "path": "src/features/voyage/lib/persist.ts",
+          "action": "modify",
+          "reason": "新旧工法和旧记录的数值兼容"
+        },
+        {
+          "path": "src/features/voyage/ui/RecordBoard.vue",
+          "action": "modify",
+          "reason": "展示不可交换的见证"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“捕获按货位标记的真实推次”“把实走步数归到正确工法”“展示不可交换的见证”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "每关的最好成绩只记步数，结果我分不清两种搬法究竟差在哪。",
+          "expected": "识别后按工法保留最少实走步数，可在账页点两次推看为什么不能交换，老纪录没有推迹就只列数值，不能猜归哪一类。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "想把同一关的成绩改成能比较搬运工法的账：只看真正改变货位的推次；相邻两推允许重走不推箱的脚步，交换后两推都合法，每推引起的门和目标变化仍归原来那一推、最终箱位及人能空走到的区域相同，就算同一工法，绕路走到箱后不另算一种；同材质箱从不同入口进同一扇门时，仍须保住是哪个货位被腾空。",
+          "expected": "两推是否能交换取决于当前货位、门变动与可空走区；一次交换可开启另一次，纯几何重叠或按材质编号排序都会误分。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：捕获按货位标记的真实推次；src/features/gadget/lib/power.ts：测交换前后各推的门变化；src/features/ledger/model/useLedger.ts：把实走步数归到正确工法；src/features/voyage/lib/persist.ts：新旧工法和旧记录的数值兼容；src/features/voyage/ui/RecordBoard.vue：展示不可交换的见证",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：两推是否能交换取决于当前货位、门变动与可空走区；一次交换可开启另一次，纯几何重叠或按材质编号排序都会误分。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "记录有语义的推事件并按合法相邻交换的传递闭包比较，必须验证中途门/目标事件所属和人的可达域。仅按箱 id 排序会把同处双推错误合并。L400 统计成绩来源，不求工法等价类。",
+        "shortcutAnalysis": "搬运轨迹、等价分析、计步比较、通关记录、账页解释/旧成绩。五处必要。",
+        "necessaryBusinessSurfaces": "搬运轨迹、等价分析、计步比较、通关记录、账页解释/旧成绩。五处必要。",
+        "reason": "记录有语义的推事件并按合法相邻交换的传递闭包比较，必须验证中途门/目标事件所属和人的可达域。仅按箱 id 排序会把同处双推错误合并。L400 统计成绩来源，不求工法等价类。 搬运轨迹、等价分析、计步比较、通关记录、账页解释/旧成绩。五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "feature-04",
+      "difficulty": "困难",
+      "goal": "合销货架",
+      "categoryEvidence": "由现有行为扩展：推一下只能让一只箱前进一格。 移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。匹配格位及材质后把门、地板的布尔供电取并集。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+      "historyComparison": {
+        "line": 2448,
+        "difference": "旧题保持编辑器里的刚性支架变换；此题由首次实际接触控制转动、传动与整步结算。",
+        "peer": "feature-05",
+        "peerDifference": "离散一次推移引发相互啮合，而非选择连续手轮分支。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "给特殊货架换上可绕固定插销摆动的长箱吧：用力的一端不在销上时，箱身扫过四分之一圈才换方向，扫到另一只有销的箱子可以啮合转动，接触的齿圈给出反向传动比；同角接上两道齿时两组传动都要成立，否则就在接触处停止；有两个接触点时不能按箱号先后各推一次。",
+          "reasoning": "扫掠起点接触的分离方向与压入方向需区分，多个齿圈同角建立约束；若速度比自相矛盾，按数组分别接上会出现顺序依赖。",
+          "failureCase": "只旋转最先被撞的锚定箱并检查终点"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "盘上应可指到第一处相碰的边，旧单格普通货仍然直推，重置本关要还原插销与货架的相对位置。",
+          "reason": "整步承接同时啮合的角度与扫掠碰撞；墙与同转架按连续角度限制通行；未走满时不提早切换踏板状态；显示首个接触和受阻边；装载插销、齿比、货架初态"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "给特殊货架换上可绕固定插销摆动的长箱吧：用力的一端不在销上时，箱身扫过四分之一圈才换方向，扫到另一只有销的箱子可以啮合转动，接触的齿圈给出反向传动比；同角接上两道齿时两组传动都要成立，否则就在接触处停止；有两个接触点时不能按箱号先后各推一次。",
+          "reason": "扫掠起点接触的分离方向与压入方向需区分，多个齿圈同角建立约束；若速度比自相矛盾，按数组分别接上会出现顺序依赖。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "给特殊货架换上可绕固定插销摆动的长箱吧：用力的一端不在销上时，箱身扫过四分之一圈才换方向，扫到另一只有销的箱子可以啮合转动，接触的齿圈给出反向传动比；同角接上两道齿时两组传动都要成立，否则就在接触处停止；有两个接触点时不能按箱号先后各推一次。",
+          "reason": "按接触事件推进并联合校验传动比；在角度域分解可行扫掠区并求首个阻挡"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。匹配格位及材质后把门、地板的布尔供电取并集。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+        "simplestApproach": "只旋转最先被撞的锚定箱并检查终点",
+        "tension": "扫掠起点接触的分离方向与压入方向需区分，多个齿圈同角建立约束；若速度比自相矛盾，按数组分别接上会出现顺序依赖。",
+        "remainingDecision": "按接触事件推进并联合校验传动比 或 在角度域分解可行扫掠区并求首个阻挡",
+        "options": [
+          {
+            "approach": "按接触事件推进并联合校验传动比",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "在角度域分解可行扫掠区并求首个阻挡",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "扫掠起点接触的分离方向与压入方向需区分，多个齿圈同角建立约束；若速度比自相矛盾，按数组分别接上会出现顺序依赖。",
+        "counterexample": {
+          "constraintQuote": "给特殊货架换上可绕固定插销摆动的长箱吧：用力的一端不在销上时，箱身扫过四分之一圈才换方向，扫到另一只有销的箱子可以啮合转动，接触的齿圈给出反向传动比；同角接上两道齿时两组传动都要成立，否则就在接触处停止；有两个接触点时不能按箱号先后各推一次。",
+          "steps": "只旋转最先被撞的锚定箱并检查终点",
+          "expected": "扫掠起点接触的分离方向与压入方向需区分，多个齿圈同角建立约束；若速度比自相矛盾，按数组分别接上会出现顺序依赖。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "扫掠起点接触的分离方向与压入方向需区分，多个齿圈同角建立约束；若速度比自相矛盾，按数组分别接上会出现顺序依赖。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "整步承接同时啮合的角度与扫掠碰撞"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "墙与同转架按连续角度限制通行"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "未走满时不提早切换踏板状态"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "显示首个接触和受阻边"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "装载插销、齿比、货架初态"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“整步承接同时啮合的角度与扫掠碰撞”“未走满时不提早切换踏板状态”“装载插销、齿比、货架初态”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "推一下只能让一只箱前进一格。",
+          "expected": "盘上应可指到第一处相碰的边，旧单格普通货仍然直推，重置本关要还原插销与货架的相对位置。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "给特殊货架换上可绕固定插销摆动的长箱吧：用力的一端不在销上时，箱身扫过四分之一圈才换方向，扫到另一只有销的箱子可以啮合转动，接触的齿圈给出反向传动比；同角接上两道齿时两组传动都要成立，否则就在接触处停止；有两个接触点时不能按箱号先后各推一次。",
+          "expected": "扫掠起点接触的分离方向与压入方向需区分，多个齿圈同角建立约束；若速度比自相矛盾，按数组分别接上会出现顺序依赖。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：整步承接同时啮合的角度与扫掠碰撞；src/features/gadget/lib/passable.ts：墙与同转架按连续角度限制通行；src/features/gadget/lib/power.ts：未走满时不提早切换踏板状态；src/features/atlas/lib/draw.ts：显示首个接触和受阻边；src/features/voyage/lib/catalog.ts：装载插销、齿比、货架初态",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：扫掠起点接触的分离方向与压入方向需区分，多个齿圈同角建立约束；若速度比自相矛盾，按数组分别接上会出现顺序依赖。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "用第一接触时刻分段求兼容传动比和扫掠体冲突，端点障碍测试漏中途穿墙；两齿同时触碰时按 id 逐个处理改变最大可转角。L1000 多折痕联动不求实推实体的首次接触。",
+        "shortcutAnalysis": "关卡几何、运动/碰撞、踏板覆盖、交货、预览碰边与落定，五处必要。",
+        "necessaryBusinessSurfaces": "关卡几何、运动/碰撞、踏板覆盖、交货、预览碰边与落定，五处必要。",
+        "reason": "用第一接触时刻分段求兼容传动比和扫掠体冲突，端点障碍测试漏中途穿墙；两齿同时触碰时按 id 逐个处理改变最大可转角。L1000 多折痕联动不求实推实体的首次接触。 关卡几何、运动/碰撞、踏板覆盖、交货、预览碰边与落定，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "feature-05",
+      "difficulty": "困难",
+      "goal": "联动百叶净空",
+      "categoryEvidence": "由现有行为扩展：门闩入门那一排门现在只有全开和全闭。 通行按单格地面、门和人物占位判断。匹配格位及材质后把门、地板的布尔供电取并集。移动只更新一个人的格位和被推单箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+      "historyComparison": {
+        "line": 700,
+        "difference": "历史保持可编辑矢量节点的几何约束；此题要求已装配分支上的运动可达通货净空。",
+        "peer": "feature-04",
+        "peerDifference": "装配构形可连续换肘后穿门，不是啮合货架的推箱扫掠。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "我想扛着不同宽度的货穿一排联动百叶门：每片叶子的转角由旁边几根连杆共同限制，能调的只有一只手轮；选定一条搬运线，盘面标出从当前角度连续转到哪里，整件货才有足够净空。",
+          "reasoning": "两构形相同输入角但不可连续切换；还需扣除人占位导致的中途堵塞，终点净宽无法证明沿途可调到。",
+          "failureCase": "对每个手轮角度各自求一次最宽铰接解"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "旧关未装百叶时仍听原踏板。",
+          "reason": "真实净空约束宽货能否过门；手轮可达分支决定原门状态；人在扫掠区时限制连续转动；展示肘形分支及可过范围；提供多杆拓扑与障碍和货宽"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "我想扛着不同宽度的货穿一排联动百叶门：每片叶子的转角由旁边几根连杆共同限制，能调的只有一只手轮；选定一条搬运线，盘面标出从当前角度连续转到哪里，整件货才有足够净空。",
+          "reason": "两构形相同输入角但不可连续切换；还需扣除人占位导致的中途堵塞，终点净宽无法证明沿途可调到。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "我想扛着不同宽度的货穿一排联动百叶门：每片叶子的转角由旁边几根连杆共同限制，能调的只有一只手轮；选定一条搬运线，盘面标出从当前角度连续转到哪里，整件货才有足够净空。",
+          "reason": "沿当前装配支追踪奇异换支点；离线枚举关节可行分支邻接，在线剔除占位阻断"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "通行按单格地面、门和人物占位判断。匹配格位及材质后把门、地板的布尔供电取并集。移动只更新一个人的格位和被推单箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+        "simplestApproach": "对每个手轮角度各自求一次最宽铰接解",
+        "tension": "两构形相同输入角但不可连续切换；还需扣除人占位导致的中途堵塞，终点净宽无法证明沿途可调到。",
+        "remainingDecision": "沿当前装配支追踪奇异换支点 或 离线枚举关节可行分支邻接，在线剔除占位阻断",
+        "options": [
+          {
+            "approach": "沿当前装配支追踪奇异换支点",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "离线枚举关节可行分支邻接，在线剔除占位阻断",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "两构形相同输入角但不可连续切换；还需扣除人占位导致的中途堵塞，终点净宽无法证明沿途可调到。",
+        "counterexample": {
+          "constraintQuote": "我想扛着不同宽度的货穿一排联动百叶门：每片叶子的转角由旁边几根连杆共同限制，能调的只有一只手轮；选定一条搬运线，盘面标出从当前角度连续转到哪里，整件货才有足够净空。",
+          "steps": "对每个手轮角度各自求一次最宽铰接解",
+          "expected": "两构形相同输入角但不可连续切换；还需扣除人占位导致的中途堵塞，终点净宽无法证明沿途可调到。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "两构形相同输入角但不可连续切换；还需扣除人占位导致的中途堵塞，终点净宽无法证明沿途可调到。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "真实净空约束宽货能否过门"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "手轮可达分支决定原门状态"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "人在扫掠区时限制连续转动"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "展示肘形分支及可过范围"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "提供多杆拓扑与障碍和货宽"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“真实净空约束宽货能否过门”“人在扫掠区时限制连续转动”“提供多杆拓扑与障碍和货宽”。旁置副本若只重演预览，原入口仍执行：通行按单格地面、门和人物占位判断。匹配格位及材质后把门、地板的布尔供电取并集。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "门闩入门那一排门现在只有全开和全闭。",
+          "expected": "旧关未装百叶时仍听原踏板。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "我想扛着不同宽度的货穿一排联动百叶门：每片叶子的转角由旁边几根连杆共同限制，能调的只有一只手轮；选定一条搬运线，盘面标出从当前角度连续转到哪里，整件货才有足够净空。",
+          "expected": "两构形相同输入角但不可连续切换；还需扣除人占位导致的中途堵塞，终点净宽无法证明沿途可调到。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/gadget/lib/passable.ts：真实净空约束宽货能否过门；src/features/gadget/lib/power.ts：手轮可达分支决定原门状态；src/features/hauler/lib/push.ts：人在扫掠区时限制连续转动；src/features/atlas/lib/draw.ts：展示肘形分支及可过范围；src/features/voyage/lib/catalog.ts：提供多杆拓扑与障碍和货宽",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：两构形相同输入角但不可连续切换；还需扣除人占位导致的中途堵塞，终点净宽无法证明沿途可调到。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "沿手轮驱动的实际连通构形分支求净空和连续可达性。只按当前角度枚举所有构形或取最大宽度，可能借用不能抵达的另一肘形。L2448 固定光学组合，不控制仓门净空。",
+        "shortcutAnalysis": "门和杆几何、连续求解、通行宽度、实时障碍、手轮和盘面显示，五处必要。",
+        "necessaryBusinessSurfaces": "门和杆几何、连续求解、通行宽度、实时障碍、手轮和盘面显示，五处必要。",
+        "reason": "沿手轮驱动的实际连通构形分支求净空和连续可达性。只按当前角度枚举所有构形或取最大宽度，可能借用不能抵达的另一肘形。L2448 固定光学组合，不控制仓门净空。 门和杆几何、连续求解、通行宽度、实时障碍、手轮和盘面显示，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "feature-06",
+      "difficulty": "困难",
+      "goal": "翻卷夹货地毯",
+      "categoryEvidence": "由现有行为扩展：地板图现在墙、地、缺口只有一层。 移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。通行按单格地面、门和人物占位判断。画布由平面地格、机关与箱子的即时状态绘制。只检查每个目标格是否有一只箱。",
+      "historyComparison": {
+        "line": 982,
+        "difference": "历史纸厚与折叠形态；此题操作持货多层地面，交叉受压时只提交可卷部分。",
+        "peer": "gen-06",
+        "peerDifference": "在场内动态改变卷叠和暴露层，非固定展开图重排。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "卷的时候先碰到哪一排就把谁卷在里面，反铺时只有实际露出来的格、货和踏板能通行或压门；同一地面坐标反复卷铺，不能把夹在两层之间的货画在顶层。",
+          "reasoning": "交叉卷在一排同时受两个卷压住，先露出的层不同会改变卡止位置；前缀已经真实卷起，整步回滚会擦除实际进展。",
+          "failureCase": "按地面坐标存一摞货，覆盖时把顶层直接换掉"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "能翻看断面核对被夹货物的上下与朝向，目标格也只有确实外露并压货时才计入完成。",
+          "reason": "按材料行提交可卷前缀和货归属；外露货才可压板；通过外露层计算通行；显示断层堆叠及层方向；外露目标才可签收"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "卷的时候先碰到哪一排就把谁卷在里面，反铺时只有实际露出来的格、货和踏板能通行或压门；同一地面坐标反复卷铺，不能把夹在两层之间的货画在顶层。",
+          "reason": "交叉卷在一排同时受两个卷压住，先露出的层不同会改变卡止位置；前缀已经真实卷起，整步回滚会擦除实际进展。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "卷的时候先碰到哪一排就把谁卷在里面，反铺时只有实际露出来的格、货和踏板能通行或压门；同一地面坐标反复卷铺，不能把夹在两层之间的货画在顶层。",
+          "reason": "保存有向层片及交叉约束逐排更新；用卷轴材料坐标追踪归属并重建局部截面"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。通行按单格地面、门和人物占位判断。画布由平面地格、机关与箱子的即时状态绘制。只检查每个目标格是否有一只箱。",
+        "simplestApproach": "按地面坐标存一摞货，覆盖时把顶层直接换掉",
+        "tension": "交叉卷在一排同时受两个卷压住，先露出的层不同会改变卡止位置；前缀已经真实卷起，整步回滚会擦除实际进展。",
+        "remainingDecision": "保存有向层片及交叉约束逐排更新 或 用卷轴材料坐标追踪归属并重建局部截面",
+        "options": [
+          {
+            "approach": "保存有向层片及交叉约束逐排更新",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "用卷轴材料坐标追踪归属并重建局部截面",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "交叉卷在一排同时受两个卷压住，先露出的层不同会改变卡止位置；前缀已经真实卷起，整步回滚会擦除实际进展。",
+        "counterexample": {
+          "constraintQuote": "卷的时候先碰到哪一排就把谁卷在里面，反铺时只有实际露出来的格、货和踏板能通行或压门；同一地面坐标反复卷铺，不能把夹在两层之间的货画在顶层。",
+          "steps": "按地面坐标存一摞货，覆盖时把顶层直接换掉",
+          "expected": "交叉卷在一排同时受两个卷压住，先露出的层不同会改变卡止位置；前缀已经真实卷起，整步回滚会擦除实际进展。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "交叉卷在一排同时受两个卷压住，先露出的层不同会改变卡止位置；前缀已经真实卷起，整步回滚会擦除实际进展。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "quote": "export function goalsSatisfied(document: GameDocument): boolean {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "按材料行提交可卷前缀和货归属"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "外露货才可压板"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "通过外露层计算通行"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "显示断层堆叠及层方向"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "外露目标才可签收"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“按材料行提交可卷前缀和货归属”“通过外露层计算通行”“外露目标才可签收”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "地板图现在墙、地、缺口只有一层。",
+          "expected": "能翻看断面核对被夹货物的上下与朝向，目标格也只有确实外露并压货时才计入完成。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "卷的时候先碰到哪一排就把谁卷在里面，反铺时只有实际露出来的格、货和踏板能通行或压门；同一地面坐标反复卷铺，不能把夹在两层之间的货画在顶层。",
+          "expected": "交叉卷在一排同时受两个卷压住，先露出的层不同会改变卡止位置；前缀已经真实卷起，整步回滚会擦除实际进展。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：按材料行提交可卷前缀和货归属；src/features/gadget/lib/power.ts：外露货才可压板；src/features/gadget/lib/passable.ts：通过外露层计算通行；src/features/atlas/lib/draw.ts：显示断层堆叠及层方向；src/features/ledger/lib/win.ts：外露目标才可签收",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：交叉卷在一排同时受两个卷压住，先露出的层不同会改变卡止位置；前缀已经真实卷起，整步回滚会擦除实际进展。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "单格顶层/深度排序不足；需要判总层序、卷内方向和交叉锁止，遇阻只应用已合法的卷入前缀。L988 判折纸遮挡渲染，不改变搬运通行和感压。",
+        "shortcutAnalysis": "多层货物/盘面、局部卷铺、通行占格、压力与通关、断层可视，五处必要。",
+        "necessaryBusinessSurfaces": "多层货物/盘面、局部卷铺、通行占格、压力与通关、断层可视，五处必要。",
+        "reason": "单格顶层/深度排序不足；需要判总层序、卷内方向和交叉锁止，遇阻只应用已合法的卷入前缀。L988 判折纸遮挡渲染，不改变搬运通行和感压。 多层货物/盘面、局部卷铺、通行占格、压力与通关、断层可视，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "feature-07",
+      "difficulty": "困难",
+      "goal": "侧视封签交付",
+      "categoryEvidence": "由现有行为扩展：目标格上有箱就算填满，实际装货单却指定要在库房上方和侧面同时读出两串封签。 只检查每个目标格是否有一只箱。移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+      "historyComparison": {
+        "line": 154,
+        "difference": "历史彩色数织从行列段推图；此处实际货箱堆叠、遮挡与双印记联立交货。",
+        "peer": "gen-03",
+        "peerDifference": "一套全局堆位必须同时生成两视图，不是六面箱朝向匹配收件单。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "请把右边的完成格数改成能试装的封签清单：选中一项，可看哪些空位无论别人怎么装都得留给这一种货；拿一只箱来试摆后，在余货有限且两面视图都合格的前提下再判断还能不能交。",
+          "reasoning": "两投影争用同一个带前后印记的箱；共享堆叠次序和有限库存决定联合解，逐面最优可给出不存在的终盘。",
+          "failureCase": "分别从上方和侧面得到一个可行配货结果"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "只有真实搬到位、下层支撑与露出的两个印记都能核对的终盘才写成绩。",
+          "reason": "两种真实视向共同签收有限货物；堆叠和取下改变真正库存；滑槽只允许稳定层序；显示冲突视线与必需留位；载入两视单与箱身前后印记"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "请把右边的完成格数改成能试装的封签清单：选中一项，可看哪些空位无论别人怎么装都得留给这一种货；拿一只箱来试摆后，在余货有限且两面视图都合格的前提下再判断还能不能交。",
+          "reason": "两投影争用同一个带前后印记的箱；共享堆叠次序和有限库存决定联合解，逐面最优可给出不存在的终盘。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "请把右边的完成格数改成能试装的封签清单：选中一项，可看哪些空位无论别人怎么装都得留给这一种货；拿一只箱来试摆后，在余货有限且两面视图都合格的前提下再判断还能不能交。",
+          "reason": "按列构造堆叠候选再联立余货配额；联合约束两面首个可见箱并逐项提取强制位置"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "只检查每个目标格是否有一只箱。移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+        "simplestApproach": "分别从上方和侧面得到一个可行配货结果",
+        "tension": "两投影争用同一个带前后印记的箱；共享堆叠次序和有限库存决定联合解，逐面最优可给出不存在的终盘。",
+        "remainingDecision": "按列构造堆叠候选再联立余货配额 或 联合约束两面首个可见箱并逐项提取强制位置",
+        "options": [
+          {
+            "approach": "按列构造堆叠候选再联立余货配额",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "联合约束两面首个可见箱并逐项提取强制位置",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "两投影争用同一个带前后印记的箱；共享堆叠次序和有限库存决定联合解，逐面最优可给出不存在的终盘。",
+        "counterexample": {
+          "constraintQuote": "请把右边的完成格数改成能试装的封签清单：选中一项，可看哪些空位无论别人怎么装都得留给这一种货；拿一只箱来试摆后，在余货有限且两面视图都合格的前提下再判断还能不能交。",
+          "steps": "分别从上方和侧面得到一个可行配货结果",
+          "expected": "两投影争用同一个带前后印记的箱；共享堆叠次序和有限库存决定联合解，逐面最优可给出不存在的终盘。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "两投影争用同一个带前后印记的箱；共享堆叠次序和有限库存决定联合解，逐面最优可给出不存在的终盘。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "quote": "export function goalsSatisfied(document: GameDocument): boolean {"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "两种真实视向共同签收有限货物"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "堆叠和取下改变真正库存"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "滑槽只允许稳定层序"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "显示冲突视线与必需留位"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "载入两视单与箱身前后印记"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“两种真实视向共同签收有限货物”“滑槽只允许稳定层序”“载入两视单与箱身前后印记”。旁置副本若只重演预览，原入口仍执行：只检查每个目标格是否有一只箱。移动只更新一个人的格位和被推单箱。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "目标格上有箱就算填满，实际装货单却指定要在库房上方和侧面同时读出两串封签。",
+          "expected": "只有真实搬到位、下层支撑与露出的两个印记都能核对的终盘才写成绩。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "请把右边的完成格数改成能试装的封签清单：选中一项，可看哪些空位无论别人怎么装都得留给这一种货；拿一只箱来试摆后，在余货有限且两面视图都合格的前提下再判断还能不能交。",
+          "expected": "两投影争用同一个带前后印记的箱；共享堆叠次序和有限库存决定联合解，逐面最优可给出不存在的终盘。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/ledger/lib/win.ts：两种真实视向共同签收有限货物；src/features/hauler/lib/push.ts：堆叠和取下改变真正库存；src/features/gadget/lib/passable.ts：滑槽只允许稳定层序；src/features/atlas/lib/draw.ts：显示冲突视线与必需留位；src/features/voyage/lib/catalog.ts：载入两视单与箱身前后印记",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：两投影争用同一个带前后印记的箱；共享堆叠次序和有限库存决定联合解，逐面最优可给出不存在的终盘。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "对同一有限库存、支撑和遮挡求两个视角的联合投影，出具某位置必需或不可同现的证据；两张投影各自有解不表示能装到一起。历史彩色数织从行列数字还原平面像素。",
+        "shortcutAnalysis": "堆叠装货、遮挡投影、共用库存求证、终态判定、盘面与清单反馈，五处必要。",
+        "necessaryBusinessSurfaces": "堆叠装货、遮挡投影、共用库存求证、终态判定、盘面与清单反馈，五处必要。",
+        "reason": "对同一有限库存、支撑和遮挡求两个视角的联合投影，出具某位置必需或不可同现的证据；两张投影各自有解不表示能装到一起。历史彩色数织从行列数字还原平面像素。 堆叠装货、遮挡投影、共用库存求证、终态判定、盘面与清单反馈，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "feature-08",
+      "difficulty": "困难",
+      "goal": "隔音封板",
+      "categoryEvidence": "由现有行为扩展：封廊里的封板过去一踩就封死。 匹配格位及材质后把门、地板的布尔供电取并集。通行按单格地面、门和人物占位判断。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。移动成功后才刷新机关、判胜、提交成绩。",
+      "historyComparison": {
+        "line": 1360,
+        "difference": "历史预算内组织展品空间声；此处反求踏板组合下辨别门铃的最少消反射封条。",
+        "peer": "feature-01",
+        "peerDifference": "优化的是多站双频知觉可辨，不是齿条配门可通。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "关卡给出门到各耳的可用直达和一次反弹路线、每段距离、反弹的强弱与相位翻转；每根定长封条只够贴一段封板，仅当那块板竖起时才能消掉打到它的反弹。",
+          "reasoning": "一条路线相位抵消另一条，删掉它可能让总响更强；封条仅在板竖起时生效，需跨态共同满足双耳辨别余量。",
+          "failureCase": "哪条反射最响就先贴哪块板直到各门响度不同"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "调好后可以蒙住门灯交货，走到听音位，只听实际开门的回声报出哪扇门才放行；原踏板升起的封板仍挡路，否则脚下就不在刚才试听的位置。",
+          "reason": "读取封板升起状态选择有效反射；听音在位才能按实报门放行；展示指定墙段对应的一组反弹路线；加载指定站位及双频辨别条件；触发真实门响并把试听和谜题态区分"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "关卡给出门到各耳的可用直达和一次反弹路线、每段距离、反弹的强弱与相位翻转；每根定长封条只够贴一段封板，仅当那块板竖起时才能消掉打到它的反弹。",
+          "reason": "一条路线相位抵消另一条，删掉它可能让总响更强；封条仅在板竖起时生效，需跨态共同满足双耳辨别余量。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "关卡给出门到各耳的可用直达和一次反弹路线、每段距离、反弹的强弱与相位翻转；每根定长封条只够贴一段封板，仅当那块板竖起时才能消掉打到它的反弹。",
+          "reason": "对封条组合共用相干叠加结果分支筛选；以未定反射幅度界逐个消除不可区分门对"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "匹配格位及材质后把门、地板的布尔供电取并集。通行按单格地面、门和人物占位判断。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。移动成功后才刷新机关、判胜、提交成绩。",
+        "simplestApproach": "哪条反射最响就先贴哪块板直到各门响度不同",
+        "tension": "一条路线相位抵消另一条，删掉它可能让总响更强；封条仅在板竖起时生效，需跨态共同满足双耳辨别余量。",
+        "remainingDecision": "对封条组合共用相干叠加结果分支筛选 或 以未定反射幅度界逐个消除不可区分门对",
+        "options": [
+          {
+            "approach": "对封条组合共用相干叠加结果分支筛选",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "以未定反射幅度界逐个消除不可区分门对",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "一条路线相位抵消另一条，删掉它可能让总响更强；封条仅在板竖起时生效，需跨态共同满足双耳辨别余量。",
+        "counterexample": {
+          "constraintQuote": "关卡给出门到各耳的可用直达和一次反弹路线、每段距离、反弹的强弱与相位翻转；每根定长封条只够贴一段封板，仅当那块板竖起时才能消掉打到它的反弹。",
+          "steps": "哪条反射最响就先贴哪块板直到各门响度不同",
+          "expected": "一条路线相位抵消另一条，删掉它可能让总响更强；封条仅在板竖起时生效，需跨态共同满足双耳辨别余量。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "一条路线相位抵消另一条，删掉它可能让总响更强；封条仅在板竖起时生效，需跨态共同满足双耳辨别余量。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "function move(dir: Dir): void {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "读取封板升起状态选择有效反射"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "听音在位才能按实报门放行"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "展示指定墙段对应的一组反弹路线"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "加载指定站位及双频辨别条件"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "action": "modify",
+          "reason": "触发真实门响并把试听和谜题态区分"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“读取封板升起状态选择有效反射”“展示指定墙段对应的一组反弹路线”“触发真实门响并把试听和谜题态区分”。旁置副本若只重演预览，原入口仍执行：匹配格位及材质后把门、地板的布尔供电取并集。通行按单格地面、门和人物占位判断。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "封廊里的封板过去一踩就封死。",
+          "expected": "调好后可以蒙住门灯交货，走到听音位，只听实际开门的回声报出哪扇门才放行；原踏板升起的封板仍挡路，否则脚下就不在刚才试听的位置。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "关卡给出门到各耳的可用直达和一次反弹路线、每段距离、反弹的强弱与相位翻转；每根定长封条只够贴一段封板，仅当那块板竖起时才能消掉打到它的反弹。",
+          "expected": "一条路线相位抵消另一条，删掉它可能让总响更强；封条仅在板竖起时生效，需跨态共同满足双耳辨别余量。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/gadget/lib/power.ts：读取封板升起状态选择有效反射；src/features/gadget/lib/passable.ts：听音在位才能按实报门放行；src/features/atlas/lib/draw.ts：展示指定墙段对应的一组反弹路线；src/features/voyage/lib/catalog.ts：加载指定站位及双频辨别条件；src/app/useWorkshop.ts：触发真实门响并把试听和谜题态区分",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：一条路线相位抵消另一条，删掉它可能让总响更强；封条仅在板竖起时生效，需跨态共同满足双耳辨别余量。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "对每耳/频率按相位叠加路径，在共同封条配置上判定全体工位的响度差余量，删去最大反射不一定减弱。L280 用空间声源诱鱼，不比较门源的听辨裕量。",
+        "shortcutAnalysis": "封板库存、按真实占用选路线、相位合成、配置优化、实际门变声和试玩，五处必要。",
+        "necessaryBusinessSurfaces": "封板库存、按真实占用选路线、相位合成、配置优化、实际门变声和试玩，五处必要。",
+        "reason": "对每耳/频率按相位叠加路径，在共同封条配置上判定全体工位的响度差余量，删去最大反射不一定减弱。L280 用空间声源诱鱼，不比较门源的听辨裕量。 封板库存、按真实占用选路线、相位合成、配置优化、实际门变声和试玩，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "feature-09",
+      "difficulty": "困难",
+      "goal": "瑕疵玻璃裁货",
+      "categoryEvidence": "由现有行为扩展：认材关里整只玻璃箱只能占一块玻璃踏板。 移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+      "historyComparison": {
+        "line": 502,
+        "difference": "旧题按质量分份并结转损耗，本题是带刀宽、纹向和瑕疵的直通断头裁切及真实片材压门。",
+        "peer": "gen-08",
+        "peerDifference": "拼件推合、挤出接触并不裁料；此处给出割缝顺序与余片归属。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "要用尽量少的原片同时凑齐多块门板，孔斑不得落在成品内，带纹订单不能旋转九十度。",
+          "reasoning": "非断头排样找不到一条不伤成品的初始通刀；改变首刀会改变瑕疵归属和后续可用矩形，应联立库存、切缝和全部订单。",
+          "failureCase": "一次做二维无重叠排样，随后沿成品边缘切割"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "给我一套能按顺序实切的划线单，我也可先切自己的一刀，再从真实余片重排；盘面、踏板开门和最终签收都要认同一块已切出的玻璃，不能让预排的片先压住门。",
+          "reason": "把已切余片作为有身份的可推货；现有识材升级为辨认实际尺寸和纹向；完整签收不能占用未切的预排片；呈现实际锯缝、缺陷与余料；加载原片、刀宽、纹向和订单"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "要用尽量少的原片同时凑齐多块门板，孔斑不得落在成品内，带纹订单不能旋转九十度。",
+          "reason": "非断头排样找不到一条不伤成品的初始通刀；改变首刀会改变瑕疵归属和后续可用矩形，应联立库存、切缝和全部订单。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "要用尽量少的原片同时凑齐多块门板，孔斑不得落在成品内，带纹订单不能旋转九十度。",
+          "reason": "按首刀构造带瑕疵的分割树并跨原片配单；按订单和纹向确定候选排样再验证可切序及料耗"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+        "simplestApproach": "一次做二维无重叠排样，随后沿成品边缘切割",
+        "tension": "非断头排样找不到一条不伤成品的初始通刀；改变首刀会改变瑕疵归属和后续可用矩形，应联立库存、切缝和全部订单。",
+        "remainingDecision": "按首刀构造带瑕疵的分割树并跨原片配单 或 按订单和纹向确定候选排样再验证可切序及料耗",
+        "options": [
+          {
+            "approach": "按首刀构造带瑕疵的分割树并跨原片配单",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "按订单和纹向确定候选排样再验证可切序及料耗",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "非断头排样找不到一条不伤成品的初始通刀；改变首刀会改变瑕疵归属和后续可用矩形，应联立库存、切缝和全部订单。",
+        "counterexample": {
+          "constraintQuote": "要用尽量少的原片同时凑齐多块门板，孔斑不得落在成品内，带纹订单不能旋转九十度。",
+          "steps": "一次做二维无重叠排样，随后沿成品边缘切割",
+          "expected": "非断头排样找不到一条不伤成品的初始通刀；改变首刀会改变瑕疵归属和后续可用矩形，应联立库存、切缝和全部订单。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "非断头排样找不到一条不伤成品的初始通刀；改变首刀会改变瑕疵归属和后续可用矩形，应联立库存、切缝和全部订单。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "export function evaluateGadgets(document: GameDocument): void {"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "quote": "export function goalsSatisfied(document: GameDocument): boolean {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "把已切余片作为有身份的可推货"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "现有识材升级为辨认实际尺寸和纹向"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "完整签收不能占用未切的预排片"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "呈现实际锯缝、缺陷与余料"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "加载原片、刀宽、纹向和订单"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“把已切余片作为有身份的可推货”“完整签收不能占用未切的预排片”“加载原片、刀宽、纹向和订单”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。匹配格位及材质后把门、地板的布尔供电取并集。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "认材关里整只玻璃箱只能占一块玻璃踏板。",
+          "expected": "给我一套能按顺序实切的划线单，我也可先切自己的一刀，再从真实余片重排；盘面、踏板开门和最终签收都要认同一块已切出的玻璃，不能让预排的片先压住门。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "要用尽量少的原片同时凑齐多块门板，孔斑不得落在成品内，带纹订单不能旋转九十度。",
+          "expected": "非断头排样找不到一条不伤成品的初始通刀；改变首刀会改变瑕疵归属和后续可用矩形，应联立库存、切缝和全部订单。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：把已切余片作为有身份的可推货；src/features/gadget/lib/power.ts：现有识材升级为辨认实际尺寸和纹向；src/features/ledger/lib/win.ts：完整签收不能占用未切的预排片；src/features/atlas/lib/draw.ts：呈现实际锯缝、缺陷与余料；src/features/voyage/lib/catalog.ts：加载原片、刀宽、纹向和订单",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：非断头排样找不到一条不伤成品的初始通刀；改变首刀会改变瑕疵归属和后续可用矩形，应联立库存、切缝和全部订单。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "全局分配有限原片的库存并递归检验每一刀可从矩形一侧贯通对侧，扣除刀缝、孔斑、纹向约束；先做局部不重叠排样再排刀会因无合法第一刀而失败。手切后只能以真实剩余片继续，不能保留原计划虚构的占用。L502 按原料重量分份计损，不提供平面可制造裁料，L238 拼碎片而不是从原片切出成品。",
+        "shortcutAnalysis": "原片/残片身份、水合库存与切台动作、贯穿裁料优化、踏板尺寸验货、实物通关与预览，五处必要。",
+        "necessaryBusinessSurfaces": "原片/残片身份、水合库存与切台动作、贯穿裁料优化、踏板尺寸验货、实物通关与预览，五处必要。",
+        "reason": "全局分配有限原片的库存并递归检验每一刀可从矩形一侧贯通对侧，扣除刀缝、孔斑、纹向约束；先做局部不重叠排样再排刀会因无合法第一刀而失败。手切后只能以真实剩余片继续，不能保留原计划虚构的占用。L502 按原料重量分份计损，不提供平面可制造裁料，L238 拼碎片而不是从原片切出成品。 原片/残片身份、水合库存与切台动作、贯穿裁料优化、踏板尺寸验货、实物通关与预览，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "feature-10",
+      "difficulty": "困难",
+      "goal": "斜坡手车速度带",
+      "categoryEvidence": "由现有行为扩展：目前方向键让搬运员从静止直走进相邻格。 移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。画布由平面地格、机关与箱子的即时状态绘制。只检查每个目标格是否有一只箱。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+      "historyComparison": {
+        "line": 1954,
+        "difference": "旧题惯性冲刺并处理运动碰撞；此题反推通过连续门槛及易碎弯道的速度区间族。",
+        "peer": "gen-10",
+        "peerDifference": "单手车有岔路和离散制动，非两只端点的刚性约束。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "试车时刹过的接缝和最后卸货速度都应能对上所选路线，玻璃箱和车实际到达最后卸货位才算填上原关的目标格，普通无坡关保持一步一格。",
+          "reasoning": "两档制动将可行速度带拆开，允许经过同一岔口的中间速度却没有后继；跨点求逆时必须保留区间族及同一条后路。",
+          "failureCase": "给每个路段记最小和最大入段速度作为一个区间"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "试车时刹过的接缝和最后卸货速度都应能对上所选路线，玻璃箱和车实际到达最后卸货位才算填上原关的目标格，普通无坡关保持一步一格。",
+          "reason": "按能量和制动档推进实际手车；速度门槛与弯道安全限制通行；绘出不连续速度族与对应后路；玻璃箱实到才计目标；加载坡度、摩擦及检查点"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "试车时刹过的接缝和最后卸货速度都应能对上所选路线，玻璃箱和车实际到达最后卸货位才算填上原关的目标格，普通无坡关保持一步一格。",
+          "reason": "两档制动将可行速度带拆开，允许经过同一岔口的中间速度却没有后继；跨点求逆时必须保留区间族及同一条后路。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "试车时刹过的接缝和最后卸货速度都应能对上所选路线，玻璃箱和车实际到达最后卸货位才算填上原关的目标格，普通无坡关保持一步一格。",
+          "reason": "按动能反推可行区间并保存路径见证；正向传播分段区间后对交付终态回筛"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。画布由平面地格、机关与箱子的即时状态绘制。只检查每个目标格是否有一只箱。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。",
+        "simplestApproach": "给每个路段记最小和最大入段速度作为一个区间",
+        "tension": "两档制动将可行速度带拆开，允许经过同一岔口的中间速度却没有后继；跨点求逆时必须保留区间族及同一条后路。",
+        "remainingDecision": "按动能反推可行区间并保存路径见证 或 正向传播分段区间后对交付终态回筛",
+        "options": [
+          {
+            "approach": "按动能反推可行区间并保存路径见证",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "正向传播分段区间后对交付终态回筛",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "两档制动将可行速度带拆开，允许经过同一岔口的中间速度却没有后继；跨点求逆时必须保留区间族及同一条后路。",
+        "counterexample": {
+          "constraintQuote": "试车时刹过的接缝和最后卸货速度都应能对上所选路线，玻璃箱和车实际到达最后卸货位才算填上原关的目标格，普通无坡关保持一步一格。",
+          "steps": "给每个路段记最小和最大入段速度作为一个区间",
+          "expected": "两档制动将可行速度带拆开，允许经过同一岔口的中间速度却没有后继；跨点求逆时必须保留区间族及同一条后路。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "两档制动将可行速度带拆开，允许经过同一岔口的中间速度却没有后继；跨点求逆时必须保留区间族及同一条后路。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "quote": "export function isPassable(document: GameDocument, at: Vec, query: PassQuery = {}): boolean {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "quote": "export function goalsSatisfied(document: GameDocument): boolean {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "按能量和制动档推进实际手车"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "速度门槛与弯道安全限制通行"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "绘出不连续速度族与对应后路"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "玻璃箱实到才计目标"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "加载坡度、摩擦及检查点"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“按能量和制动档推进实际手车”“绘出不连续速度族与对应后路”“加载坡度、摩擦及检查点”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。通行按单格地面、门和人物占位判断。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "目前方向键让搬运员从静止直走进相邻格。",
+          "expected": "试车时刹过的接缝和最后卸货速度都应能对上所选路线，玻璃箱和车实际到达最后卸货位才算填上原关的目标格，普通无坡关保持一步一格。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "试车时刹过的接缝和最后卸货速度都应能对上所选路线，玻璃箱和车实际到达最后卸货位才算填上原关的目标格，普通无坡关保持一步一格。",
+          "expected": "两档制动将可行速度带拆开，允许经过同一岔口的中间速度却没有后继；跨点求逆时必须保留区间族及同一条后路。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：按能量和制动档推进实际手车；src/features/gadget/lib/passable.ts：速度门槛与弯道安全限制通行；src/features/atlas/lib/draw.ts：绘出不连续速度族与对应后路；src/features/ledger/lib/win.ts：玻璃箱实到才计目标；src/features/voyage/lib/catalog.ts：加载坡度、摩擦及检查点",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：两档制动将可行速度带拆开，允许经过同一岔口的中间速度却没有后继；跨点求逆时必须保留区间族及同一条后路。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "按离散制动档和岔路向前/向后传播可达能量区间的并集，保留路径和档位见证；取区间凸包会允许根本无法连接到交货点的中间速度。历史是角色冲刺控制。",
+        "shortcutAnalysis": "坡道蓝图、手车速度与制动、速度窗求证、路线/试车、卸货判定，五处必要。",
+        "necessaryBusinessSurfaces": "坡道蓝图、手车速度与制动、速度窗求证、路线/试车、卸货判定，五处必要。",
+        "reason": "按离散制动档和岔路向前/向后传播可达能量区间的并集，保留路径和档位见证；取区间凸包会允许根本无法连接到交货点的中间速度。历史是角色冲刺控制。 坡道蓝图、手车速度与制动、速度窗求证、路线/试车、卸货判定，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "feature-11",
+      "difficulty": "困难",
+      "goal": "绕柱委托",
+      "categoryEvidence": "由现有行为扩展：同一关把箱子全部送到目标就结束，我想有一类绳结委托，收货要再核对从装货口到卸货口的实际脚迹：地上画出不能跨过的几根柱子，接单人从装货口牵着粉线走到卸货口，绕柱的先后与方向要和委托样线相同，缩短多绕的来回不应改变交付。 移动只更新一个人的格位和被推单箱。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。移动成功后才刷新机关、判胜、提交成绩。",
+      "historyComparison": {
+        "line": 268,
+        "difference": "旧题在绳长和电量限制内返航；此题验证两条路径的有序绕柱类别及有界交货。",
+        "peer": "gen-04",
+        "peerDifference": "比较能无穿柱变形的路线；不是编组历史。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "同一关把箱子全部送到目标就结束，我想有一类绳结委托，收货要再核对从装货口到卸货口的实际脚迹：地上画出不能跨过的几根柱子，接单人从装货口牵着粉线走到卸货口，绕柱的先后与方向要和委托样线相同，缩短多绕的来回不应改变交付。",
+          "reasoning": "绕甲后乙与绕乙后甲净圈数相同却未必等价；需要解出有序绕行的可消关系，和箱门状态共同裁剪剩余步数。",
+          "failureCase": "为每根柱存净圈数并寻找普通最短搬运路"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "请按此单和真实箱门找出剩余步数内仍可交货的一条走法；穿过同一扇门却从柱子另一侧绕回时，货虽都在目标上，也应允许接着走，等脚迹符合才写通关成绩。",
+          "reason": "在实际搬运中记录绕柱穿越顺序；结合全目标及指定路径类才冻结结算；恢复原图上样线与可拉紧的实走线；装载柱子、抽取段和委托；当货到位而脚迹不符允许继续原局"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "同一关把箱子全部送到目标就结束，我想有一类绳结委托，收货要再核对从装货口到卸货口的实际脚迹：地上画出不能跨过的几根柱子，接单人从装货口牵着粉线走到卸货口，绕柱的先后与方向要和委托样线相同，缩短多绕的来回不应改变交付。",
+          "reason": "绕甲后乙与绕乙后甲净圈数相同却未必等价；需要解出有序绕行的可消关系，和箱门状态共同裁剪剩余步数。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "同一关把箱子全部送到目标就结束，我想有一类绳结委托，收货要再核对从装货口到卸货口的实际脚迹：地上画出不能跨过的几根柱子，接单人从装货口牵着粉线走到卸货口，绕柱的先后与方向要和委托样线相同，缩短多绕的来回不应改变交付。",
+          "reason": "沿切线穿越顺序化简后在有界图寻路；将仓路提升到绕柱类覆盖图并与实推取积"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "移动只更新一个人的格位和被推单箱。只检查每个目标格是否有一只箱。画布由平面地格、机关与箱子的即时状态绘制。蓝图和载入函数只有二维格、箱、门、踏板和形变地板。移动成功后才刷新机关、判胜、提交成绩。",
+        "simplestApproach": "为每根柱存净圈数并寻找普通最短搬运路",
+        "tension": "绕甲后乙与绕乙后甲净圈数相同却未必等价；需要解出有序绕行的可消关系，和箱门状态共同裁剪剩余步数。",
+        "remainingDecision": "沿切线穿越顺序化简后在有界图寻路 或 将仓路提升到绕柱类覆盖图并与实推取积",
+        "options": [
+          {
+            "approach": "沿切线穿越顺序化简后在有界图寻路",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "将仓路提升到绕柱类覆盖图并与实推取积",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "绕甲后乙与绕乙后甲净圈数相同却未必等价；需要解出有序绕行的可消关系，和箱门状态共同裁剪剩余步数。",
+        "counterexample": {
+          "constraintQuote": "同一关把箱子全部送到目标就结束，我想有一类绳结委托，收货要再核对从装货口到卸货口的实际脚迹：地上画出不能跨过的几根柱子，接单人从装货口牵着粉线走到卸货口，绕柱的先后与方向要和委托样线相同，缩短多绕的来回不应改变交付。",
+          "steps": "为每根柱存净圈数并寻找普通最短搬运路",
+          "expected": "绕甲后乙与绕乙后甲净圈数相同却未必等价；需要解出有序绕行的可消关系，和箱门状态共同裁剪剩余步数。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "绕甲后乙与绕乙后甲净圈数相同却未必等价；需要解出有序绕行的可消关系，和箱门状态共同裁剪剩余步数。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "quote": "export function goalsSatisfied(document: GameDocument): boolean {"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "quote": "export function paintStage(ctx: CanvasRenderingContext2D, document: GameDocument, tile = TILE): void {"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "function move(dir: Dir): void {"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "在实际搬运中记录绕柱穿越顺序"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "结合全目标及指定路径类才冻结结算"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "恢复原图上样线与可拉紧的实走线"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "装载柱子、抽取段和委托"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "action": "modify",
+          "reason": "当货到位而脚迹不符允许继续原局"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“在实际搬运中记录绕柱穿越顺序”“恢复原图上样线与可拉紧的实走线”“当货到位而脚迹不符允许继续原局”。旁置副本若只重演预览，原入口仍执行：移动只更新一个人的格位和被推单箱。只检查每个目标格是否有一只箱。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "同一关把箱子全部送到目标就结束，我想有一类绳结委托，收货要再核对从装货口到卸货口的实际脚迹：地上画出不能跨过的几根柱子，接单人从装货口牵着粉线走到卸货口，绕柱的先后与方向要和委托样线相同，缩短多绕的来回不应改变交付。",
+          "expected": "请按此单和真实箱门找出剩余步数内仍可交货的一条走法；穿过同一扇门却从柱子另一侧绕回时，货虽都在目标上，也应允许接着走，等脚迹符合才写通关成绩。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "同一关把箱子全部送到目标就结束，我想有一类绳结委托，收货要再核对从装货口到卸货口的实际脚迹：地上画出不能跨过的几根柱子，接单人从装货口牵着粉线走到卸货口，绕柱的先后与方向要和委托样线相同，缩短多绕的来回不应改变交付。",
+          "expected": "绕甲后乙与绕乙后甲净圈数相同却未必等价；需要解出有序绕行的可消关系，和箱门状态共同裁剪剩余步数。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/hauler/lib/push.ts：在实际搬运中记录绕柱穿越顺序；src/features/ledger/lib/win.ts：结合全目标及指定路径类才冻结结算；src/features/atlas/lib/draw.ts：恢复原图上样线与可拉紧的实走线；src/features/voyage/lib/catalog.ts：装载柱子、抽取段和委托；src/app/useWorkshop.ts：当货到位而脚迹不符允许继续原局",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：绕甲后乙与绕乙后甲净圈数相同却未必等价；需要解出有序绕行的可消关系，和箱门状态共同裁剪剩余步数。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "给每段绕柱路径赋非交换的约简绕行历史，在带历史状态的真实箱门图上求有限步见证；每柱净圈数相同不足以辨别甲乙/乙甲。L268 按实际拉紧长度与绕障收线找返航，不按同伦委托签收。",
+        "shortcutAnalysis": "柱/委托配置、走过的路径、同伦与剩余路、仓面线迹、委托签收，五处必要。",
+        "necessaryBusinessSurfaces": "柱/委托配置、走过的路径、同伦与剩余路、仓面线迹、委托签收，五处必要。",
+        "reason": "给每段绕柱路径赋非交换的约简绕行历史，在带历史状态的真实箱门图上求有限步见证；每柱净圈数相同不足以辨别甲乙/乙甲。L268 按实际拉紧长度与绕障收线找返航，不按同伦委托签收。 柱/委托配置、走过的路径、同伦与剩余路、仓面线迹、委托签收，五处必要。",
+        "log": "independent-1124.md"
+      }
+    },
+    {
+      "id": "feature-12",
+      "difficulty": "困难",
+      "goal": "留白楼面开局",
+      "categoryEvidence": "由现有行为扩展：点目录总是从同一张固定图开工，我想让同一库房有“留白拼楼面”的开局。 蓝图和载入函数只有二维格、箱、门、踏板和形变地板。开关重载蓝图并重算机关，通关只按关号写入最少步数。移动只更新一个人的格位和被推单箱。只检查每个目标格是否有一只箱。相同关卡只维持一个最少步数。",
+      "historyComparison": {
+        "line": 70,
+        "difference": "历史生成唯一静态接线谜题；此题是交互铺固定房屋拼件，每个可放件要有可玩通关的完整布局见证。",
+        "peer": "gen-08",
+        "peerDifference": "可选楼面组合必须从初态真实送货；托盘题的接缝属于在运货物自身。"
+      },
+      "hardConstraints": [
+        {
+          "quote": "踏板、门、装货区和卸货区钉死，余下部分只能用给定库存的拐廊、窄道、回车坪拼成，拼块允许转向；我能锁住一段喜欢的走廊，再让目录列出下一个空位所有仍能拼完并完成送货的摆法。",
+          "reasoning": "单个必需门可以通，先移箱却会永久堵住另一目标；对称去重若移动锚定踏板会错并不等价成绩，必须在固定锚点群中校验完整运输。",
+          "failureCase": "先检查边缘拼得出，再分别验证各目标可达"
+        }
+      ],
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "请给每个保留摆法一个能从实盘走出来的交付样例，切到另一种开局后成绩只在确属同一整图的搬法间比较，未铺完或没搜完的部分不要记作无解。",
+          "reason": "生成与锚点相容的可摆开局；把同一实体整图在不同表现间归档；由同一冻结布局实走通关见证；不可只按每个终点分别可达签收；成绩按等价仓图而非普通关卡编号写入"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "踏板、门、装货区和卸货区钉死，余下部分只能用给定库存的拐廊、窄道、回车坪拼成，拼块允许转向；我能锁住一段喜欢的走廊，再让目录列出下一个空位所有仍能拼完并完成送货的摆法。",
+          "reason": "单个必需门可以通，先移箱却会永久堵住另一目标；对称去重若移动锚定踏板会错并不等价成绩，必须在固定锚点群中校验完整运输。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "踏板、门、装货区和卸货区钉死，余下部分只能用给定库存的拐廊、窄道、回车坪拼成，拼块允许转向；我能锁住一段喜欢的走廊，再让目录列出下一个空位所有仍能拼完并完成送货的摆法。",
+          "reason": "联合枚举拼图再从可玩性反例剪枝；以可执行推运约束限缩未铺地块，再做目录等价归档"
+        }
+      ],
+      "designDecision": {
+        "baselineReuse": "蓝图和载入函数只有二维格、箱、门、踏板和形变地板。开关重载蓝图并重算机关，通关只按关号写入最少步数。移动只更新一个人的格位和被推单箱。只检查每个目标格是否有一只箱。相同关卡只维持一个最少步数。",
+        "simplestApproach": "先检查边缘拼得出，再分别验证各目标可达",
+        "tension": "单个必需门可以通，先移箱却会永久堵住另一目标；对称去重若移动锚定踏板会错并不等价成绩，必须在固定锚点群中校验完整运输。",
+        "remainingDecision": "联合枚举拼图再从可玩性反例剪枝 或 以可执行推运约束限缩未铺地块，再做目录等价归档",
+        "options": [
+          {
+            "approach": "联合枚举拼图再从可玩性反例剪枝",
+            "validWhen": "适合直接保留各完整可行状态及其来源。",
+            "cost": "分支或可行配置多时需证明何时可以合并。"
+          },
+          {
+            "approach": "以可执行推运约束限缩未铺地块，再做目录等价归档",
+            "validWhen": "可由实际反例或区间界证明不可行分支时。",
+            "cost": "剪枝若抹去决定后续结果的状态，会留下虚假的验收见证。"
+          }
+        ],
+        "choice": "需在冻结基线实测可行性；可接受任一符合全部契约的做法。",
+        "correctnessImpact": "单个必需门可以通，先移箱却会永久堵住另一目标；对称去重若移动锚定踏板会错并不等价成绩，必须在固定锚点群中校验完整运输。",
+        "counterexample": {
+          "constraintQuote": "踏板、门、装货区和卸货区钉死，余下部分只能用给定库存的拐廊、窄道、回车坪拼成，拼块允许转向；我能锁住一段喜欢的走廊，再让目录列出下一个空位所有仍能拼完并完成送货的摆法。",
+          "steps": "先检查边缘拼得出，再分别验证各目标可达",
+          "expected": "单个必需门可以通，先移箱却会永久堵住另一目标；对称去重若移动锚定踏板会错并不等价成绩，必须在固定锚点群中校验完整运输。",
+          "wrongResult": "局部可行误报为用户可操作的整体结果，或漏掉题中仍可行的分支。",
+          "whyRoutineFixFails": "单个必需门可以通，先移箱却会永久堵住另一目标；对称去重若移动锚定踏板会错并不等价成绩，必须在固定锚点群中校验完整运输。"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "quote": "export interface LevelBlueprint {"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "quote": "function openLevel(id: string): void {"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "export function applyMove(document: GameDocument, dir: Dir): MoveResult {"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "quote": "export function goalsSatisfied(document: GameDocument): boolean {"
+        },
+        {
+          "path": "src/features/voyage/lib/persist.ts",
+          "quote": "export function betterRecord("
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "生成与锚点相容的可摆开局"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "action": "modify",
+          "reason": "把同一实体整图在不同表现间归档"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "由同一冻结布局实走通关见证"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "不可只按每个终点分别可达签收"
+        },
+        {
+          "path": "src/features/voyage/lib/persist.ts",
+          "action": "modify",
+          "reason": "成绩按等价仓图而非普通关卡编号写入"
+        }
+      ],
+      "minimality": "仅将求解器及详情面板接入 Workspace、借用既有移动和判胜是可尝试的 1–4 文件方案。需逐项核查它在原有入口能否做到“生成与锚点相容的可摆开局”“由同一冻结布局实走通关见证”“成绩按等价仓图而非普通关卡编号写入”。旁置副本若只重演预览，原入口仍执行：蓝图和载入函数只有二维格、箱、门、踏板和形变地板。开关重载蓝图并重算机关，通关只按关号写入最少步数。 初审不能把路径清单当作排除所有合规替代方案的证明。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "点目录总是从同一张固定图开工，我想让同一库房有“留白拼楼面”的开局。",
+          "expected": "请给每个保留摆法一个能从实盘走出来的交付样例，切到另一种开局后成绩只在确属同一整图的搬法间比较，未铺完或没搜完的部分不要记作无解。"
+        },
+        {
+          "kind": "boundary",
+          "steps": "踏板、门、装货区和卸货区钉死，余下部分只能用给定库存的拐廊、窄道、回车坪拼成，拼块允许转向；我能锁住一段喜欢的走廊，再让目录列出下一个空位所有仍能拼完并完成送货的摆法。",
+          "expected": "单个必需门可以通，先移箱却会永久堵住另一目标；对称去重若移动锚定踏板会错并不等价成绩，必须在固定锚点群中校验完整运输。"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "src/features/voyage/lib/catalog.ts：生成与锚点相容的可摆开局；src/features/voyage/model/useVoyage.ts：把同一实体整图在不同表现间归档；src/features/hauler/lib/push.ts：由同一冻结布局实走通关见证；src/features/ledger/lib/win.ts：不可只按每个终点分别可达签收；src/features/voyage/lib/persist.ts：成绩按等价仓图而非普通关卡编号写入",
+        "efficientPathAnalysis": "可批量读取这些入口，复用现有移动/机关/判胜；仍需把两种方案的反例接入实盘：单个必需门可以通，先移箱却会永久堵住另一目标；对称去重若移动锚定踏板会错并不等价成绩，必须在固定锚点群中校验完整运输。",
+        "estimate": null,
+        "runs": []
+      },
+      "review": {
+        "verdict": "pending",
+        "p5Verdict": "pass",
+        "p6Verdict": "pending",
+        "p6Analysis": "独立报告：没有独立解题实跑，无法复算有效数、排除项或工具分布。",
+        "difficultyGates": {
+          "H1": true,
+          "H2": true,
+          "H3": true
+        },
+        "actualDifficulty": "困难",
+        "featureKinds": [
+          "多模块整合",
+          "关键设计取舍",
+          "复杂技术关注点"
+        ],
+        "simpleSolutionSuffices": false,
+        "designDecisionAnalysis": "装配解须与共同推动顺序一起可达；仅在保持钉件/锁件/箱种的对称子群内去重，否则同形楼的可锁位置或最佳成绩会被串用。历史是遗迹关卡绘制发布与埋陷阱解谜，不是在锁定部分拼块后求全可行补全。",
+        "shortcutAnalysis": "铺楼与目录、水合关卡、解运见证、预览选择、同图成绩键，五处必要。",
+        "necessaryBusinessSurfaces": "铺楼与目录、水合关卡、解运见证、预览选择、同图成绩键，五处必要。",
+        "reason": "装配解须与共同推动顺序一起可达；仅在保持钉件/锁件/箱种的对称子群内去重，否则同形楼的可锁位置或最佳成绩会被串用。历史是遗迹关卡绘制发布与埋陷阱解谜，不是在锁定部分拼块后求全可行补全。 铺楼与目录、水合关卡、解运见证、预览选择、同图成绩键，五处必要。",
+        "log": "independent-1124.md"
+      }
+    }
+  ]
+}

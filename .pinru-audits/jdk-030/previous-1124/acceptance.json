@@ -1,0 +1,3618 @@
+{
+  "schemaVersion": 2,
+  "projectSha256": "fa59de46dd9f90754642a2fdd4de41027a5ca3cdc84eb062393d2ab19b25124c",
+  "promptSha256": "e4665bec8b2461df9c33b0aaeb221679c964d9ec574f0b960b4da385eaf424f6",
+  "checks": {
+    "typecheck": {
+      "status": "passed",
+      "action": "npm run typecheck",
+      "log": "logs/typecheck.log"
+    },
+    "build": {
+      "status": "passed",
+      "action": "npm run build",
+      "log": "logs/build.log"
+    },
+    "structure": {
+      "status": "passed",
+      "action": "node check-cohesion.mjs jdk-030",
+      "log": "logs/structure.log"
+    },
+    "dockerConfig": {
+      "status": "passed",
+      "action": "docker compose -p jdk030 config",
+      "log": "logs/docker-config.log"
+    },
+    "dockerBuild": {
+      "status": "passed",
+      "action": "docker compose -p jdk030 build",
+      "log": "logs/docker-build.log"
+    },
+    "dockerSmoke": {
+      "status": "passed",
+      "action": "docker compose -p jdk030 up; curl index/js/css/spa; down",
+      "log": "logs/docker-smoke.log"
+    },
+    "browserSmoke": {
+      "status": "passed",
+      "action": "浏览器通关门闩入门并切换架桥验证供电与记录",
+      "log": "logs/browser-smoke.log"
+    }
+  },
+  "projectReview": {
+    "domain": "游戏图形与多媒体",
+    "pureFrontend": "全部状态在浏览器内存与 localStorage，无业务后端。persist.ts 只读写 jdk-030.voyage.v1。",
+    "cohesion": "atlas 管地图绘制与格子，hauler 管推动，gadget 管供电与通行，ledger 管步数与通关，voyage 管关卡与记录。跨模块只经 GameDocument 与公开入口。结构检查 34 个业务文件通过。",
+    "capacityLog": "capacity.md",
+    "responsibilities": {
+      "atlas": "关卡瓦片、目标格、画布绘制与图例。",
+      "hauler": "人与箱子占格、一次一格推动。",
+      "gadget": "种类踏板供电、门与地板变形、通行判定。",
+      "ledger": "步数、通关冻结、目标覆盖。",
+      "voyage": "关卡目录、重置、最佳记录持久化。"
+    },
+    "interactions": [
+      {
+        "from": "hauler",
+        "to": "gadget",
+        "steps": "匹配木箱压上踏板",
+        "expected": "门打开",
+        "observed": "机关面板有电且门开启",
+        "log": "logs/interaction-1.log"
+      },
+      {
+        "from": "ledger",
+        "to": "voyage",
+        "steps": "两目标填满通关",
+        "expected": "写入最佳步数",
+        "observed": "门闩入门 22 步",
+        "log": "logs/interaction-2.log"
+      },
+      {
+        "from": "voyage",
+        "to": "atlas",
+        "steps": "改选架桥并压板",
+        "expected": "地图换成缺口桥板且旧记录仍在",
+        "observed": "三处架桥已变形，记录保留 22 步",
+        "log": "logs/interaction-3.log"
+      }
+    ]
+  },
+  "review": {
+    "author": "出题者-jdk-030-cursor-grok",
+    "reviewer": "independent-reviewer-jdk-030",
+    "independent": true,
+    "verdict": "pending",
+    "log": "review/independent.md"
+  },
+  "tasks": [
+    {
+      "id": "gen-01",
+      "difficulty": "困难",
+      "goal": "单步撤销与通关成绩提交边界",
+      "categoryEvidence": "全库搜索 undo/history 无撤销栈。通关由 markCleared 后 commitClear 立即写入 records。题目不依赖其他题。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "让撤销、重置和最佳记录同时说得通",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "需要定提交边界，让撤销、重置和最佳记录同时说得通",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "刚通关的那一步如果被撤掉，现场回到未解开，可目录里已经有已完成和最佳步数",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "穿过通关瞬间再走完时新步数和旧最佳也要有唯一比法",
+          "reasoning": "快照恢复会倒回通关标记，与已完成最佳仍要可查看冲突；成绩永不撤回则目录已完成而地图未解。",
+          "failureCase": "20步通关写入后撤销到19，目录或空或仍显示已完成。"
+        }
+      ],
+      "designDecision": {
+        "tension": "快照恢复会倒回通关标记，与已完成最佳仍要可查看冲突；成绩永不撤回则目录已完成而地图未解。",
+        "options": [
+          {
+            "approach": "通关当下提交，撤销不撤回成绩",
+            "validWhen": "把成绩看成生涯事件",
+            "cost": "目录已完成与现场未解并存"
+          },
+          {
+            "approach": "离开本关才提交，撤销可撤回未提交通关",
+            "validWhen": "把成绩看成一次尝试",
+            "cost": "看记录的人在离开关卡前看不到刚打出的最佳"
+          }
+        ],
+        "choice": "参考：尝试内可撤回，换关或重置已通关现场时提交。其他满足契约的协议也可。",
+        "correctnessImpact": "目录徽章、冻结移动和最佳比较会随协议改变。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "每步深拷贝运行时并弹出即可恢复现场，但不能决定成绩表是否倒回。",
+        "remainingDecision": "通关记录在越过通关线的撤销时撤回、保留还是延迟提交。",
+        "counterexample": {
+          "constraintQuote": "若成绩永不撤回，目录显示已完成而地图还没解开",
+          "steps": "20步通关后撤销到19步再25步打完",
+          "expected": "现场未解时目录语义与再次通关比较有唯一定义",
+          "wrongResult": "目录仍显示已完成最佳20，25步覆盖或忽略无约定",
+          "whyRoutineFixFails": "补守卫只拦二次写入仍无法决定19步窗口的已完成标记"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "增加历史条目形状，省略则各模块无法共享撤销范围"
+        },
+        {
+          "path": "src/features/ledger/lib/history.ts",
+          "action": "add",
+          "reason": "历史栈与穿过通关线的提交标记"
+        },
+        {
+          "path": "src/features/ledger/model/useLedger.ts",
+          "action": "modify",
+          "reason": "步数簿在撤销时回退步数与尝试状态"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "action": "modify",
+          "reason": "成绩提交时机必须与撤销协议一致"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "恢复后按占格重算或写入快照中的门态"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "action": "modify",
+          "reason": "把撤销接入移动成功之后的同一条命令链"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "调查推动/机关/通关/持久化，设计历史范围与提交边界，接入步数、进度、地图与命令，验证跨通关撤销。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "现场未解时目录语义与再次通关比较有唯一定义"
+        },
+        {
+          "kind": "boundary",
+          "steps": "20步通关后撤销到19步再25步打完",
+          "expected": "现场未解时目录语义与再次通关比较有唯一定义"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/ledger/lib/history.ts",
+          "src/features/ledger/model/useLedger.ts",
+          "src/features/voyage/model/useVoyage.ts",
+          "src/features/gadget/lib/power.ts",
+          "src/app/useWorkshop.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "gen-02",
+      "difficulty": "困难",
+      "goal": "最佳路线幽灵分世界",
+      "categoryEvidence": "记录只有 bestSteps，无走法、无第二份模拟。不依赖其他题。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "自己的箱子和踏板绝不能被幽灵改掉",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "若只在同一份地图上重放走法，幽灵会去压你的踏板",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "重置当前关卡时人要回到蓝图，残影是停住、重头放，还是跟着消失",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "残影必须能让人看出当时门是开还是关",
+          "reasoning": "共用世界会让幽灵改玩家的门；只画折线则残影穿关着的门。",
+          "failureCase": "共用踏板时残影帮玩家开门。"
+        }
+      ],
+      "designDecision": {
+        "tension": "共用世界会让幽灵改玩家的门；只画折线则残影穿关着的门。",
+        "options": [
+          {
+            "approach": "影子世界重放走法",
+            "validWhen": "需要对照当时门态",
+            "cost": "两套门，玩家可能误以为能互动"
+          },
+          {
+            "approach": "仅坐标折线叠加",
+            "validWhen": "只关心路径",
+            "cost": "看不出当时开门"
+          }
+        ],
+        "choice": "参考：冻结通关时的走法在影子关卡重放，玩家世界隔离。",
+        "correctnessImpact": "地图要画两层占格，进度面板控制残影，重置只清玩家或连残影。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "把走法存在记录里并在同一文档重放，会污染踏板。",
+        "remainingDecision": "隔离粒度与重置时残影生命周期。",
+        "counterexample": {
+          "constraintQuote": "若只在同一份地图上重放走法，幽灵会去压你的踏板",
+          "steps": "玩家把压门木箱推走后播放残影",
+          "expected": "玩家的门保持关闭，残影在自己的世界开门",
+          "wrongResult": "残影压踏板把门打开，玩家借路",
+          "whyRoutineFixFails": "加一个「播放时禁止玩家移动」仍无法在同时对照时隔离供电"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "记录增加走法字段"
+        },
+        {
+          "path": "src/features/voyage/lib/persist.ts",
+          "action": "modify",
+          "reason": "持久化走法并做旧档兼容"
+        },
+        {
+          "path": "src/features/voyage/lib/ghost.ts",
+          "action": "add",
+          "reason": "影子关卡逐步重放"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "绘制残影与影子门"
+        },
+        {
+          "path": "src/features/ledger/lib/steps.ts",
+          "action": "modify",
+          "reason": "通关时连同走法提交"
+        },
+        {
+          "path": "src/features/voyage/ui/RecordBoard.vue",
+          "action": "modify",
+          "reason": "开关残影回放"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "补走法记录、影子模拟、双层绘制、重置交互与旧记录迁移。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "玩家的门保持关闭，残影在自己的世界开门"
+        },
+        {
+          "kind": "boundary",
+          "steps": "玩家把压门木箱推走后播放残影",
+          "expected": "玩家的门保持关闭，残影在自己的世界开门"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/voyage/lib/persist.ts",
+          "src/features/voyage/lib/ghost.ts",
+          "src/features/atlas/lib/draw.ts",
+          "src/features/ledger/lib/steps.ts",
+          "src/features/voyage/ui/RecordBoard.vue"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "gen-03",
+      "difficulty": "困难",
+      "goal": "冰块滑行的多格一步结算",
+      "categoryEvidence": "tiles 只有 wall/floor/goal/gap，applyMove 一格。无冰。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "滑行途中经过踏板必须让机关看见",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "若按键瞬间把通行图冻住再滑，箱子可能停在现已关闭的门里",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "中途若箱子已经压满目标，通关判定用滑到哪一格的画面",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "这一整段只记一步",
+          "reasoning": "离板关门与不可停在门内、一步原子落定互相卡住。",
+          "failureCase": "冻结合法性穿门；逐步求值卡门缝。"
+        }
+      ],
+      "designDecision": {
+        "tension": "离板关门与不可停在门内、一步原子落定互相卡住。",
+        "options": [
+          {
+            "approach": "按键瞬间冻结通行图再滑",
+            "validWhen": "把一步看成意图提交",
+            "cost": "可能停在已应关闭的门里"
+          },
+          {
+            "approach": "每格重算机关",
+            "validWhen": "强调途经踏板",
+            "cost": "同格弹射或一步无法落定"
+          }
+        ],
+        "choice": "参考：逐步滑动但禁止停在门内，非法则整步回滚；通关看落定后状态。",
+        "correctnessImpact": "地图冰面、推动循环、步数一次、通关与重置必须同一套中间结果。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "循环逐格调用现有求值并只加一次步数，仍可能卡在门缝或穿门。",
+        "remainingDecision": "多格原子步相对机关的求值相位。",
+        "counterexample": {
+          "constraintQuote": "不能把实体停在已经关上的门里面",
+          "steps": "箱子从踏板滑向曾打开的门",
+          "expected": "门按离板关上，箱子停在门前，只记一步",
+          "wrongResult": "箱子停在门里或穿过关闭的门",
+          "whyRoutineFixFails": "只加循环或只加快照各满足一条而破坏另一条"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "增加冰面地形"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "关卡数据出现冰格"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "滑行循环与回滚"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "滑行中途的门与缺口判定"
+        },
+        {
+          "path": "src/features/ledger/lib/steps.ts",
+          "action": "modify",
+          "reason": "整段只计一步"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "绘制冰面"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "新地形、滑行相位、机关与通关、关卡数据与绘制验证。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "门按离板关上，箱子停在门前，只记一步"
+        },
+        {
+          "kind": "boundary",
+          "steps": "箱子从踏板滑向曾打开的门",
+          "expected": "门按离板关上，箱子停在门前，只记一步"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/voyage/lib/catalog.ts",
+          "src/features/hauler/lib/push.ts",
+          "src/features/gadget/lib/passable.ts",
+          "src/features/ledger/lib/steps.ts",
+          "src/features/atlas/lib/draw.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "gen-04",
+      "difficulty": "困难",
+      "goal": "成对传送与同格冲突",
+      "categoryEvidence": "无传送门字段，移动是邻格替换。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "一次推动里箱子先踏进传送格、人随后踩上被腾空的入口",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "是先后传送、同时传送还是整步取消，会得到完全不同的占格",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "出口当时关着时是整步退回、只留在入口，还是箱子进去人留下",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "出口被门封住或被实体占住时不能重叠",
+          "reasoning": "同一步双实体与出口门状态的提交范围互相制约。",
+          "failureCase": "人随箱子连传或整步取消导致踏空。"
+        }
+      ],
+      "designDecision": {
+        "tension": "同一步双实体与出口门状态的提交范围互相制约。",
+        "options": [
+          {
+            "approach": "先后传送",
+            "validWhen": "模拟物理顺序",
+            "cost": "人会连传叠箱"
+          },
+          {
+            "approach": "整步原子传送或整步失败",
+            "validWhen": "避免半步",
+            "cost": "可能看起来踏空"
+          }
+        ],
+        "choice": "参考：推动与传送同一提交，出口不可用则整步失败不计数。",
+        "correctnessImpact": "地图传送绘制、失败回滚、机关因箱子换边而开合。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "移动结束后改坐标，无法处理双实体同一步。",
+        "remainingDecision": "传送顺序与出口不可用时的回滚范围。",
+        "counterexample": {
+          "constraintQuote": "会不会连传两次",
+          "steps": "人推箱进入入口，出口空且开门",
+          "expected": "只有约定的实体出现在出口，不重叠",
+          "wrongResult": "人跟着箱子连传叠在一起",
+          "whyRoutineFixFails": "出口占用检查只加在单实体上仍漏掉腾空入口的二次触发"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "传送对数据"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "关卡布置传送对"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "推入传送格的提交"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "出口门与占格"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "绘制传送门"
+        },
+        {
+          "path": "src/features/ledger/lib/steps.ts",
+          "action": "modify",
+          "reason": "失败不计数、成功只计一步"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "传送数据、冲突协议、绘制、回滚与步数。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "只有约定的实体出现在出口，不重叠"
+        },
+        {
+          "kind": "boundary",
+          "steps": "人推箱进入入口，出口空且开门",
+          "expected": "只有约定的实体出现在出口，不重叠"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/voyage/lib/catalog.ts",
+          "src/features/hauler/lib/push.ts",
+          "src/features/gadget/lib/passable.ts",
+          "src/features/atlas/lib/draw.ts",
+          "src/features/ledger/lib/steps.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "gen-05",
+      "difficulty": "困难",
+      "goal": "成绩档案导出导入与半局冲突",
+      "categoryEvidence": "只有 localStorage 的 records 与 currentLevelId，无文件、无半局。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "导入成功后目录、地图和步数要一起换成解释得通的那一套",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "半局和已完成记录同时指向同一关时谁作废",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "文件里可能带着某关更好的数字，同时又带着另一关未完成的半局",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "损坏或版本对不上的文件要提示并保住当前目录和正在推的现场",
+          "reasoning": "覆盖丢失本地更优通关；合并数字可能用过期半局打回未完成。",
+          "failureCase": "覆盖丢18步或半局打回未完成。"
+        }
+      ],
+      "designDecision": {
+        "tension": "覆盖丢失本地更优通关；合并数字可能用过期半局打回未完成。",
+        "options": [
+          {
+            "approach": "整表替换",
+            "validWhen": "档案是权威备份",
+            "cost": "丢掉本地更好成绩"
+          },
+          {
+            "approach": "按关合并记录并拒绝指纹不匹配的半局",
+            "validWhen": "两台设备各打过不同关",
+            "cost": "半局可能被丢弃需提示"
+          }
+        ],
+        "choice": "参考：记录取更优，半局仅当关卡指纹一致且该关本地未完成时恢复。",
+        "correctnessImpact": "目录、地图、步数同时切换，损坏保留现场。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "JSON 覆盖 records，无法处理半局与已完成冲突。",
+        "remainingDecision": "导入时记录与现场的所有权协议。",
+        "counterexample": {
+          "constraintQuote": "只按关合并数字又可能用一份过期半局把正在打的关打回未完成",
+          "steps": "本地关2已18步完成，文件含关2的40步半局和关1更好成绩",
+          "expected": "关1成绩变好，关2保持已完成18步，现场不被40步半局覆盖",
+          "wrongResult": "关2变成未完成40步或关1更好成绩没进去",
+          "whyRoutineFixFails": "单纯校验 JSON schema 不能决定半局与已完成的优先级"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "档案版本与可选半局形状"
+        },
+        {
+          "path": "src/features/voyage/lib/codec.ts",
+          "action": "add",
+          "reason": "校验、合并、拒绝损坏"
+        },
+        {
+          "path": "src/features/voyage/lib/persist.ts",
+          "action": "modify",
+          "reason": "与文件档案共用记录形状"
+        },
+        {
+          "path": "src/features/voyage/ui/LevelRail.vue",
+          "action": "modify",
+          "reason": "导出导入入口"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "action": "modify",
+          "reason": "导入后切换当前关与现场"
+        },
+        {
+          "path": "src/features/atlas/ui/StageView.vue",
+          "action": "modify",
+          "reason": "导入成功后重绘新关"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "编解码、合并策略、目录地图步数联动、损坏保留。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "关1成绩变好，关2保持已完成18步，现场不被40步半局覆盖"
+        },
+        {
+          "kind": "boundary",
+          "steps": "本地关2已18步完成，文件含关2的40步半局和关1更好成绩",
+          "expected": "关1成绩变好，关2保持已完成18步，现场不被40步半局覆盖"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/voyage/lib/codec.ts",
+          "src/features/voyage/lib/persist.ts",
+          "src/features/voyage/ui/LevelRail.vue",
+          "src/features/voyage/model/useVoyage.ts",
+          "src/features/atlas/ui/StageView.vue"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "gen-06",
+      "difficulty": "困难",
+      "goal": "限时与步数双成绩在离开地图时的时钟",
+      "categoryEvidence": "无计时器，LevelRecord 只有 bestSteps。无暂停出口。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "目录同时列出最佳用时和最佳步数",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "打开目录看成绩时现场不能被偷偷判负",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "通关和超时落在同一瞬间时",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "超时不得写成步数最佳",
+          "reasoning": "无暂停产品里离开舞台的时间所有权与双成绩提交冲突。",
+          "failureCase": "翻目录被判负或靠目录无限暂停。"
+        }
+      ],
+      "designDecision": {
+        "tension": "无暂停产品里离开舞台的时间所有权与双成绩提交冲突。",
+        "options": [
+          {
+            "approach": "翻目录冻结时钟",
+            "validWhen": "阅读不算比赛",
+            "cost": "可当暂停作弊"
+          },
+          {
+            "approach": "墙上时间继续",
+            "validWhen": "强调限时压力",
+            "cost": "看记录回来瞬间失败"
+          }
+        ],
+        "choice": "参考：舞台不可见时冻结，但冻结期间禁止移动；通关优先于同帧超时。",
+        "correctnessImpact": "超时失败不写步数，重置只清本关钟。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "performance.now 累加写两个字段，无法处理翻目录。",
+        "remainingDecision": "离开舞台时时钟冻结还是继续，以及同帧通关/超时优先级。",
+        "counterexample": {
+          "constraintQuote": "打开目录看成绩时现场不能被偷偷判负",
+          "steps": "剩余0.4秒打开目录停留10秒再回来",
+          "expected": "回来仍可动或明确处于冻结阅读，不写失败成绩",
+          "wrongResult": "后台超时把本关判负并可能写脏记录",
+          "whyRoutineFixFails": "独立时间戳加超时判断仍要先定义离开舞台算不算比赛时间"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "双成绩字段"
+        },
+        {
+          "path": "src/features/ledger/lib/clock.ts",
+          "action": "add",
+          "reason": "时限与离开舞台的相位"
+        },
+        {
+          "path": "src/features/ledger/model/useLedger.ts",
+          "action": "modify",
+          "reason": "超时失败不走通关提交"
+        },
+        {
+          "path": "src/features/voyage/lib/persist.ts",
+          "action": "modify",
+          "reason": "保存最佳用时"
+        },
+        {
+          "path": "src/features/voyage/ui/RecordBoard.vue",
+          "action": "modify",
+          "reason": "展示双成绩"
+        },
+        {
+          "path": "src/features/voyage/ui/LevelRail.vue",
+          "action": "modify",
+          "reason": "打开目录与时钟交互"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "时钟所有权、双记录、超时失败隔离、目录交互。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "回来仍可动或明确处于冻结阅读，不写失败成绩"
+        },
+        {
+          "kind": "boundary",
+          "steps": "剩余0.4秒打开目录停留10秒再回来",
+          "expected": "回来仍可动或明确处于冻结阅读，不写失败成绩"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/ledger/lib/clock.ts",
+          "src/features/ledger/model/useLedger.ts",
+          "src/features/voyage/lib/persist.ts",
+          "src/features/voyage/ui/RecordBoard.vue",
+          "src/features/voyage/ui/LevelRail.vue"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "gen-07",
+      "difficulty": "困难",
+      "goal": "巡逻守卫与踏板抢回合",
+      "categoryEvidence": "活动体只有 player 与 boxes，踏板只认箱子种类。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "守卫若能压踏板",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "一回合里先算人再算机关、还是守卫走完再算一次，会决定门在这一步内开不开",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "玩家和守卫对换格子算穿越还是死亡",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "撞上人就失败且不能写通关记录",
+          "reasoning": "新活动体接入供电与胜负的回合相位。",
+          "failureCase": "守卫卡门或玩家借守卫开门。"
+        }
+      ],
+      "designDecision": {
+        "tension": "新活动体接入供电与胜负的回合相位。",
+        "options": [
+          {
+            "approach": "人-机关-守卫-机关",
+            "validWhen": "守卫要能走入自己打开的门",
+            "cost": "玩家可借同回合开门"
+          },
+          {
+            "approach": "人-守卫-一次机关",
+            "validWhen": "强调玩家先手",
+            "cost": "守卫卡在仍关的门外"
+          }
+        ],
+        "choice": "参考：守卫可压板但失败优先于通关；对换视为死亡。",
+        "correctnessImpact": "失败态、绘制路线、重置回起点、已有最佳不被抹掉。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "玩家移动后按路径走守卫再碰撞，无法决定供电次数。",
+        "remainingDecision": "一回合求值次数与守卫的压板类别、对换规则。",
+        "counterexample": {
+          "constraintQuote": "会决定门在这一步内开不开",
+          "steps": "铁块守卫走向铁板，门挡在下一格",
+          "expected": "按选定相位，守卫要么穿过刚开的门要么停在门外，失败不写记录",
+          "wrongResult": "一次求值使守卫像迷路卡死，或玩家无代价借门",
+          "whyRoutineFixFails": "补碰撞检测不能代替供电插在哪一次移动之后"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "守卫实体与失败状态"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "路线数据"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "守卫占压"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "回合末守卫移动与碰撞"
+        },
+        {
+          "path": "src/features/ledger/lib/steps.ts",
+          "action": "modify",
+          "reason": "失败不提交通关"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "绘制守卫"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "守卫数据、相位、供电扩展、失败隔离、绘制。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "按选定相位，守卫要么穿过刚开的门要么停在门外，失败不写记录"
+        },
+        {
+          "kind": "boundary",
+          "steps": "铁块守卫走向铁板，门挡在下一格",
+          "expected": "按选定相位，守卫要么穿过刚开的门要么停在门外，失败不写记录"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/voyage/lib/catalog.ts",
+          "src/features/gadget/lib/power.ts",
+          "src/features/hauler/lib/push.ts",
+          "src/features/ledger/lib/steps.ts",
+          "src/features/atlas/lib/draw.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "gen-08",
+      "difficulty": "困难",
+      "goal": "检查点地砖与重置语义",
+      "categoryEvidence": "重置总是 hydrate 蓝图，步数单一计数器。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "踩过之后重置可以选择回到检查点或真正起点",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "若重置清零步数再提交，五步过关会污染成绩",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "检查点快照要不要连门和地板一起记住",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "目录上的最佳步数必须仍是从真正起点算到通关的全程",
+          "reasoning": "重置入口被复用后显示步数与提交步数口径冲突。",
+          "failureCase": "检查点后短程污染最佳。"
+        }
+      ],
+      "designDecision": {
+        "tension": "重置入口被复用后显示步数与提交步数口径冲突。",
+        "options": [
+          {
+            "approach": "双计数：显示从检查点、提交从起点",
+            "validWhen": "成绩必须全程可比",
+            "cost": "界面有两个数字"
+          },
+          {
+            "approach": "检查点不改步数只存现场",
+            "validWhen": "重置不等于重开成绩",
+            "cost": "和重置归零的旧按钮文案冲突需改文案"
+          }
+        ],
+        "choice": "参考：提交始终用从蓝图起点累加的步数，检查点只恢复现场。",
+        "correctnessImpact": "重置 UI 选择、地图标记、记录提交。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "存一份拷贝并清零步数，会把短程写成最佳。",
+        "remainingDecision": "快照字段范围与显示/提交是否两套计数。",
+        "counterexample": {
+          "constraintQuote": "不能把检查点之后的短程写成最佳",
+          "steps": "30步踩检查点，重置到检查点后5步通关",
+          "expected": "目录最佳按全程35或仍为更早的全程最佳，绝不是5",
+          "wrongResult": "目录写下5步",
+          "whyRoutineFixFails": "给重置加确认框不能改变计数口径"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "检查点快照与双计数"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "检查点格子"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "action": "modify",
+          "reason": "重置选项"
+        },
+        {
+          "path": "src/features/ledger/lib/steps.ts",
+          "action": "modify",
+          "reason": "提交用全程步数"
+        },
+        {
+          "path": "src/features/voyage/ui/LevelRail.vue",
+          "action": "modify",
+          "reason": "重置到检查点或起点"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "绘制检查点"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "快照范围、双计数、重置 UI、提交口径。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "目录最佳按全程35或仍为更早的全程最佳，绝不是5"
+        },
+        {
+          "kind": "boundary",
+          "steps": "30步踩检查点，重置到检查点后5步通关",
+          "expected": "目录最佳按全程35或仍为更早的全程最佳，绝不是5"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/voyage/lib/catalog.ts",
+          "src/features/voyage/model/useVoyage.ts",
+          "src/features/ledger/lib/steps.ts",
+          "src/features/voyage/ui/LevelRail.vue",
+          "src/features/atlas/lib/draw.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "gen-09",
+      "difficulty": "困难",
+      "goal": "激光反射与推动合法性循环",
+      "categoryEvidence": "门只由踏板 doorPower 打开，无光线。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "推动玻璃进入光路的那一步，门在推动开始时仍是关的",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "若先假定推成功再算光再承认移动，实体会穿过一扇中途仍关着的门",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "木箱被点燃发生在移动中还是落定后，还会改变踏板占格和通关谁先结算",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "光打到光闸则开门",
+          "reasoning": "新电源与移动合法性循环依赖。",
+          "failureCase": "永远推不进或穿关着的闸。"
+        }
+      ],
+      "designDecision": {
+        "tension": "新电源与移动合法性循环依赖。",
+        "options": [
+          {
+            "approach": "先按旧光路判通行",
+            "validWhen": "门在推之前必须已开",
+            "cost": "靠本步反射开门的推法永远非法"
+          },
+          {
+            "approach": "试探推动后更新光再提交或回滚",
+            "validWhen": "允许本步创造的光授权本步",
+            "cost": "中途穿关着的门，需定义是否可接受"
+          }
+        ],
+        "choice": "参考：试探占用计算新光，仅当落点在新光打开的闸后才提交，否则回滚。",
+        "correctnessImpact": "烧毁、通关、绘制光束。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "步后扫描光线当额外电源，无法授权本步穿过光闸。",
+        "remainingDecision": "光路相对推动的提交相位。",
+        "counterexample": {
+          "constraintQuote": "实体会穿过一扇中途仍关着的门",
+          "steps": "把玻璃推到反射位，落点在闸后一格",
+          "expected": "按协议要么整步成功且光闸因新光打开，要么整步失败",
+          "wrongResult": "先通行则永远推不进；先光路则穿过仍关的闸且不回滚",
+          "whyRoutineFixFails": "步后扫描救不了本步合法性"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "发射器与光闸"
+        },
+        {
+          "path": "src/features/gadget/lib/beam.ts",
+          "action": "add",
+          "reason": "光线几何与反射"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "光闸接入供电"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "试探推动与烧毁"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "烧毁与通关顺序"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "绘制光束"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "光路、箱子种类效果、推动相位、胜负、绘制。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "按协议要么整步成功且光闸因新光打开，要么整步失败"
+        },
+        {
+          "kind": "boundary",
+          "steps": "把玻璃推到反射位，落点在闸后一格",
+          "expected": "按协议要么整步成功且光闸因新光打开，要么整步失败"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/gadget/lib/beam.ts",
+          "src/features/gadget/lib/power.ts",
+          "src/features/hauler/lib/push.ts",
+          "src/features/ledger/lib/win.ts",
+          "src/features/atlas/lib/draw.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "gen-10",
+      "difficulty": "困难",
+      "goal": "双角色轮换与共用占格",
+      "categoryEvidence": "单一 player 坐标。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "各走各的，都能推箱",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "非活动的那位算障碍、可被推开的箱子，还是也能压踏板",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "切换本身计不计步",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "两人不能叠在同一格",
+          "reasoning": "第二主体在占格、推动、步数上不能同时沿用单人模型。",
+          "failureCase": "叠格或免费换人躲门。"
+        }
+      ],
+      "designDecision": {
+        "tension": "第二主体在占格、推动、步数上不能同时沿用单人模型。",
+        "options": [
+          {
+            "approach": "非活动者当不可推障碍且不压板",
+            "validWhen": "保持箱子种类供电",
+            "cost": "不能借同伴占位"
+          },
+          {
+            "approach": "非活动者可被推且切换计步",
+            "validWhen": "两人是对等角色",
+            "cost": "可能把同伴推进缺口"
+          }
+        ],
+        "choice": "参考：非活动者为障碍不压板，切换不计步但封道结算仍按当前占格。",
+        "correctnessImpact": "双出生点、通关条件、绘制两人。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "数组两人加 activeIndex 调用现有 applyMove，未定义非活动者类别。",
+        "remainingDecision": "非活动者实体类别与切换是否提交。",
+        "counterexample": {
+          "constraintQuote": "会改变另一人能不能借位开门",
+          "steps": "把同伴推到踏板上再换人走过门",
+          "expected": "按选定类别，要么借位合法要么明确禁止",
+          "wrongResult": "同伴既当墙又突然供电，或免费换人躲封道",
+          "whyRoutineFixFails": "只加切换按钮不够"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "双角色与活动者"
+        },
+        {
+          "path": "src/features/hauler/lib/occupancy.ts",
+          "action": "modify",
+          "reason": "第二人占格"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "对当前角色推动"
+        },
+        {
+          "path": "src/features/hauler/ui/MoverHud.vue",
+          "action": "modify",
+          "reason": "切换操作"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "通关是否要求两人位置"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "绘制两名角色"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "实体模型、切换、推动冲突、通关、绘制。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "按选定类别，要么借位合法要么明确禁止"
+        },
+        {
+          "kind": "boundary",
+          "steps": "把同伴推到踏板上再换人走过门",
+          "expected": "按选定类别，要么借位合法要么明确禁止"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/hauler/lib/occupancy.ts",
+          "src/features/hauler/lib/push.ts",
+          "src/features/hauler/ui/MoverHud.vue",
+          "src/features/ledger/lib/win.ts",
+          "src/features/atlas/lib/draw.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "gen-11",
+      "difficulty": "困难",
+      "goal": "管道洪水蔓延与箱子存亡",
+      "categoryEvidence": "地板只有 bridge/seal，箱子不会消失。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "打开通水闸后水沿连通地板扩散",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "若木箱压着通水踏板被冲走，本步切断水源则洪水只闪一下",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "失败、吞箱和通关落在同一帧时只能有一种提交结果",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "人踩进水里失败且不写通关",
+          "reasoning": "破坏性蔓延与供电自指，移动与蔓延相位冲突。",
+          "failureCase": "洪水闪烁或人走进下一步才到的水。"
+        }
+      ],
+      "designDecision": {
+        "tension": "破坏性蔓延与供电自指，移动与蔓延相位冲突。",
+        "options": [
+          {
+            "approach": "先移动后蔓延，水源本步不因自毁切断",
+            "validWhen": "水有惯性",
+            "cost": "人可走进即将淹的格"
+          },
+          {
+            "approach": "先蔓延后移动，自毁当步切断",
+            "validWhen": "供电必须连续",
+            "cost": "看起来是干地却被拒绝"
+          }
+        ],
+        "choice": "参考：蔓延用移动前供电扩一轮，自毁的木箱本步仍供电；失败优先通关。",
+        "correctnessImpact": "水格、种类破坏、重置恢复箱子。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "每步 BFS 扩张，无法处理自指供电与同帧胜负。",
+        "remainingDecision": "蔓延相对移动的相位以及自毁是否当步切断。",
+        "counterexample": {
+          "constraintQuote": "本步不切断则箱子已经不在、水仍按曾供电扩一轮",
+          "steps": "木箱压通水板被冲走",
+          "expected": "按协议水扩一轮或立刻干涸，现场与供电定义一致",
+          "wrongResult": "木箱消失后门闪一下又关上，占格与供电对不上",
+          "whyRoutineFixFails": "只做 BFS 不规定自毁当步的电源"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "水格与箱可消失"
+        },
+        {
+          "path": "src/features/gadget/lib/flood.ts",
+          "action": "add",
+          "reason": "蔓延与坝"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "水源供电与自毁"
+        },
+        {
+          "path": "src/features/hauler/lib/occupancy.ts",
+          "action": "modify",
+          "reason": "被冲走的箱子"
+        },
+        {
+          "path": "src/features/ledger/lib/steps.ts",
+          "action": "modify",
+          "reason": "失败优先"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "绘制水"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "蔓延、破坏、胜负、绘制、重置恢复。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "按协议水扩一轮或立刻干涸，现场与供电定义一致"
+        },
+        {
+          "kind": "boundary",
+          "steps": "木箱压通水板被冲走",
+          "expected": "按协议水扩一轮或立刻干涸，现场与供电定义一致"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/gadget/lib/flood.ts",
+          "src/features/gadget/lib/power.ts",
+          "src/features/hauler/lib/occupancy.ts",
+          "src/features/ledger/lib/steps.ts",
+          "src/features/atlas/lib/draw.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "gen-12",
+      "difficulty": "困难",
+      "goal": "中途挂起换关再续",
+      "categoryEvidence": "换关直接 hydrate，存储无半局。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "去打另一关，再回来从挂起点继续",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "回来是恢复半局并保持已完成标记，还是把关卡打回进行中",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "重置当前关应丢掉该关挂起还是当成回到挂起点",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "挂起不得改写别关最佳",
+          "reasoning": "半局所有权与已完成标记双状态。",
+          "failureCase": "挂起覆盖最佳或回来丢现场。"
+        }
+      ],
+      "designDecision": {
+        "tension": "半局所有权与已完成标记双状态。",
+        "options": [
+          {
+            "approach": "明确按钮才挂起，换关默认丢弃并确认",
+            "validWhen": "避免悄悄覆盖",
+            "cost": "多一次操作"
+          },
+          {
+            "approach": "换关自动挂起未完成现场",
+            "validWhen": "强调可续玩",
+            "cost": "可能把已完成关打回进行中"
+          }
+        ],
+        "choice": "参考：自动挂起未完成且未通关的现场；已完成关的挂起不摘掉已完成标记。",
+        "correctnessImpact": "目录徽章、重置 vs 挂起、持久化。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "多一个 suspendedByLevel 键，未定义与已完成标记的关系。",
+        "remainingDecision": "离开未完成关的默认动作以及挂起与已完成并存。",
+        "counterexample": {
+          "constraintQuote": "把关卡打回进行中，会让最佳记录和现场互斥",
+          "steps": "关1曾通关又重置挑战后挂在12步，去关2打完再回来",
+          "expected": "关1最佳仍在，现场从12步继续或明确丢弃",
+          "wrongResult": "已完成标记消失或12步现场丢失",
+          "whyRoutineFixFails": "多一个存储键不能决定徽章状态机"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "挂起快照"
+        },
+        {
+          "path": "src/features/voyage/lib/persist.ts",
+          "action": "modify",
+          "reason": "分关存储半局"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "action": "modify",
+          "reason": "换关协议"
+        },
+        {
+          "path": "src/features/voyage/ui/LevelRail.vue",
+          "action": "modify",
+          "reason": "挂起徽章"
+        },
+        {
+          "path": "src/features/ledger/model/useLedger.ts",
+          "action": "modify",
+          "reason": "恢复步数与尝试状态"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "action": "modify",
+          "reason": "换关前挂起当前现场"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "快照、换关协议、重置对比、目录徽章、持久化。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "关1最佳仍在，现场从12步继续或明确丢弃"
+        },
+        {
+          "kind": "boundary",
+          "steps": "关1曾通关又重置挑战后挂在12步，去关2打完再回来",
+          "expected": "关1最佳仍在，现场从12步继续或明确丢弃"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/voyage/lib/persist.ts",
+          "src/features/voyage/model/useVoyage.ts",
+          "src/features/voyage/ui/LevelRail.vue",
+          "src/features/ledger/model/useLedger.ts",
+          "src/app/useWorkshop.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "feature-01",
+      "difficulty": "困难",
+      "goal": "目标格认箱子种类",
+      "categoryEvidence": "goalsSatisfied 只检查任意箱子占格。扩展旧关无标记目标。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "同一格若还有踏板，错箱仍可能供电开门",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "通关检查和供电必须分开看占格",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "旧存档没有种类字段时要能打开",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "部分目标只认指定种类",
+          "reasoning": "占用谓词与满足谓词从同一占格拆开。",
+          "failureCase": "错箱通关或错箱断电死锁。"
+        }
+      ],
+      "designDecision": {
+        "tension": "占用谓词与满足谓词从同一占格拆开。",
+        "options": [
+          {
+            "approach": "错箱占格但不满足通关，供电仍按种类",
+            "validWhen": "踏板规则不变",
+            "cost": "界面必须区分等待"
+          },
+          {
+            "approach": "错箱不可停在认种目标",
+            "validWhen": "避免误导",
+            "cost": "可能弹开破坏现有推法"
+          }
+        ],
+        "choice": "参考：允许错箱停留，通关不计数，供电独立。",
+        "correctnessImpact": "绘制目标标记、目录说明、旧关兼容。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "目标加 accept 过滤通关，若复用占格布尔会关错门。",
+        "remainingDecision": "错误压占是否阻挡以及通关/供电是否共用函数。",
+        "counterexample": {
+          "constraintQuote": "若把占用和满足合成一个开关，错箱会把门一起关掉造成死锁",
+          "steps": "铁箱压在只认木的目标上，该格铁板",
+          "expected": "铁门仍按铁箱供电，通关仍缺木箱",
+          "wrongResult": "铁门关上或错箱通关",
+          "whyRoutineFixFails": "只改 goalsSatisfied 一个函数会把供电绑死"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "目标可选种类"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "新关标记、旧关缺省"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "满足与占用分离"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "供电不借用通关谓词"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "绘制认种目标"
+        },
+        {
+          "path": "src/features/ledger/ui/StepMeter.vue",
+          "action": "modify",
+          "reason": "列出未满足的认种格"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "谓词拆分、旧档、绘制、供电保持。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "铁门仍按铁箱供电，通关仍缺木箱"
+        },
+        {
+          "kind": "boundary",
+          "steps": "铁箱压在只认木的目标上，该格铁板",
+          "expected": "铁门仍按铁箱供电，通关仍缺木箱"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/voyage/lib/catalog.ts",
+          "src/features/ledger/lib/win.ts",
+          "src/features/gadget/lib/power.ts",
+          "src/features/atlas/lib/draw.ts",
+          "src/features/ledger/ui/StepMeter.vue"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "feature-02",
+      "difficulty": "困难",
+      "goal": "连环推箱的中间机关结算",
+      "categoryEvidence": "第二只箱子 isPassable 为 false，不能成列。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "它们会在同一键经过不同踏板",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "一次性平移后再算机关，中间「离开踏板、后箱尚未到达」的断电不会发生",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "失败则人和箱子都回到按键前",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "一条直线上的箱子可以一起被推，只要末格有空位",
+          "reasoning": "成列与离板立刻关门无法用现有整步一次求值同时满足。",
+          "failureCase": "钻门或卡在门里还计数。"
+        }
+      ],
+      "designDecision": {
+        "tension": "成列与离板立刻关门无法用现有整步一次求值同时满足。",
+        "options": [
+          {
+            "approach": "原子平移后一次求值",
+            "validWhen": "把连锁当一个刚体",
+            "cost": "断电中间态消失，可能钻门"
+          },
+          {
+            "approach": "逐只移动并求值，非法整步回滚",
+            "validWhen": "强调门的即时性",
+            "cost": "有的成列推法失败"
+          }
+        ],
+        "choice": "参考：从远到近移动以减少互相覆盖，每只后求值，任一门缝卡死则回滚。",
+        "correctnessImpact": "推动、占格、步数只在成功时增加。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "收集整列一次性平移，无法表达中段关门。",
+        "remainingDecision": "连锁相对机关的相位。",
+        "counterexample": {
+          "constraintQuote": "门可能在中段关上，后半列卡进非法格",
+          "steps": "两箱一列，前箱离开木板，后箱落点在门后",
+          "expected": "按协议整列通过或整步失败回滚",
+          "wrongResult": "后箱停在关着的门里且步数已加",
+          "whyRoutineFixFails": "只扩展 isPassable 看末格不够"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "收集列与回滚"
+        },
+        {
+          "path": "src/features/hauler/lib/occupancy.ts",
+          "action": "modify",
+          "reason": "列上多箱扫描"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "中段求值入口"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "中段门缝"
+        },
+        {
+          "path": "src/features/ledger/lib/steps.ts",
+          "action": "modify",
+          "reason": "失败不计步"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "action": "modify",
+          "reason": "成功才刷新通关检查"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "列推动、相位、回滚、步数。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "按协议整列通过或整步失败回滚"
+        },
+        {
+          "kind": "boundary",
+          "steps": "两箱一列，前箱离开木板，后箱落点在门后",
+          "expected": "按协议整列通过或整步失败回滚"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/features/hauler/lib/push.ts",
+          "src/features/hauler/lib/occupancy.ts",
+          "src/features/gadget/lib/power.ts",
+          "src/features/gadget/lib/passable.ts",
+          "src/features/ledger/lib/steps.ts",
+          "src/app/useWorkshop.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "feature-03",
+      "difficulty": "困难",
+      "goal": "门延迟充能",
+      "categoryEvidence": "door.open = doorPower.has，当帧开关。无时钟。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "通关冻结后还能否继续充能，也要和「通关后不能再移动」的现状一起解释",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "充能若跟墙上时间走，打开目录停留就会偷偷开到位",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "差一步充满时重置当前关，充能必须回到未充电",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "有的门要连续供电若干步才打开",
+          "reasoning": "新相位与无时钟、通关冻结相遇。",
+          "failureCase": "翻目录偷开或重置清了别关成绩。"
+        }
+      ],
+      "designDecision": {
+        "tension": "新相位与无时钟、通关冻结相遇。",
+        "options": [
+          {
+            "approach": "充能绑步数，断电清零，冻结后停止",
+            "validWhen": "与现有步数簿同相位",
+            "cost": "点按才能充"
+          },
+          {
+            "approach": "断电暂停不清零",
+            "validWhen": "允许间歇供电",
+            "cost": "点按维持变成暂停"
+          }
+        ],
+        "choice": "参考：绑步数、断电清零、冻结与翻目录都不推进。",
+        "correctnessImpact": "面板显示还差几步，重置清充能不清别关成绩。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "charge++ / =0，未定义翻目录与冻结。",
+        "remainingDecision": "断电曲线以及冻结期间是否推进。",
+        "counterexample": {
+          "constraintQuote": "打开目录停留就会偷偷开到位",
+          "steps": "差一步充满时打开目录停留",
+          "expected": "回来门仍差一步",
+          "wrongResult": "门已经开了",
+          "whyRoutineFixFails": "给门加计数器仍要先规定离开舞台算不算步"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "门的充能字段"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "按步充能"
+        },
+        {
+          "path": "src/features/ledger/lib/steps.ts",
+          "action": "modify",
+          "reason": "步回合钩子"
+        },
+        {
+          "path": "src/features/gadget/ui/GadgetPanel.vue",
+          "action": "modify",
+          "reason": "显示还差几步"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "延迟门关卡"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "action": "modify",
+          "reason": "重置清充能"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "充能相位、面板、重置、冻结。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "回来门仍差一步"
+        },
+        {
+          "kind": "boundary",
+          "steps": "差一步充满时打开目录停留",
+          "expected": "回来门仍差一步"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/gadget/lib/power.ts",
+          "src/features/ledger/lib/steps.ts",
+          "src/features/gadget/ui/GadgetPanel.vue",
+          "src/features/voyage/lib/catalog.ts",
+          "src/features/voyage/model/useVoyage.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "feature-04",
+      "difficulty": "困难",
+      "goal": "关卡解锁与练习不写成绩",
+      "categoryEvidence": "所有关可点，commitClear 无条件写最佳。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "查看已完成记录仍要在列表里可见，即使后面的关还锁着",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "练习和正式若共用同一个提交出口，练习打出的更少步数会覆盖正式成绩并错误开门",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "从练习切回正式是丢掉现场还是两份现场并存",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "练习通关既不能写目录最佳，也不能因此解锁下一关",
+          "reasoning": "同一通关函数的写入权限。",
+          "failureCase": "练习覆盖最佳。"
+        }
+      ],
+      "designDecision": {
+        "tension": "同一通关函数的写入权限。",
+        "options": [
+          {
+            "approach": "练习走独立提交，不写 records 不解锁",
+            "validWhen": "权限必须拆开",
+            "cost": "两套冻结提示"
+          },
+          {
+            "approach": "正式/练习两份现场",
+            "validWhen": "切换不丢",
+            "cost": "存储加倍"
+          }
+        ],
+        "choice": "参考：独立提交出口；切换丢掉练习现场；已完成最佳只读展示。",
+        "correctnessImpact": "锁图标、重置清哪一套。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "unlocked 集合加练习标志，若仍调用 commitClear 会写坏成绩。",
+        "remainingDecision": "提交入口是否复用以及现场是否两份。",
+        "counterexample": {
+          "constraintQuote": "练习打出的更少步数会覆盖正式成绩并错误开门",
+          "steps": "正式最佳18，练习打出10",
+          "expected": "目录仍18且下一关不因练习解锁",
+          "wrongResult": "最佳变成10并解锁",
+          "whyRoutineFixFails": "加锁图标但不拆提交出口不够"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "解锁与模式"
+        },
+        {
+          "path": "src/features/voyage/lib/persist.ts",
+          "action": "modify",
+          "reason": "保存解锁不保存练习成绩"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "action": "modify",
+          "reason": "拆分提交"
+        },
+        {
+          "path": "src/features/voyage/ui/LevelRail.vue",
+          "action": "modify",
+          "reason": "锁与练习入口"
+        },
+        {
+          "path": "src/features/ledger/lib/steps.ts",
+          "action": "modify",
+          "reason": "练习通关冻结但不 commitClear"
+        },
+        {
+          "path": "src/features/atlas/ui/StageView.vue",
+          "action": "modify",
+          "reason": "练习提示"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "权限、提交拆分、目录、现场切换。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "目录仍18且下一关不因练习解锁"
+        },
+        {
+          "kind": "boundary",
+          "steps": "正式最佳18，练习打出10",
+          "expected": "目录仍18且下一关不因练习解锁"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/voyage/lib/persist.ts",
+          "src/features/voyage/model/useVoyage.ts",
+          "src/features/voyage/ui/LevelRail.vue",
+          "src/features/ledger/lib/steps.ts",
+          "src/features/atlas/ui/StageView.vue"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "feature-05",
+      "difficulty": "困难",
+      "goal": "步数拆为空走与推动并迁移旧档",
+      "categoryEvidence": "attempt.steps 单一，records.bestSteps 单一。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "目录同时展示两项",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "若把旧总数全部算成推动，新的二十步里只有四次推动反而排不进",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "通关那一步若是推动必须同时进入两项",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "把空走和推动分开计数",
+          "reasoning": "新口径与旧存档比较键。",
+          "failureCase": "旧档错排或消失。"
+        }
+      ],
+      "designDecision": {
+        "tension": "新口径与旧存档比较键。",
+        "options": [
+          {
+            "approach": "旧档只保留总数，新榜先比推动再比总数，旧档单独标注不可比",
+            "validWhen": "避免错排",
+            "cost": "旧最佳暂时不进新排序"
+          },
+          {
+            "approach": "双关键字，缺省把旧总数当空走",
+            "validWhen": "尽量留下旧档",
+            "cost": "可能低估旧档推动"
+          }
+        ],
+        "choice": "参考：展示两项；比较用（推动，总数）；旧档无推动字段则不参与推动榜但保留总数金牌。",
+        "correctnessImpact": "迁移、重置清两项、MoveResult 分类。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "两个计数器和为总步，未定义旧档比较。",
+        "remainingDecision": "比较函数与迁移缺省。",
+        "counterexample": {
+          "constraintQuote": "同一份十八步旧档在新榜上的位置完全不同",
+          "steps": "旧最佳18无拆分，新成绩20总/4推动",
+          "expected": "按选定比较键有稳定名次且旧18仍能看见",
+          "wrongResult": "旧18被当成18次推动压过新档，或旧档消失",
+          "whyRoutineFixFails": "加两个计数器不够，必须定比较键"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "拆分步数与记录"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "MoveResult 区分空走推动"
+        },
+        {
+          "path": "src/features/ledger/lib/steps.ts",
+          "action": "modify",
+          "reason": "两项累加"
+        },
+        {
+          "path": "src/features/voyage/lib/persist.ts",
+          "action": "modify",
+          "reason": "迁移旧 records"
+        },
+        {
+          "path": "src/features/voyage/ui/RecordBoard.vue",
+          "action": "modify",
+          "reason": "展示两项"
+        },
+        {
+          "path": "src/features/ledger/ui/StepMeter.vue",
+          "action": "modify",
+          "reason": "分别显示"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "分类、迁移、比较、UI。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "按选定比较键有稳定名次且旧18仍能看见"
+        },
+        {
+          "kind": "boundary",
+          "steps": "旧最佳18无拆分，新成绩20总/4推动",
+          "expected": "按选定比较键有稳定名次且旧18仍能看见"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/hauler/lib/push.ts",
+          "src/features/ledger/lib/steps.ts",
+          "src/features/voyage/lib/persist.ts",
+          "src/features/voyage/ui/RecordBoard.vue",
+          "src/features/ledger/ui/StepMeter.vue"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "feature-06",
+      "difficulty": "困难",
+      "goal": "封道可吞实体且与通关同时发生",
+      "categoryEvidence": "seal 只让新走入失败，已在格上可离开。箱子不消失。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "最后一只未进目标的木箱被吞的同时其他箱子填满目标，失败和通关会抢同一帧",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "先吞则目录没有成绩且目标已空；先通关则记录写入后现场又失败",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "铁箱若只看求值前的占格，同一步把铁箱推进封道格能不能救命",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "封道落下时格上的木箱被销毁、人失败，铁箱则把这一格撑住使本步不封",
+          "reasoning": "破坏与通关共用一次求值出口。",
+          "failureCase": "又写成绩又失败。"
+        }
+      ],
+      "designDecision": {
+        "tension": "破坏与通关共用一次求值出口。",
+        "options": [
+          {
+            "approach": "失败优先，吞箱后不再提交通关",
+            "validWhen": "死亡不能刷成绩",
+            "cost": "可能吞掉本来能过的最后一箱"
+          },
+          {
+            "approach": "先通关再破坏，已写入的最佳不因随后失败撤回",
+            "validWhen": "通关瞬间已成立",
+            "cost": "现场随即失败难看"
+          }
+        ],
+        "choice": "参考：同一提交里先结算破坏与失败，失败则不写记录；铁箱用移动后占格支撑。",
+        "correctnessImpact": "箱子生命周期、失败不改已有最佳。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "求值末尾删木箱，未规定与通关的先后。",
+        "remainingDecision": "吞箱、供电回退、胜负顺序。",
+        "counterexample": {
+          "constraintQuote": "失败和通关会抢同一帧",
+          "steps": "木箱既压触发封道的踏板又是最后未进目标的箱子",
+          "expected": "只有一种提交：失败或通关",
+          "wrongResult": "目录有成绩同时现场失败",
+          "whyRoutineFixFails": "分别补销毁和通关检查不加顺序仍会双写"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "封道与支撑、销毁"
+        },
+        {
+          "path": "src/features/hauler/lib/occupancy.ts",
+          "action": "modify",
+          "reason": "箱子可被移除"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "与失败抢提交"
+        },
+        {
+          "path": "src/features/ledger/lib/steps.ts",
+          "action": "modify",
+          "reason": "失败状态"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "木箱消失"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "action": "modify",
+          "reason": "失败不 commitClear"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "破坏、胜负顺序、绘制、记录隔离。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "只有一种提交：失败或通关"
+        },
+        {
+          "kind": "boundary",
+          "steps": "木箱既压触发封道的踏板又是最后未进目标的箱子",
+          "expected": "只有一种提交：失败或通关"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/features/gadget/lib/power.ts",
+          "src/features/hauler/lib/occupancy.ts",
+          "src/features/ledger/lib/win.ts",
+          "src/features/ledger/lib/steps.ts",
+          "src/features/atlas/lib/draw.ts",
+          "src/features/voyage/model/useVoyage.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "feature-07",
+      "difficulty": "困难",
+      "goal": "单向地板对人与箱子不同规则",
+      "categoryEvidence": "无 facing，四向 DIR_VEC 等价。推箱时人走进箱格。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "基线里推箱子时人一定走进箱子原来的格子",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "若箱子也遵守箭头，人会因为这次被迫走进逆箭格而推不动",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "重置后面向回到蓝图",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "有的地板画着单向箭头，人只能顺箭走",
+          "reasoning": "推箱契约与单向约束冲突。",
+          "failureCase": "人被带到逆箭或合法垫块被禁。"
+        }
+      ],
+      "designDecision": {
+        "tension": "推箱契约与单向约束冲突。",
+        "options": [
+          {
+            "approach": "人守箭头，箱子无视，但若人将走进逆箭则整步非法",
+            "validWhen": "保持推箱进人格",
+            "cost": "不能借箱走上逆箭"
+          },
+          {
+            "approach": "箱子也守箭头，逆推直接失败",
+            "validWhen": "箭头对所有实体",
+            "cost": "垫块打法消失"
+          }
+        ],
+        "choice": "参考：人守箭头；推箱时对人的落点做箭头检查，失败整步不行。",
+        "correctnessImpact": "朝向绘制、重置朝向。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "记录 facing 并过滤人的方向，忽略推箱落点会让人被带上逆箭。",
+        "remainingDecision": "箱子与人的箭头谓词是否同一函数。",
+        "counterexample": {
+          "constraintQuote": "人可以躲在箱后被「带」上逆箭",
+          "steps": "人站在箭头格逆方向推前方箱子",
+          "expected": "整步失败或箱子移动而人合法落点",
+          "wrongResult": "人进了逆箭格却算成功",
+          "whyRoutineFixFails": "只给人的主动移动加过滤不够"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "朝向与箭头格"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "箭头数据"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "人落点箭头检查"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "箭头谓词"
+        },
+        {
+          "path": "src/features/atlas/lib/draw.ts",
+          "action": "modify",
+          "reason": "绘制箭头与朝向"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "action": "modify",
+          "reason": "重置朝向"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "朝向、推箱契约、绘制、重置。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "整步失败或箱子移动而人合法落点"
+        },
+        {
+          "kind": "boundary",
+          "steps": "人站在箭头格逆方向推前方箱子",
+          "expected": "整步失败或箱子移动而人合法落点"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/voyage/lib/catalog.ts",
+          "src/features/hauler/lib/push.ts",
+          "src/features/gadget/lib/passable.ts",
+          "src/features/atlas/lib/draw.ts",
+          "src/features/voyage/model/useVoyage.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "feature-08",
+      "difficulty": "困难",
+      "goal": "通关后继续推但不回写更差成绩",
+      "categoryEvidence": "cleared 后 applyMove 直接返回。betterRecord 用 min。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "通关后仍能推，打乱现场",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "通关后若继续走离开目标，已完成标记是保持还是摘掉",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "步数簿在继续推时展示生涯最佳还是本次已经涨上去的数",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "只有再次达成更少步数才更新最佳，更多步数不得回写",
+          "reasoning": "完成标记粘性与记录更新入口。",
+          "failureCase": "更差步数覆盖最佳或完成标记乱跳。"
+        }
+      ],
+      "designDecision": {
+        "tension": "完成标记粘性与记录更新入口。",
+        "options": [
+          {
+            "approach": "cleared 粘性，继续走只加步数，再次满足才 min 写入",
+            "validWhen": "已完成应保持可查看",
+            "cost": "现场可被打乱仍显示已完成"
+          },
+          {
+            "approach": "离开目标则 playing，但 records 不删",
+            "validWhen": "现场谓词",
+            "cost": "目录尚未通关与最佳并存需解释"
+          }
+        ],
+        "choice": "参考：粘性已完成；解冻移动；只在再次满足且步数更少时更新。",
+        "correctnessImpact": "移动入口解冻、目录徽章、步数展示。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "去掉冻结每次满足就 min，若用最后一次覆盖会变差。",
+        "remainingDecision": "cleared 粘性以及展示哪个数字。",
+        "counterexample": {
+          "constraintQuote": "十八步会被二十步写坏",
+          "steps": "18步通关后再走2步离开又填满",
+          "expected": "最佳仍18",
+          "wrongResult": "最佳变成20",
+          "whyRoutineFixFails": "解冻移动后若仍用覆盖写入就会写坏"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "解冻移动"
+        },
+        {
+          "path": "src/features/ledger/lib/steps.ts",
+          "action": "modify",
+          "reason": "粘性 cleared 仍计数"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "再次满足才通知"
+        },
+        {
+          "path": "src/features/voyage/lib/persist.ts",
+          "action": "modify",
+          "reason": "只在更优时写入"
+        },
+        {
+          "path": "src/features/ledger/ui/StepMeter.vue",
+          "action": "modify",
+          "reason": "展示生涯与本次"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "action": "modify",
+          "reason": "通关后不再拒绝移动"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "状态机、提交、UI、解冻。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "最佳仍18"
+        },
+        {
+          "kind": "boundary",
+          "steps": "18步通关后再走2步离开又填满",
+          "expected": "最佳仍18"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/features/hauler/lib/push.ts",
+          "src/features/ledger/lib/steps.ts",
+          "src/features/ledger/lib/win.ts",
+          "src/features/voyage/lib/persist.ts",
+          "src/features/ledger/ui/StepMeter.vue",
+          "src/app/useWorkshop.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "feature-09",
+      "difficulty": "困难",
+      "goal": "通关还需机关终态",
+      "categoryEvidence": "afterMove 只看 goalsSatisfied。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "未满足的终态要在机关面板上列出",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "若先认目标再算机关，门还开着会误通关，随即关上",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "通关瞬间用求值前快照、求值后状态，还是要求连续两帧稳定",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "部分关必须在通关瞬间保持指定门开着或封道维持",
+          "reasoning": "胜负与机关求值相位耦合。",
+          "failureCase": "误通关或永远无法用最后一步过关且无说明。"
+        }
+      ],
+      "designDecision": {
+        "tension": "胜负与机关求值相位耦合。",
+        "options": [
+          {
+            "approach": "通关看求值后状态",
+            "validWhen": "看见的那一帧就是结算帧",
+            "cost": "从踏板推上目标的最后一步可能无解"
+          },
+          {
+            "approach": "要求求值前后终态都满足",
+            "validWhen": "避免误通关",
+            "cost": "更严，部分关要改设计"
+          }
+        ],
+        "choice": "参考：求值后再检查目标与终态；关卡作者按此排最后一步。",
+        "correctnessImpact": "蓝图条件、面板、目录只在真正满足时写入。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "clearWhen 加到通关函数，未规定与 refresh 的先后。",
+        "remainingDecision": "通关判定使用哪一帧。",
+        "counterexample": {
+          "constraintQuote": "门还开着会误通关，随即关上",
+          "steps": "最后一箱从踏板推上目标，关卡要求门保持开",
+          "expected": "按选定帧，要么不能过要么过关后门仍开",
+          "wrongResult": "提示通关同时门已关上",
+          "whyRoutineFixFails": "加条件不指定与 evaluateGadgets 的顺序仍会误通关"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "clearWhen"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "终态关卡"
+        },
+        {
+          "path": "src/features/ledger/lib/win.ts",
+          "action": "modify",
+          "reason": "联合检查"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "action": "modify",
+          "reason": "求值与通关顺序"
+        },
+        {
+          "path": "src/features/gadget/ui/GadgetPanel.vue",
+          "action": "modify",
+          "reason": "列出未满足终态"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "action": "modify",
+          "reason": "只在联合满足时提交"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "终态、相位、面板、提交。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "按选定帧，要么不能过要么过关后门仍开"
+        },
+        {
+          "kind": "boundary",
+          "steps": "最后一箱从踏板推上目标，关卡要求门保持开",
+          "expected": "按选定帧，要么不能过要么过关后门仍开"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/voyage/lib/catalog.ts",
+          "src/features/ledger/lib/win.ts",
+          "src/app/useWorkshop.ts",
+          "src/features/gadget/ui/GadgetPanel.vue",
+          "src/features/voyage/model/useVoyage.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "feature-10",
+      "difficulty": "困难",
+      "goal": "同一扇门被正反踏板争夺",
+      "categoryEvidence": "多板对门是或开，默认关。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "冲突时面板要同时列出正反来源",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "正反同时为真时开优先、关优先还是保持上一帧",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "保持上一帧会引入记忆，重置和换关必须定义初值",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "踏板可以配置成开门或关门",
+          "reasoning": "无记忆布尔与有记忆锁存在可复现性上不同。",
+          "failureCase": "重放不一致或画关能进。"
+        }
+      ],
+      "designDecision": {
+        "tension": "无记忆布尔与有记忆锁存在可复现性上不同。",
+        "options": [
+          {
+            "approach": "关优先无记忆",
+            "validWhen": "锁门要压得过开门",
+            "cost": "开门板在反板压着时无效"
+          },
+          {
+            "approach": "保持上一帧锁存",
+            "validWhen": "需要时序谜题",
+            "cost": "同样摆法取决于谁先压，重放要固定顺序"
+          }
+        ],
+        "choice": "参考：无记忆关优先，重置回到蓝图默认，面板列出冲突。",
+        "correctnessImpact": "通行必须跟合成结果，不能画关走得进。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "布尔或开，无法表达反极性。",
+        "remainingDecision": "冲突合成函数以及是否引入记忆。",
+        "counterexample": {
+          "constraintQuote": "同样的摆法重放结果不同",
+          "steps": "木箱正踏板与铁箱反踏板同时压着，先重置再摆",
+          "expected": "合成规则固定，重放一致",
+          "wrongResult": "谁先压上结果不同且面板只显示最终开或关",
+          "whyRoutineFixFails": "加极性字段不规定同时为真的合成"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "踏板极性"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "正反配置"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "冲突合成"
+        },
+        {
+          "path": "src/features/gadget/ui/GadgetPanel.vue",
+          "action": "modify",
+          "reason": "列出正反"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "按合成结果通行"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "action": "modify",
+          "reason": "重置初值"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "极性、合成、面板、通行、重置。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "合成规则固定，重放一致"
+        },
+        {
+          "kind": "boundary",
+          "steps": "木箱正踏板与铁箱反踏板同时压着，先重置再摆",
+          "expected": "合成规则固定，重放一致"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/voyage/lib/catalog.ts",
+          "src/features/gadget/lib/power.ts",
+          "src/features/gadget/ui/GadgetPanel.vue",
+          "src/features/gadget/lib/passable.ts",
+          "src/features/voyage/model/useVoyage.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "feature-11",
+      "difficulty": "困难",
+      "goal": "拉取箱子与踏板占格交接",
+      "categoryEvidence": "只能推，人进箱格。无拉。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "要用最新供电检查身后那一格走不走得成",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "先走人后移箱会出现一帧空格断电，身后由该板打开的门可能闪关",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "失败必须整步退回，成功才加一步",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "可以向后拉，箱子进入人的原格，人退到身后一格",
+          "reasoning": "拉步中间占格与即时供电。",
+          "failureCase": "闪关卡死还计数。"
+        }
+      ],
+      "designDecision": {
+        "tension": "拉步中间占格与即时供电。",
+        "options": [
+          {
+            "approach": "原子交换后一次求值",
+            "validWhen": "门不闪",
+            "cost": "中间断电谜题做不成"
+          },
+          {
+            "approach": "两段移动，闪断则整步失败",
+            "validWhen": "强调瞬时断电",
+            "cost": "许多拉法失败"
+          }
+        ],
+        "choice": "参考：原子交换一次求值，身后门按新供电检查，失败回滚。",
+        "correctnessImpact": "操作说明、不得撬开已冻结通关。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "检查身后可通行并交换，未处理踏板空帧。",
+        "remainingDecision": "拉步占格是交换还是两段。",
+        "counterexample": {
+          "constraintQuote": "身后由该板打开的门可能闪关，整步因门关上而非法",
+          "steps": "人站在木板上拉前方木箱，身后是该板打开的门",
+          "expected": "按协议拉成且门不闪，或明确失败回滚",
+          "wrongResult": "门闪一下人卡在非法格且步数已加",
+          "whyRoutineFixFails": "只加拉的坐标变换不够"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "拉与回滚"
+        },
+        {
+          "path": "src/features/hauler/ui/MoverHud.vue",
+          "action": "modify",
+          "reason": "拉的操作说明"
+        },
+        {
+          "path": "src/features/gadget/lib/passable.ts",
+          "action": "modify",
+          "reason": "身后格合法性"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "交换后求值"
+        },
+        {
+          "path": "src/features/ledger/lib/steps.ts",
+          "action": "modify",
+          "reason": "成功才计数"
+        },
+        {
+          "path": "src/app/keys.ts",
+          "action": "modify",
+          "reason": "拉的按键"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "拉、占格相位、回滚、操作。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "按协议拉成且门不闪，或明确失败回滚"
+        },
+        {
+          "kind": "boundary",
+          "steps": "人站在木板上拉前方木箱，身后是该板打开的门",
+          "expected": "按协议拉成且门不闪，或明确失败回滚"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/features/hauler/lib/push.ts",
+          "src/features/hauler/ui/MoverHud.vue",
+          "src/features/gadget/lib/passable.ts",
+          "src/features/gadget/lib/power.ts",
+          "src/features/ledger/lib/steps.ts",
+          "src/app/keys.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    },
+    {
+      "id": "feature-12",
+      "difficulty": "困难",
+      "goal": "边沿自锁踏板与电平板共存",
+      "categoryEvidence": "踏板是电平占压。多板或开。",
+      "features": [
+        {
+          "kind": "多模块整合",
+          "quote": "同一扇门可以同时连到电平板和自锁板",
+          "reason": "同一事件要同时改写至少两个模块的可观察状态，不是面板同步现成派生值。"
+        },
+        {
+          "kind": "关键设计取舍",
+          "quote": "自锁已经翻开、电平板随后断电时，若按或开则门保持开，关卡无法用离开电平板来关门",
+          "reason": "已定规则之后仍有提交/相位/所有权决策，常规模型不能直接消掉。"
+        },
+        {
+          "kind": "复杂技术关注点",
+          "quote": "锁存记在踏板、门还是本次尝试里，重置和换关清不清",
+          "reason": "触发过程里必须保住跨重置、换关或同帧结算的结果。"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "quote": "部分踏板改成进入边沿才翻转一次锁存",
+          "reasoning": "两种时间语义接到同一扇门。",
+          "failureCase": "或开关不了门或自锁被电平静默覆盖。"
+        }
+      ],
+      "designDecision": {
+        "tension": "两种时间语义接到同一扇门。",
+        "options": [
+          {
+            "approach": "锁存作为第三电源与电平或开",
+            "validWhen": "自锁要能独自开门",
+            "cost": "离开电平板关不了门"
+          },
+          {
+            "approach": "电平在场时覆盖锁存，电平消失才用锁存",
+            "validWhen": "电平板是总闸",
+            "cost": "自锁在电平在时无效"
+          }
+        ],
+        "choice": "参考：或开并在面板分开显示锁存与实时占压；重置清锁存。",
+        "correctnessImpact": "边沿检测、串关、面板两盏灯。",
+        "baselineReuse": "基线提供一格推动、整步后种类踏板求值、通关冻结写入最佳、重置回蓝图、localStorage 仅记录与关卡 id。无撤销栈、无影子世界、无冰/传送/时钟/守卫/检查点/光/双人/洪水/挂起。",
+        "simplestApproach": "mode+wasOccupied，未规定与电平或门的合成。",
+        "remainingDecision": "锁存与电平同时接到一门时的合成，以及锁存归属。",
+        "counterexample": {
+          "constraintQuote": "关卡无法用离开电平板来关门",
+          "steps": "自锁已翻开，再压上电平板后离开电平板",
+          "expected": "按合成规则门开或关且可重现",
+          "wrongResult": "面板仍显示断开但门开着，或锁存被清掉",
+          "whyRoutineFixFails": "只加边沿检测不规定双电源合成"
+        }
+      },
+      "sourceEvidence": [
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "quote": "if (document.attempt.status === \"cleared\") return { moved: false, pushed: false, reason: \"cleared\" };"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "quote": "(box) => sameCell(box, plate) && box.kind === plate.accept"
+        },
+        {
+          "path": "src/app/useWorkshop.ts",
+          "quote": "gadget.refresh();\n    const tick = ledger.afterMove(result);"
+        }
+      ],
+      "changes": [
+        {
+          "path": "src/shared/types.ts",
+          "action": "modify",
+          "reason": "踏板模式与锁存"
+        },
+        {
+          "path": "src/features/gadget/lib/power.ts",
+          "action": "modify",
+          "reason": "边沿与双电源"
+        },
+        {
+          "path": "src/features/gadget/ui/GadgetPanel.vue",
+          "action": "modify",
+          "reason": "锁存与占压分灯"
+        },
+        {
+          "path": "src/features/voyage/lib/catalog.ts",
+          "action": "modify",
+          "reason": "自锁踏板关卡"
+        },
+        {
+          "path": "src/features/voyage/model/useVoyage.ts",
+          "action": "modify",
+          "reason": "重置清锁存"
+        },
+        {
+          "path": "src/features/hauler/lib/push.ts",
+          "action": "modify",
+          "reason": "移动后提供边沿所需的前后占格"
+        }
+      ],
+      "p6Workload": {
+        "status": "estimated",
+        "necessaryWork": "边沿、合成、面板、重置清记忆。",
+        "efficientPathAnalysis": "允许批量读相关模块、批量改类型与规则、一次命令做类型检查与构建后，仍需调查基线、设计提交相位、接入至少两个模块界面并做正常与边界验证，保守估计有效调用仍在五十次以上。不能把五文件或构建通过换算成调用数。",
+        "estimate": "保守 58–90 次有效调用；不确定因素是解题者是否批量编辑以及验证是否需要反复通关。估计不等于实测。",
+        "runs": []
+      },
+      "minimality": "尝试只改公共求值或单一提交函数无法覆盖题面里相遇的约束；列出的每个文件分别承担类型、规则、另一模块交接或界面，省略则对应验收点不成立。",
+      "acceptance": [
+        {
+          "kind": "normal",
+          "steps": "按题面主路径操作一次完整成功流程。",
+          "expected": "按合成规则门开或关且可重现"
+        },
+        {
+          "kind": "boundary",
+          "steps": "自锁已翻开，再压上电平板后离开电平板",
+          "expected": "按合成规则门开或关且可重现"
+        }
+      ],
+      "review": {
+        "difficultyGates": {
+          "H1": false,
+          "H2": false,
+          "H3": false
+        },
+        "p6Verdict": "pending",
+        "p6Analysis": "尚未实跑，仅工作量预审。",
+        "designDecisionAnalysis": "待独立复核者先提出最简单方案再对照。",
+        "simpleSolutionSuffices": null,
+        "verdict": "pending",
+        "actualDifficulty": "",
+        "featureKinds": [],
+        "necessaryFiles": [
+          "src/shared/types.ts",
+          "src/features/gadget/lib/power.ts",
+          "src/features/gadget/ui/GadgetPanel.vue",
+          "src/features/voyage/lib/catalog.ts",
+          "src/features/voyage/model/useVoyage.ts",
+          "src/features/hauler/lib/push.ts"
+        ],
+        "reason": "待独立复核。",
+        "shortcutAnalysis": "待独立复核者主动寻找少文件方案。"
+      }
+    }
+  ]
+}

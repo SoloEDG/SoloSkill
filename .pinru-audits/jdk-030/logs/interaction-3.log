@@ -1,0 +1,6 @@
+from: voyage
+to: atlas
+steps: 通关后改选「架桥」，再在架桥重置；目录仍展示上一关最佳。
+expected: 地图、箱子、机关回到所选关蓝图，步数归零，已完成关的最佳步数保留。
+observed: 架桥出现缺口与三处待机桥板；最佳记录仍列出门闩入门 22 步。木箱压板后三处架桥变为已变形。
+log: logs/browser-smoke.log

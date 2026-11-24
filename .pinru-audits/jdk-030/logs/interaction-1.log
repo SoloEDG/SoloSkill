@@ -1,0 +1,6 @@
+from: hauler
+to: gadget
+steps: 在门闩入门把匹配种类的木箱推上踏板，整步落定后重算供电。
+expected: 踏板变为有电，对应门打开，地图通行性立即改变，人可以走进原关闭的门廊。
+observed: 机关面板显示「有电」「门开启」，画布上门闩打开。步数随成功推动增加。
+log: logs/browser-smoke.log
