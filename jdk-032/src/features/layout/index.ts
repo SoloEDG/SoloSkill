@@ -1,0 +1,5 @@
+export { useLayout } from './model/useLayout'
+export { default as BuildCanvas } from './ui/BuildCanvas.vue'
+export { default as PiecePalette } from './ui/PiecePalette.vue'
+export { default as ObjectInspector } from './ui/ObjectInspector.vue'
+export { distance, nextContact } from './lib/geometry'

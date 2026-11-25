@@ -1,0 +1,26 @@
+{
+  "name": "domino-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "vue-tsc --noEmit",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource/barlow": "^5.2.0",
+    "@fontsource/ibm-plex-mono": "^5.2.0",
+    "@lucide/vue": "^1.78.0",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "@vitejs/plugin-vue": "^5.2.0",
+    "@vue/compiler-sfc": "^3.5.0",
+    "typescript": "~5.8.0",
+    "vite": "^6.3.0",
+    "vue-tsc": "^3.3.14"
+  }
+}
