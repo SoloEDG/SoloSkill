@@ -1,0 +1,5 @@
+services:
+  regatta:
+    build: .
+    ports:
+      - "127.0.0.1:${REGATTA_PORT:-8033}:80"

@@ -1,0 +1,21 @@
+{
+  "name": "night-circuit",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": { "dev": "vite", "typecheck": "vue-tsc --noEmit", "build": "vite build" },
+  "dependencies": {
+    "@fontsource/barlow-condensed": "^5.2.8",
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "lucide-vue-next": "^0.511.0",
+    "rot-js": "^2.2.1",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "@vue/compiler-sfc": "^3.5.13",
+    "typescript": "~5.8.3",
+    "vite": "^6.4.0",
+    "vue-tsc": "^2.2.10"
+  }
+}
