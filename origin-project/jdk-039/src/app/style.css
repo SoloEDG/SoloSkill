@@ -1,0 +1,17 @@
+:root {font-family:system-ui,-apple-system,'PingFang SC',sans-serif;color:#ebefea;background:#1a211f;color-scheme:dark;}
+* {box-sizing:border-box;}
+body {margin:0;}
+.top {max-width:1080px;margin:auto;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #485750;}
+h1,h2 {margin:0;display:flex;align-items:center;gap:8px;}
+h1 {font-size:23px;} h1 svg {color:#f3b689;} h2 {font-size:14px;margin-bottom:8px;}
+main {max-width:1080px;margin:auto;padding:14px 18px 24px;display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:18px;}
+.stations {display:flex;align-items:start;justify-content:space-between;gap:6px;margin-bottom:8px;}
+button {min-height:33px;display:inline-flex;justify-content:center;align-items:center;gap:5px;border:1px solid #62736b;border-radius:4px;padding:3px 7px;background:#303d39;color:#edf5ee;cursor:pointer;font:600 12px system-ui;white-space:nowrap;}
+button:disabled {cursor:default;opacity:.57;}
+button:focus-visible {outline:2px solid #e6c698;outline-offset:1px;}
+button:not(:disabled):hover {filter:brightness(1.14);}
+aside {display:grid;gap:12px;align-self:start;}
+.panel {border-top:1px solid #53655b;padding:7px 0 0;min-width:0;}
+@media(max-width:720px) {main {grid-template-columns:1fr;gap:12px;} aside {grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:390px) {main,.top {padding-inline:8px;}}
+@media(prefers-reduced-motion:reduce) {* {transition:none!important;}}
