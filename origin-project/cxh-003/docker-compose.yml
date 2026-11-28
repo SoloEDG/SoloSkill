@@ -1,0 +1,6 @@
+services:
+  glass-atelier:
+    build: .
+    ports:
+      - "${PORT:-4178}:80"
+    restart: unless-stopped
